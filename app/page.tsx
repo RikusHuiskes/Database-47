@@ -4,131 +4,628 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-type RecordRow = {
-  id?: string | number;
-  title?: string;
+type Category = {
+  id: string;
   name?: string;
-  description?: string;
-  start_date?: string;
-  start_time?: string;
-  status?: string;
-  [key: string]: unknown;
+  slug?: string;
 };
 
+type EventRow = {
+  id: string;
+  title: string;
+  slug: string;
+  start_at: string;
+  end_at?: string | null;
+  venue_name?: string | null;
+  city?: string | null;
+  status?: string;
+  description?: string | null;
+  short_description?: string | null;
+  price_from?: number | null;
+  price_to?: number | null;
+  is_free?: boolean;
+};
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box" as const,
+  padding: 11,
+  border: "1px solid #cbd5e1",
+  borderRadius: 7,
+  fontSize: 15,
+  background: "white",
+};
+
+const labelStyle = {
+  display: "block",
+  marginBottom: 6,
+  fontWeight: 600,
+  fontSize: 14,
+};
+
+function makeSlug(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function Home() {
-  const [categories, setCategories] = useState<RecordRow[]>([]);
-  const [events, setEvents] = useState<RecordRow[]>([]);
-  const [categoryStatus, setCategoryStatus] = useState("Laden...");
-  const [eventStatus, setEventStatus] = useState("Laden...");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    async function loadData() {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const [title, setTitle] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [description, setDescription] = useState("");
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [venueName, setVenueName] = useState("");
+  const [address, setAddress] = useState("");
+  const [postcode, setPostcode] = useState("");
+  const [city, setCity] = useState("");
+  const [priceFrom, setPriceFrom] = useState("");
+  const [priceTo, setPriceTo] = useState("");
+  const [isFree, setIsFree] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [bookingUrl, setBookingUrl] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [categoryId, setCategoryId] = useState("");
 
-      if (!url || !key) {
-        setCategoryStatus("Supabase-instellingen ontbreken.");
-        setEventStatus("Controleer de variabelen in Vercel.");
-        setLoading(false);
-        return;
-      }
+  const [supabase] = useState(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      const supabase = createClient(url, key);
+    if (!url || !key) return null;
+    return createClient(url, key);
+  });
 
-      const [categoryResult, eventResult] = await Promise.all([
-        supabase.from("categories").select("*").limit(100),
-        supabase.from("events").select("*").limit(50),
-      ]);
-
-      if (categoryResult.error) {
-        setCategoryStatus("Fout: " + categoryResult.error.message);
-      } else {
-        setCategories(categoryResult.data ?? []);
-        setCategoryStatus(
-          `${categoryResult.data?.length ?? 0} categorieën geladen`
-        );
-      }
-
-      if (eventResult.error) {
-        setEventStatus("Fout: " + eventResult.error.message);
-      } else {
-        setEvents(eventResult.data ?? []);
-        setEventStatus(
-          `${eventResult.data?.length ?? 0} activiteiten gevonden`
-        );
-      }
-
+  async function loadData() {
+    if (!supabase) {
+      setError("Supabase-instellingen ontbreken. Controleer Vercel.");
       setLoading(false);
+      return;
     }
 
-    loadData().catch(() => {
-      setCategoryStatus("Er ging iets mis bij het laden.");
-      setEventStatus("Controleer de Supabase-verbinding.");
-      setLoading(false);
-    });
+    setError("");
+
+    const [categoryResult, eventResult] = await Promise.all([
+      supabase.from("categories").select("*").order("name").limit(100),
+      supabase
+        .from("events")
+        .select("*")
+        .order("start_at", { ascending: true })
+        .limit(100),
+    ]);
+
+    if (categoryResult.error) {
+      setError("Categorieën laden mislukt: " + categoryResult.error.message);
+    } else {
+      setCategories((categoryResult.data ?? []) as Category[]);
+    }
+
+    if (eventResult.error) {
+      setError((previous) =>
+        previous
+          ? previous + " | Evenementen: " + eventResult.error.message
+          : "Evenementen laden mislukt: " + eventResult.error.message
+      );
+    } else {
+      setEvents((eventResult.data ?? []) as EventRow[]);
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    void loadData();
+    // De verbinding wordt bij het openen van de pagina geladen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function resetForm() {
+    setTitle("");
+    setShortDescription("");
+    setDescription("");
+    setStartAt("");
+    setEndAt("");
+    setVenueName("");
+    setAddress("");
+    setPostcode("");
+    setCity("");
+    setPriceFrom("");
+    setPriceTo("");
+    setIsFree(false);
+    setWebsiteUrl("");
+    setBookingUrl("");
+    setSourceUrl("");
+    setCategoryId("");
+  }
+
+  async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMessage("");
+    setError("");
+
+    if (!supabase) {
+      setError("Geen Supabase-verbinding.");
+      return;
+    }
+
+    if (!title.trim() || !startAt) {
+      setError("Vul minimaal de titel en startdatum in.");
+      return;
+    }
+
+    setSaving(true);
+
+    const payload = {
+      title: title.trim(),
+      slug: makeSlug(title),
+      short_description: shortDescription.trim() || null,
+      description: description.trim() || null,
+      start_at: new Date(startAt).toISOString(),
+      end_at: endAt ? new Date(endAt).toISOString() : null,
+      venue_name: venueName.trim() || null,
+      address: address.trim() || null,
+      postcode: postcode.trim() || null,
+      city: city.trim() || null,
+      price_from: isFree || priceFrom === "" ? null : Number(priceFrom),
+      price_to: isFree || priceTo === "" ? null : Number(priceTo),
+      is_free: isFree,
+      website_url: websiteUrl.trim() || null,
+      booking_url: bookingUrl.trim() || null,
+      source_url: sourceUrl.trim() || null,
+      status: "pending",
+      verified: false,
+    };
+
+    const { data, error: insertError } = await supabase
+      .from("events")
+      .insert(payload)
+      .select("id")
+      .single();
+
+    if (insertError) {
+      setError(
+        "Opslaan mislukt: " +
+          insertError.message +
+          ". Controleer eventueel de INSERT-rechten in Supabase."
+      );
+      setSaving(false);
+      return;
+    }
+
+    let categoryWarning = "";
+
+    if (categoryId && data?.id) {
+      const { error: linkError } = await supabase
+        .from("event_categories")
+        .insert({ event_id: data.id, category_id: categoryId });
+
+      if (linkError) {
+        categoryWarning =
+          " Het evenement is opgeslagen, maar de categorie kon niet worden gekoppeld: " +
+          linkError.message;
+      }
+    }
+
+    resetForm();
+    setShowForm(false);
+    setMessage(
+      "Evenement opgeslagen als 'pending' (wacht op controle)." +
+        categoryWarning
+    );
+
+    await loadData();
+    setSaving(false);
+  }
+
+  function formatDate(value?: string | null) {
+    if (!value) return "Datum onbekend";
+    return new Date(value).toLocaleString("fr-FR", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  }
+
   return (
-    <main style={{
-      maxWidth: 1000,
-      margin: "0 auto",
-      padding: 24,
-      fontFamily: "Arial, sans-serif",
-      color: "#172033",
-    }}>
-      <h1>DATABASE 47</h1>
-      <p>Regionale activiteitenagenda — Lot-et-Garonne</p>
-      <hr />
-
-      <h2>Admin Dashboard</h2>
-
-      <p>Activiteiten geladen: {events.length}</p>
-      <p>Categorieën: {categories.length}</p>
+    <main
+      style={{
+        maxWidth: 1000,
+        margin: "0 auto",
+        padding: 24,
+        fontFamily: "Arial, sans-serif",
+        color: "#172033",
+      }}
+    >
+      <header>
+        <h1>DATABASE 47</h1>
+        <p>Regionale evenementenagenda — Lot-et-Garonne</p>
+      </header>
 
       <hr />
+
+      <h2>Beheerdersdashboard</h2>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: 12,
+          margin: "20px 0",
+        }}
+      >
+        {[
+          ["Evenementen", events.length],
+          ["Categorieën", categories.length],
+          [
+            "Wacht op controle",
+            events.filter((event) => event.status === "pending").length,
+          ],
+        ].map(([label, count]) => (
+          <div
+            key={String(label)}
+            style={{
+              padding: 16,
+              background: "white",
+              border: "1px solid #d8dee8",
+              borderRadius: 10,
+            }}
+          >
+            <div style={{ fontSize: 14, color: "#64748b" }}>{label}</div>
+            <strong style={{ fontSize: 27 }}>{count}</strong>
+          </div>
+        ))}
+      </div>
+
       <h2>Databaseverbinding</h2>
-      <p>Categorieën: {categoryStatus}</p>
-      <p>Activiteiten: {eventStatus}</p>
+      <p>
+        {supabase
+          ? `${categories.length} categorieën en ${events.length} evenementen geladen.`
+          : "Supabase-instellingen ontbreken."}
+      </p>
 
-      <h2>Categorieën</h2>
-      {categories.map((item, index) => (
-        <p key={String(item.id ?? index)}>
-          {String(item.name ?? item.title ?? item.slug ?? `Categorie ${index + 1}`)}
+      {error && (
+        <p
+          role="alert"
+          style={{
+            padding: 12,
+            background: "#fff1f2",
+            color: "#9f1239",
+            borderRadius: 8,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {error}
         </p>
-      ))}
-
-      <hr />
-      <h2>Activiteiten</h2>
-
-      {loading && <p>Activiteiten laden...</p>}
-
-      {!loading && !events.length && !eventStatus.startsWith("Fout:") && (
-        <p>Er staan nog geen activiteiten in de tabel.</p>
       )}
 
-      {events.map((event, index) => (
+      {message && (
+        <p
+          role="status"
+          style={{
+            padding: 12,
+            background: "#ecfdf5",
+            color: "#065f46",
+            borderRadius: 8,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {message}
+        </p>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          margin: "24px 0",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setShowForm(!showForm);
+            setError("");
+            setMessage("");
+          }}
+          style={{
+            padding: "12px 18px",
+            border: 0,
+            borderRadius: 8,
+            background: "#173f5f",
+            color: "white",
+            cursor: "pointer",
+            fontSize: 15,
+          }}
+        >
+          {showForm ? "Formulier sluiten" : "+ Nieuw evenement"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void loadData()}
+          style={{
+            padding: "12px 18px",
+            border: "1px solid #cbd5e1",
+            borderRadius: 8,
+            background: "white",
+            cursor: "pointer",
+            fontSize: 15,
+          }}
+        >
+          Vernieuwen
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={saveEvent}
+          style={{
+            display: "grid",
+            gap: 16,
+            padding: 20,
+            background: "white",
+            border: "1px solid #d8dee8",
+            borderRadius: 12,
+            marginBottom: 28,
+          }}
+        >
+          <h2>Nieuw evenement invoeren</h2>
+          <p style={{ marginTop: 0, color: "#64748b" }}>
+            Velden met * zijn verplicht. Het evenement wordt eerst ter controle
+            aangeboden.
+          </p>
+
+          <div>
+            <label style={labelStyle}>Titel *</label>
+            <input
+              style={inputStyle}
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Bijvoorbeeld: Marché nocturne"
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Categorie</label>
+            <select
+              style={inputStyle}
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <option value="">Kies een categorie</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name ?? category.slug ?? category.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Korte beschrijving</label>
+            <input
+              style={inputStyle}
+              value={shortDescription}
+              onChange={(e) => setShortDescription(e.target.value)}
+              maxLength={250}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Uitgebreide beschrijving</label>
+            <textarea
+              style={{ ...inputStyle, minHeight: 110 }}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Begindatum en -tijd *</label>
+            <input
+              style={inputStyle}
+              type="datetime-local"
+              required
+              value={startAt}
+              onChange={(e) => setStartAt(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Einddatum en -tijd</label>
+            <input
+              style={inputStyle}
+              type="datetime-local"
+              value={endAt}
+              onChange={(e) => setEndAt(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Locatie / zaal</label>
+            <input
+              style={inputStyle}
+              value={venueName}
+              onChange={(e) => setVenueName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Adres</label>
+            <input
+              style={inputStyle}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Postcode</label>
+            <input
+              style={inputStyle}
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Plaats</label>
+            <input
+              style={inputStyle}
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Bijvoorbeeld: Duras"
+            />
+          </div>
+
+          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={isFree}
+              onChange={(e) => setIsFree(e.target.checked)}
+            />
+            Dit evenement is gratis
+          </label>
+
+          {!isFree && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div>
+                <label style={labelStyle}>Prijs vanaf (€)</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={priceFrom}
+                  onChange={(e) => setPriceFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Prijs tot (€)</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={priceTo}
+                  onChange={(e) => setPriceTo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label style={labelStyle}>Website</label>
+            <input
+              style={inputStyle}
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Reserveringslink</label>
+            <input
+              style={inputStyle}
+              type="url"
+              value={bookingUrl}
+              onChange={(e) => setBookingUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Bronlink</label>
+            <input
+              style={inputStyle}
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              padding: 14,
+              border: 0,
+              borderRadius: 8,
+              background: saving ? "#94a3b8" : "#16734b",
+              color: "white",
+              cursor: saving ? "wait" : "pointer",
+              fontSize: 16,
+            }}
+          >
+            {saving ? "Opslaan..." : "Evenement opslaan"}
+          </button>
+        </form>
+      )}
+
+      <h2>Evenementen</h2>
+
+      {loading && <p>Gegevens laden...</p>}
+
+      {!loading && events.length === 0 && (
+        <p>Er zijn nog geen evenementen opgeslagen.</p>
+      )}
+
+      {events.map((event) => (
         <article
-          key={String(event.id ?? index)}
+          key={event.id}
           style={{
             padding: 16,
             marginBottom: 12,
+            background: "white",
             border: "1px solid #d8dee8",
-            borderRadius: 8,
+            borderRadius: 10,
+            overflowWrap: "anywhere",
           }}
         >
-          <h3>
-            {String(event.title ?? event.name ?? `Activiteit ${index + 1}`)}
-          </h3>
-          {event.start_date != null && (
-            <p>Datum: {String(event.start_date)}</p>
+          <h3>{event.title}</h3>
+          <p>{formatDate(event.start_at)}</p>
+          {(event.venue_name || event.city) && (
+            <p>{[event.venue_name, event.city].filter(Boolean).join(", ")}</p>
           )}
-          {event.description != null && (
-            <p>{String(event.description)}</p>
-          )}
-          {event.status != null && (
-            <p>Status: {String(event.status)}</p>
-          )}
+          {event.short_description && <p>{event.short_description}</p>}
+          {event.description && <p>{event.description}</p>}
+          <p>
+            Status:{" "}
+            {event.status === "pending"
+              ? "In afwachting van controle"
+              : event.status ?? "Onbekend"}
+          </p>
+          {event.is_free ? (
+            <p>Gratis</p>
+          ) : event.price_from != null ? (
+            <p>
+              Vanaf €{Number(event.price_from).toFixed(2)}
+              {event.price_to != null
+                ? ` tot €${Number(event.price_to).toFixed(2)}`
+                : ""}
+            </p>
+          ) : null}
         </article>
       ))}
     </main>
