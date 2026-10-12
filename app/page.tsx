@@ -190,11 +190,10 @@ export default function Home() {
       verified: false,
     };
 
-    const { data, error: insertError } = await supabase
-      .from("events")
-      .insert(payload)
-      .select("id")
-      .single();
+    const { error: insertError } = await supabase.rpc("submit_pending_event", {
+  p_event: payload,
+  p_category_id: categoryId || null,
+});
 
     if (insertError) {
       setError(
