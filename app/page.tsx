@@ -31,11 +31,13 @@ export default function Home() {
 
       try {
         const supabase = createClient(url, key);
+const { data, error } = await supabase
+  .from("categories")
+  .select("*")
+  .limit(50);
 
-        const { data, error } = await supabase
-          .from("categories")
-          .select("*")
-          .limit(50);
+console.log("Supabase data:", data);
+console.log("Supabase error:", error);
 
         if (error) {
           setStatus("Databasefout: " + error.message);
