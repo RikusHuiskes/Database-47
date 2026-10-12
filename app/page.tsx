@@ -207,10 +207,7 @@ export default function Home() {
 
   resetForm();
 setShowForm(false);
-setMessage("Evenement opgeslagen als 'pending' (wacht op controle).");
-      "Evenement opgeslagen als 'pending' (wacht op controle)." +
-        categoryWarning
-    );
+
 
     await loadData();
     setSaving(false);
