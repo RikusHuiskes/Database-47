@@ -205,23 +205,9 @@ export default function Home() {
       return;
     }
 
-    let categoryWarning = "";
-
-    if (categoryId && data?.id) {
-      const { error: linkError } = await supabase
-        .from("event_categories")
-        .insert({ event_id: data.id, category_id: categoryId });
-
-      if (linkError) {
-        categoryWarning =
-          " Het evenement is opgeslagen, maar de categorie kon niet worden gekoppeld: " +
-          linkError.message;
-      }
-    }
-
-    resetForm();
-    setShowForm(false);
-    setMessage(
+  resetForm();
+setShowForm(false);
+setMessage("Evenement opgeslagen als 'pending' (wacht op controle).");
       "Evenement opgeslagen als 'pending' (wacht op controle)." +
         categoryWarning
     );
