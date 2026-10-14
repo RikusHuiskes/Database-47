@@ -13,10 +13,16 @@ type Category = {
   slug?: string;
 };
 
+type EventCategoryRow = {
+  event_id: string;
+  category_id: string;
+};
+
 type EventRow = {
   id: string;
   title: string;
   slug: string;
+  category_name?: string | null;
   start_at: string;
   end_at?: string | null;
   venue_name?: string | null;
@@ -99,14 +105,16 @@ export default function Home() {
 
     setError("");
 
-    const [categoryResult, eventResult] = await Promise.all([
-      supabase.from("categories").select("*").order("name").limit(100),
-      supabase
-        .from("events")
-        .select("*")
-        .order("start_at", { ascending: true })
-        .limit(100),
-    ]);
+    const [categoryResult, eventResult, eventCategoryResult] =
+      await Promise.all([
+        supabase.from("categories").select("*").order("name").limit(100),
+        supabase
+          .from("events")
+          .select("*")
+          .order("start_at", { ascending: true })
+          .limit(100),
+        supabase.from("event_categories").select("event_id, category_id"),
+      ]);
 
     if (categoryResult.error) {
       setError("Categorieën laden mislukt: " + categoryResult.error.message);
@@ -120,8 +128,35 @@ export default function Home() {
           ? previous + " | Evenementen: " + eventResult.error.message
           : "Evenementen laden mislukt: " + eventResult.error.message
       );
-    } else {
+    } else if (eventCategoryResult.error) {
+      setError((previous) =>
+        previous
+          ? previous + " | Categoriekoppelingen laden mislukt: " + eventCategoryResult.error.message
+          : "Categoriekoppelingen laden mislukt: " + eventCategoryResult.error.message
+      );
       setEvents((eventResult.data ?? []) as EventRow[]);
+    } else {
+      const eventCategoryRows =
+        (eventCategoryResult.data ?? []) as EventCategoryRow[];
+      const categoryRows = (categoryResult.data ?? []) as Category[];
+
+      const eventsWithCategories = ((eventResult.data ?? []) as EventRow[]).map(
+        (event) => {
+          const link = eventCategoryRows.find(
+            (row) => row.event_id === event.id
+          );
+          const category = categoryRows.find(
+            (row) => row.id === link?.category_id
+          );
+
+          return {
+            ...event,
+            category_name: category?.name ?? category?.slug ?? null,
+          };
+        }
+      );
+
+      setEvents(eventsWithCategories);
     }
 
     setLoading(false);
@@ -589,6 +624,9 @@ setShowForm(false);
           }}
         >
           <h3>{event.title}</h3>
+          {event.category_name && (
+            <p><strong>Categorie:</strong> {event.category_name}</p>
+          )}
           <p>{formatDate(event.start_at)}</p>
           {(event.venue_name || event.city) && (
             <p>{[event.venue_name, event.city].filter(Boolean).join(", ")}</p>
