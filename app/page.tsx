@@ -117,7 +117,7 @@ export default function Home() {
       ]);
 
     if (categoryResult.error) {
-      setError("Categorieën laden mislukt: " + categoryResult.error.message);
+      setError("CategorieÃ«n laden mislukt: " + categoryResult.error.message);
     } else {
       setCategories((categoryResult.data ?? []) as Category[]);
     }
@@ -268,7 +268,7 @@ setShowForm(false);
     >
       <header>
         <h1>DATABASE 47</h1>
-        <p>Regionale evenementenagenda — Lot-et-Garonne</p>
+        <p>Regionale evenementenagenda â€” Lot-et-Garonne</p>
       </header>
 
       <hr />
@@ -285,7 +285,7 @@ setShowForm(false);
       >
         {[
           ["Evenementen", events.length],
-          ["Categorieën", categories.length],
+          ["CategorieÃ«n", categories.length],
           [
             "Wacht op controle",
             events.filter((event) => event.status === "pending").length,
@@ -309,7 +309,7 @@ setShowForm(false);
       <h2>Databaseverbinding</h2>
       <p>
         {supabase
-          ? `${categories.length} categorieën en ${events.length} evenementen geladen.`
+          ? `${categories.length} categorieÃ«n en ${events.length} evenementen geladen.`
           : "Supabase-instellingen ontbreken."}
       </p>
 
@@ -413,7 +413,7 @@ setShowForm(false);
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Bijvoorbeeld: Marché nocturne"
+              placeholder="Bijvoorbeeld: MarchÃ© nocturne"
             />
           </div>
 
@@ -528,7 +528,7 @@ setShowForm(false);
               }}
             >
               <div>
-                <label style={labelStyle}>Prijs vanaf (€)</label>
+                <label style={labelStyle}>Prijs vanaf (â‚¬)</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -539,7 +539,7 @@ setShowForm(false);
                 />
               </div>
               <div>
-                <label style={labelStyle}>Prijs tot (€)</label>
+                <label style={labelStyle}>Prijs tot (â‚¬)</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -643,9 +643,9 @@ setShowForm(false);
             <p>Gratis</p>
           ) : event.price_from != null ? (
             <p>
-              Vanaf €{Number(event.price_from).toFixed(2)}
+              Vanaf â‚¬{Number(event.price_from).toFixed(2)}
               {event.price_to != null
-                ? ` tot €${Number(event.price_to).toFixed(2)}`
+                ? ` tot â‚¬${Number(event.price_to).toFixed(2)}`
                 : ""}
             </p>
           ) : null}
