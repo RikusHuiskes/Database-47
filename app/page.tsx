@@ -528,7 +528,7 @@ setShowForm(false);
               }}
             >
               <div>
-                <label style={labelStyle}>Prijs vanaf (â‚¬)</label>
+               <label style={labelStyle}>Prijs vanaf (&euro;)</label>
                 <input
                   style={inputStyle}
                   type="number"
