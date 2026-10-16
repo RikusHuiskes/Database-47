@@ -649,8 +649,10 @@ setShowForm(false);
                 ? ` tot €${Number(event.price_to).toFixed(2)}`
                 : ""}
             </p>
-         
+          
+          ) : null}
         </article>
+
       ))}
     </main>
   );
