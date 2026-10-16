@@ -649,16 +649,7 @@ setShowForm(false);
                 ? ` tot €${Number(event.price_to).toFixed(2)}`
                 : ""}
             </p>
-          ) : null}
-
-            <p>
-              Vanaf €{Number(event.price_from).toFixed(2)}
-              {event.price_to != null
-                ? ` tot €${Number(event.price_to).toFixed(2)}`
-                : ""}
-            </p>
-
-          ) : null}
+         
         </article>
       ))}
     </main>
