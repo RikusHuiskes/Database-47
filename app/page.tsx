@@ -639,13 +639,18 @@ setShowForm(false);
               ? "In afwachting van controle"
               : event.status ?? "Onbekend"}
           </p>
+           
           {event.is_free ? (
             <p>Gratis</p>
           ) : event.price_from != null ? (
-          </p>
-          {event.is_free ? (
-            <p>Gratis</p>
-          ) : event.price_from != null ? (
+            <p>
+              Vanaf €{Number(event.price_from).toFixed(2)}
+              {event.price_to != null
+                ? ` tot €${Number(event.price_to).toFixed(2)}`
+                : ""}
+            </p>
+          ) : null}
+
             <p>
               Vanaf €{Number(event.price_from).toFixed(2)}
               {event.price_to != null
