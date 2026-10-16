@@ -642,12 +642,17 @@ setShowForm(false);
           {event.is_free ? (
             <p>Gratis</p>
           ) : event.price_from != null ? (
+          </p>
+          {event.is_free ? (
+            <p>Gratis</p>
+          ) : event.price_from != null ? (
             <p>
-              Vanaf â‚¬{Number(event.price_from).toFixed(2)}
+              Vanaf €{Number(event.price_from).toFixed(2)}
               {event.price_to != null
-                ? ` tot â‚¬${Number(event.price_to).toFixed(2)}`
+                ? ` tot €${Number(event.price_to).toFixed(2)}`
                 : ""}
             </p>
+
           ) : null}
         </article>
       ))}
