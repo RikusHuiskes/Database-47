@@ -288,7 +288,11 @@ setShowForm(false);
           ["CategorieÃ«n", categories.length],
           [
             "Wacht op controle",
-           events.filter((event) => event.status?.toLowerCase() === "pending").length,
+           events.filter(
+  (event) =>
+    event.status?.toLowerCase() === "pending" &&
+    event.verified === false
+).length,
           ],
         ].map(([label, count]) => (
           <div
