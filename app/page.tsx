@@ -28,6 +28,7 @@ type EventRow = {
   venue_name?: string | null;
   city?: string | null;
   status?: string;
+  verified?: boolean | null;
   description?: string | null;
   short_description?: string | null;
   price_from?: number | null;
