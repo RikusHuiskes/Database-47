@@ -152,7 +152,6 @@ export default function Home() {
       ]);
 
     if (categoryResult.error) {
-      setError("CategorieÃ«n laden mislukt: " + categoryResult.error.message);
       setError("Categorieën laden mislukt: " + categoryResult.error.message);
     } else {
       setCategories((categoryResult.data ?? []) as Category[]);
@@ -219,7 +218,6 @@ export default function Home() {
       }
     });
 
-    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
     void supabase.auth.getSession().then(async ({ data, error: sessionError }) => {
       if (!active) return;
       if (sessionError) setError("Sessie controleren mislukt: " + sessionError.message);
@@ -508,7 +506,6 @@ setShowForm(false);
     >
       <header>
         <h1>DATABASE 47</h1>
-        <p>Regionale evenementenagenda â€” Lot-et-Garonne</p>
         <p>Regionale evenementenagenda — Lot-et-Garonne</p>
       </header>
 
@@ -551,7 +548,6 @@ setShowForm(false);
       >
         {[
           ["Evenementen", events.length],
-          ["CategorieÃ«n", categories.length],
           ["Categorieën", categories.length],
           [
             "Wacht op controle",
@@ -580,7 +576,6 @@ setShowForm(false);
       <h2>Databaseverbinding</h2>
       <p>
         {supabase
-          ? `${categories.length} categorieÃ«n en ${events.length} evenementen geladen.`
           ? `${categories.length} categorieën en ${events.length} evenementen geladen.`
           : "Supabase-instellingen ontbreken."}
       </p>
@@ -685,7 +680,6 @@ setShowForm(false);
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Bijvoorbeeld: MarchÃ© nocturne"
               placeholder="Bijvoorbeeld: Marché nocturne"
             />
           </div>
@@ -812,7 +806,6 @@ setShowForm(false);
                 />
               </div>
               <div>
-                <label style={labelStyle}>Prijs tot (â‚¬)</label>
                 <label style={labelStyle}>Prijs tot (€)</label>
                 <input
                   style={inputStyle}
@@ -1195,6 +1188,7 @@ setShowForm(false);
     </main>
   );
 }
+
 
 
 
