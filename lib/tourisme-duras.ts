@@ -33,7 +33,7 @@ function decodeHtml(value: string): string {
     amp: "&", apos: "'", nbsp: " ", quot: '"', eacute: "é", egrave: "è",
     ecirc: "ê", euml: "ë", agrave: "à", acirc: "â", auml: "ä", ccedil: "ç",
     icirc: "î", iuml: "ï", ocirc: "ô", ugrave: "ù", ucirc: "û", uuml: "ü",
-    oelig: "œ", apos: "'", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“",
+    oelig: "œ", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“",
     ndash: "–", mdash: "—", hellip: "…", euro: "€",
   };
   return value.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, code: string) => {
