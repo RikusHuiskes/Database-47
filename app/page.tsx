@@ -64,6 +64,7 @@ export default function Home() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -228,6 +229,45 @@ export default function Home() {
       setEvents([]);
     }
   }
+
+  async function setEventStatus(event: EventRow, status: "approved" | "rejected") {
+    if (!supabase) {
+      setError("Geen Supabase-verbinding.");
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    setUpdatingEventId(event.id);
+
+    const { data, error: updateError } = await supabase
+      .from("events")
+      .update({ status, verified: status === "approved" })
+      .eq("id", event.id)
+      .select("id")
+      .maybeSingle();
+
+    if (updateError) {
+      setError("Wijzigen mislukt: " + updateError.message);
+      setUpdatingEventId(null);
+      return;
+    }
+
+    if (!data) {
+      setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
+      setUpdatingEventId(null);
+      return;
+    }
+
+    await loadData();
+    setMessage(
+      status === "approved"
+        ? `“${event.title}” is goedgekeurd.`
+        : `“${event.title}” is afgewezen.`
+    );
+    setUpdatingEventId(null);
+  }
+
   function resetForm() {
     setTitle("");
     setShortDescription("");
@@ -726,8 +766,45 @@ setShowForm(false);
             Status:{" "}
             {event.status === "pending"
               ? "In afwachting van controle"
+              : event.status === "rejected"
+                ? "Afgewezen"
               : event.status ?? "Onbekend"}
           </p>
+
+          {event.status?.toLowerCase() === "pending" && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              <button
+                type="button"
+                disabled={updatingEventId === event.id}
+                onClick={() => void setEventStatus(event, "approved")}
+                style={{
+                  padding: "10px 14px",
+                  border: 0,
+                  borderRadius: 7,
+                  background: updatingEventId === event.id ? "#94a3b8" : "#16734b",
+                  color: "white",
+                  cursor: updatingEventId === event.id ? "wait" : "pointer",
+                }}
+              >
+                {updatingEventId === event.id ? "Bezig..." : "Goedkeuren"}
+              </button>
+              <button
+                type="button"
+                disabled={updatingEventId === event.id}
+                onClick={() => void setEventStatus(event, "rejected")}
+                style={{
+                  padding: "10px 14px",
+                  border: "1px solid #fecaca",
+                  borderRadius: 7,
+                  background: "white",
+                  color: "#b91c1c",
+                  cursor: updatingEventId === event.id ? "wait" : "pointer",
+                }}
+              >
+                Afwijzen
+              </button>
+            </div>
+          )}
            
           {event.is_free ? (
             <p>Gratis</p>
@@ -746,5 +823,4 @@ setShowForm(false);
     </main>
   );
 }
-
 
