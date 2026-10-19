@@ -3,10 +3,6 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 type Category = {
   id: string;
   name?: string;
@@ -71,6 +67,10 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [user, setUser] = useState<{ email?: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -164,11 +164,70 @@ export default function Home() {
   }
 
   useEffect(() => {
-    void loadData();
-    // De verbinding wordt bij het openen van de pagina geladen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!supabase) {
+      setError("Supabase-instellingen ontbreken. Controleer Vercel.");
+      setLoading(false);
+      setAuthLoading(false);
+      return;
+    }
 
+    let active = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setUser(session?.user ? { email: session.user.email } : null);
+      if (!session) {
+        setEvents([]);
+        setLoading(false);
+      }
+    });
+
+    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+      if (!active) return;
+      if (sessionError) setError("Sessie controleren mislukt: " + sessionError.message);
+      setUser(data.session?.user ? { email: data.session.user.email } : null);
+      setAuthLoading(false);
+      void loadData();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
+
+  async function signIn(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    if (!supabase) {
+      setError("Geen Supabase-verbinding.");
+      return;
+    }
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: userEmail.trim(),
+      password,
+    });
+
+    if (signInError) {
+      setError("Inloggen mislukt: " + signInError.message);
+      return;
+    }
+
+    setUser(data.user ? { email: data.user.email } : null);
+    setPassword("");
+    await loadData();
+  }
+
+  async function signOut() {
+    if (!supabase) return;
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) setError("Uitloggen mislukt: " + signOutError.message);
+    else {
+      setUser(null);
+      setEvents([]);
+    }
+  }
   function resetForm() {
     setTitle("");
     setShortDescription("");
@@ -275,6 +334,31 @@ setShowForm(false);
       <hr />
 
       <h2>Beheerdersdashboard</h2>
+
+      {authLoading ? (
+        <p>Inlogstatus controleren...</p>
+      ) : user ? (
+        <p>
+          Ingelogd als <strong>{user.email}</strong>{" "}
+          <button type="button" onClick={() => void signOut()}>Uitloggen</button>
+        </p>
+      ) : (
+        <form onSubmit={signIn} style={{ display: "grid", gap: 12, maxWidth: 420, padding: 18, margin: "16px 0", background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
+          <h3 style={{ margin: 0 }}>Beheerderslogin</h3>
+          <label style={labelStyle}>
+            E-mailadres
+            <input style={inputStyle} type="email" autoComplete="username" required value={userEmail} onChange={(e) => setUserEmail(e.target.value)} />
+          </label>
+          <label style={labelStyle}>
+            Wachtwoord
+            <input style={inputStyle} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          </label>
+          <button type="submit" style={{ padding: 12, border: 0, borderRadius: 8, background: "#173f5f", color: "white", cursor: "pointer" }}>
+            Inloggen
+          </button>
+          <p style={{ margin: 0, color: "#64748b" }}>Gebruik het wachtwoord van je Database 47-account.</p>
+        </form>
+      )}
 
       <div
         style={{
@@ -662,3 +746,5 @@ setShowForm(false);
     </main>
   );
 }
+
+
