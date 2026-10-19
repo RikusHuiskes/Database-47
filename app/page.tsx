@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import type { ImportedEvent } from "../lib/tourisme-duras";
 type Category = {
   id: string;
   name?: string;
@@ -105,6 +106,10 @@ export default function Home() {
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<ImportedEvent[]>([]);
+  const [importNotice, setImportNotice] = useState("");
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -486,6 +491,79 @@ setShowForm(false);
     setSaving(false);
   }
 
+  async function previewTourismeDuras() {
+    if (!isAdmin) return;
+    setError("");
+    setMessage("");
+    setImportNotice("");
+    setImportLoading(true);
+    setImportPreview([]);
+    try {
+      const response = await fetch("/api/import-tourisme-duras", { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "De agenda kon niet worden ingelezen.");
+      setImportPreview(result.events as ImportedEvent[]);
+      setImportNotice(`${result.events.length} evenementen met een herkenbare datum gevonden. Controleer de lijst en kies daarna zelf of je ze importeert.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
+    } finally {
+      setImportLoading(false);
+    }
+  }
+
+  async function importTourismeDuras() {
+    if (!supabase || !isAdmin || importPreview.length === 0) return;
+    setError("");
+    setMessage("");
+    setImporting(true);
+    setImportNotice("");
+    const sourceUrls = importPreview.map((event) => event.source_url);
+    const existingResult = await supabase
+      .from("events")
+      .select("title,start_at,source_url")
+      .in("source_url", sourceUrls)
+      .limit(1000);
+    if (existingResult.error) {
+      setError("Bestaande import controleren is mislukt: " + existingResult.error.message);
+      setImporting(false);
+      return;
+    }
+
+    const knownSourceUrls = new Set((existingResult.data ?? []).map((row) => row.source_url).filter(Boolean));
+    const knownTitleDates = new Set([
+      ...events.map((event) => `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`),
+      ...(existingResult.data ?? []).map((event) => `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`),
+    ]);
+    let inserted = 0;
+    let skipped = 0;
+    let failedTitle = "";
+    let failureMessage = "";
+    for (const event of importPreview) {
+      const titleDateKey = `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`;
+      if (knownSourceUrls.has(event.source_url) || knownTitleDates.has(titleDateKey)) {
+        skipped += 1;
+        continue;
+      }
+      const { error: insertError } = await supabase.rpc("submit_pending_event", {
+        p_event: event,
+        p_category_id: null,
+      });
+      if (insertError) {
+        failedTitle = event.title;
+        failureMessage = `Import gestopt bij “${event.title}”: ${insertError.message}. ${inserted} evenementen zijn toegevoegd; ${skipped} dubbelen overgeslagen.`;
+        break;
+      }
+      inserted += 1;
+      knownSourceUrls.add(event.source_url);
+      knownTitleDates.add(titleDateKey);
+    }
+    await loadData();
+    if (failedTitle) setError(failureMessage);
+    else setMessage(`${inserted} evenementen toegevoegd als ‘in afwachting van controle’; ${skipped} bestaande of dubbele evenementen overgeslagen.`);
+    setImportPreview([]);
+    setImporting(false);
+  }
+
   function formatDate(value?: string | null) {
     if (!value) return "Datum onbekend";
     return new Date(value).toLocaleString("fr-FR", {
@@ -652,7 +730,48 @@ setShowForm(false);
         >
           Vernieuwen
         </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => void previewTourismeDuras()}
+            disabled={importLoading || importing}
+            style={{
+              padding: "12px 18px",
+              border: "1px solid #cbd5e1",
+              borderRadius: 8,
+              background: "white",
+              cursor: importLoading || importing ? "wait" : "pointer",
+              fontSize: 15,
+            }}
+          >
+            {importLoading ? "Agenda ophalen..." : "Tourisme Duras importeren"}
+          </button>
+        )}
       </div>
+
+      {importNotice && (
+        <section style={{ padding: 18, marginBottom: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
+          <p role="status">{importNotice}</p>
+          <p style={{ color: "#64748b" }}>Nieuwe evenementen worden eerst ter controle aangeboden. Herhalende of niet-eenduidige datums worden overgeslagen. Als de bron geen tijd vermeldt, gebruikt de import 10:00.</p>
+          <ul style={{ maxHeight: 320, overflowY: "auto", paddingLeft: 22 }}>
+            {importPreview.map((event) => (
+              <li key={event.source_url} style={{ marginBottom: 8 }}>
+                <strong>{event.title}</strong> — {formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}{event.city ? ` · ${event.city}` : ""}
+              </li>
+            ))}
+          </ul>
+          {importPreview.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void importTourismeDuras()}
+              disabled={importing || !isAdmin}
+              style={{ padding: "12px 18px", border: 0, borderRadius: 8, background: importing ? "#94a3b8" : "#16734b", color: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
+            >
+              {importing ? "Importeren..." : `${importPreview.length} evenementen importeren als concept`}
+            </button>
+          )}
+        </section>
+      )}
 
       {showForm && (
         <form
