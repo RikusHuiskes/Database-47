@@ -30,6 +30,29 @@ type EventRow = {
   price_from?: number | null;
   price_to?: number | null;
   is_free?: boolean;
+  address?: string | null;
+  postcode?: string | null;
+  website_url?: string | null;
+  booking_url?: string | null;
+  source_url?: string | null;
+};
+
+type EventEditDraft = {
+  title: string;
+  short_description: string;
+  description: string;
+  start_at: string;
+  end_at: string;
+  venue_name: string;
+  address: string;
+  postcode: string;
+  city: string;
+  price_from: string;
+  price_to: string;
+  is_free: boolean;
+  website_url: string;
+  booking_url: string;
+  source_url: string;
 };
 
 const inputStyle = {
@@ -59,18 +82,28 @@ function makeSlug(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function toLocalDateTime(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState<{ email?: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [title, setTitle] = useState("");
@@ -119,6 +152,7 @@ export default function Home() {
       ]);
 
     if (categoryResult.error) {
+      setError("CategorieÃ«n laden mislukt: " + categoryResult.error.message);
       setError("Categorieën laden mislukt: " + categoryResult.error.message);
     } else {
       setCategories((categoryResult.data ?? []) as Category[]);
@@ -177,15 +211,25 @@ export default function Home() {
       if (!active) return;
       setUser(session?.user ? { email: session.user.email } : null);
       if (!session) {
+        setIsAdmin(false);
+        setEditingEventId(null);
+        setEditDraft(null);
         setEvents([]);
         setLoading(false);
       }
     });
 
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+    void supabase.auth.getSession().then(async ({ data, error: sessionError }) => {
       if (!active) return;
       if (sessionError) setError("Sessie controleren mislukt: " + sessionError.message);
       setUser(data.session?.user ? { email: data.session.user.email } : null);
+      if (data.session) {
+        const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
+        if (active) setIsAdmin(!adminError && adminStatus === true);
+      } else {
+        setIsAdmin(false);
+      }
       setAuthLoading(false);
       void loadData();
     });
@@ -217,6 +261,8 @@ export default function Home() {
 
     setUser(data.user ? { email: data.user.email } : null);
     setPassword("");
+    const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
+    setIsAdmin(!adminError && adminStatus === true);
     await loadData();
   }
 
@@ -226,7 +272,10 @@ export default function Home() {
     if (signOutError) setError("Uitloggen mislukt: " + signOutError.message);
     else {
       setUser(null);
+      setIsAdmin(false);
       setEvents([]);
+      setEditingEventId(null);
+      setEditDraft(null);
     }
   }
 
@@ -265,6 +314,97 @@ export default function Home() {
         ? `“${event.title}” is goedgekeurd.`
         : `“${event.title}” is afgewezen.`
     );
+    setUpdatingEventId(null);
+  }
+
+  function beginEdit(event: EventRow) {
+    setError("");
+    setMessage("");
+    setEditingEventId(event.id);
+    setEditDraft({
+      title: event.title ?? "",
+      short_description: event.short_description ?? "",
+      description: event.description ?? "",
+      start_at: toLocalDateTime(event.start_at),
+      end_at: toLocalDateTime(event.end_at),
+      venue_name: event.venue_name ?? "",
+      address: event.address ?? "",
+      postcode: event.postcode ?? "",
+      city: event.city ?? "",
+      price_from: event.price_from == null ? "" : String(event.price_from),
+      price_to: event.price_to == null ? "" : String(event.price_to),
+      is_free: Boolean(event.is_free),
+      website_url: event.website_url ?? "",
+      booking_url: event.booking_url ?? "",
+      source_url: event.source_url ?? "",
+    });
+  }
+
+  function updateEditDraft(field: keyof EventEditDraft, value: string | boolean) {
+    setEditDraft((current) =>
+      current ? ({ ...current, [field]: value } as EventEditDraft) : current
+    );
+  }
+
+  async function saveEventEdits(
+    e: React.FormEvent<HTMLFormElement>,
+    event: EventRow
+  ) {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+
+    if (!supabase || !editDraft) {
+      setError("Geen Supabase-verbinding.");
+      return;
+    }
+    if (!editDraft.title.trim() || !editDraft.start_at) {
+      setError("Vul minimaal de titel en startdatum in.");
+      return;
+    }
+
+    setUpdatingEventId(event.id);
+    const payload = {
+      title: editDraft.title.trim(),
+      slug: makeSlug(editDraft.title),
+      short_description: editDraft.short_description.trim() || null,
+      description: editDraft.description.trim() || null,
+      start_at: new Date(editDraft.start_at).toISOString(),
+      end_at: editDraft.end_at ? new Date(editDraft.end_at).toISOString() : null,
+      venue_name: editDraft.venue_name.trim() || null,
+      address: editDraft.address.trim() || null,
+      postcode: editDraft.postcode.trim() || null,
+      city: editDraft.city.trim() || null,
+      price_from: editDraft.is_free || !editDraft.price_from ? null : Number(editDraft.price_from),
+      price_to: editDraft.is_free || !editDraft.price_to ? null : Number(editDraft.price_to),
+      is_free: editDraft.is_free,
+      website_url: editDraft.website_url.trim() || null,
+      booking_url: editDraft.booking_url.trim() || null,
+      source_url: editDraft.source_url.trim() || null,
+    };
+
+    const { data, error: updateError } = await supabase
+      .from("events")
+      .update(payload)
+      .eq("id", event.id)
+      .select("id")
+      .maybeSingle();
+
+    if (updateError) {
+      setError("Opslaan mislukt: " + updateError.message);
+      setUpdatingEventId(null);
+      return;
+    }
+    if (!data) {
+      setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
+      setUpdatingEventId(null);
+      return;
+    }
+
+    setEditingEventId(null);
+    setEditDraft(null);
+    await loadData();
+    setMessage(`“${payload.title}” is bijgewerkt.`);
     setUpdatingEventId(null);
   }
 
@@ -368,6 +508,7 @@ setShowForm(false);
     >
       <header>
         <h1>DATABASE 47</h1>
+        <p>Regionale evenementenagenda â€” Lot-et-Garonne</p>
         <p>Regionale evenementenagenda — Lot-et-Garonne</p>
       </header>
 
@@ -410,6 +551,7 @@ setShowForm(false);
       >
         {[
           ["Evenementen", events.length],
+          ["CategorieÃ«n", categories.length],
           ["Categorieën", categories.length],
           [
             "Wacht op controle",
@@ -438,6 +580,7 @@ setShowForm(false);
       <h2>Databaseverbinding</h2>
       <p>
         {supabase
+          ? `${categories.length} categorieÃ«n en ${events.length} evenementen geladen.`
           ? `${categories.length} categorieën en ${events.length} evenementen geladen.`
           : "Supabase-instellingen ontbreken."}
       </p>
@@ -542,6 +685,7 @@ setShowForm(false);
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Bijvoorbeeld: MarchÃ© nocturne"
               placeholder="Bijvoorbeeld: Marché nocturne"
             />
           </div>
@@ -668,6 +812,7 @@ setShowForm(false);
                 />
               </div>
               <div>
+                <label style={labelStyle}>Prijs tot (â‚¬)</label>
                 <label style={labelStyle}>Prijs tot (€)</label>
                 <input
                   style={inputStyle}
@@ -771,7 +916,24 @@ setShowForm(false);
               : event.status ?? "Onbekend"}
           </p>
 
-          {event.status?.toLowerCase() === "pending" && (
+          {isAdmin && editingEventId !== event.id && (
+            <button
+              type="button"
+              onClick={() => beginEdit(event)}
+              style={{
+                marginBottom: 12,
+                padding: "10px 14px",
+                border: "1px solid #cbd5e1",
+                borderRadius: 7,
+                background: "white",
+                cursor: "pointer",
+              }}
+            >
+              Bewerken
+            </button>
+          )}
+
+          {isAdmin && event.status?.toLowerCase() === "pending" && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               <button
                 type="button"
@@ -817,13 +979,222 @@ setShowForm(false);
             </p>
           
           ) : null}
+
+          {isAdmin && editingEventId === event.id && editDraft && (
+            <form
+              onSubmit={(e) => void saveEventEdits(e, event)}
+              style={{
+                display: "grid",
+                gap: 14,
+                marginTop: 18,
+                padding: 18,
+                background: "#f8fafc",
+                border: "1px solid #cbd5e1",
+                borderRadius: 10,
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Evenement bewerken</h3>
+
+              <label style={labelStyle}>
+                Titel *
+                <input
+                  style={inputStyle}
+                  required
+                  value={editDraft.title}
+                  onChange={(e) => updateEditDraft("title", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Korte beschrijving
+                <input
+                  style={inputStyle}
+                  maxLength={250}
+                  value={editDraft.short_description}
+                  onChange={(e) => updateEditDraft("short_description", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Uitgebreide beschrijving
+                <textarea
+                  style={{ ...inputStyle, minHeight: 100 }}
+                  value={editDraft.description}
+                  onChange={(e) => updateEditDraft("description", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Begindatum en -tijd *
+                <input
+                  style={inputStyle}
+                  type="datetime-local"
+                  required
+                  value={editDraft.start_at}
+                  onChange={(e) => updateEditDraft("start_at", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Einddatum en -tijd
+                <input
+                  style={inputStyle}
+                  type="datetime-local"
+                  value={editDraft.end_at}
+                  onChange={(e) => updateEditDraft("end_at", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Locatie / zaal
+                <input
+                  style={inputStyle}
+                  value={editDraft.venue_name}
+                  onChange={(e) => updateEditDraft("venue_name", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Adres
+                <input
+                  style={inputStyle}
+                  value={editDraft.address}
+                  onChange={(e) => updateEditDraft("address", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Postcode
+                <input
+                  style={inputStyle}
+                  value={editDraft.postcode}
+                  onChange={(e) => updateEditDraft("postcode", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Plaats
+                <input
+                  style={inputStyle}
+                  value={editDraft.city}
+                  onChange={(e) => updateEditDraft("city", e.target.value)}
+                />
+              </label>
+
+              <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={editDraft.is_free}
+                  onChange={(e) => updateEditDraft("is_free", e.target.checked)}
+                />
+                Dit evenement is gratis
+              </label>
+
+              {!editDraft.is_free && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  <label style={labelStyle}>
+                    Prijs vanaf (€)
+                    <input
+                      style={inputStyle}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editDraft.price_from}
+                      onChange={(e) => updateEditDraft("price_from", e.target.value)}
+                    />
+                  </label>
+                  <label style={labelStyle}>
+                    Prijs tot (€)
+                    <input
+                      style={inputStyle}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editDraft.price_to}
+                      onChange={(e) => updateEditDraft("price_to", e.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              <label style={labelStyle}>
+                Website
+                <input
+                  style={inputStyle}
+                  type="url"
+                  value={editDraft.website_url}
+                  onChange={(e) => updateEditDraft("website_url", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Reserveringslink
+                <input
+                  style={inputStyle}
+                  type="url"
+                  value={editDraft.booking_url}
+                  onChange={(e) => updateEditDraft("booking_url", e.target.value)}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Bronlink
+                <input
+                  style={inputStyle}
+                  type="url"
+                  value={editDraft.source_url}
+                  onChange={(e) => updateEditDraft("source_url", e.target.value)}
+                />
+              </label>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                <button
+                  type="submit"
+                  disabled={updatingEventId === event.id}
+                  style={{
+                    padding: "11px 16px",
+                    border: 0,
+                    borderRadius: 7,
+                    background: updatingEventId === event.id ? "#94a3b8" : "#16734b",
+                    color: "white",
+                    cursor: updatingEventId === event.id ? "wait" : "pointer",
+                  }}
+                >
+                  {updatingEventId === event.id ? "Opslaan..." : "Wijzigingen opslaan"}
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingEventId === event.id}
+                  onClick={() => {
+                    setEditingEventId(null);
+                    setEditDraft(null);
+                    setError("");
+                  }}
+                  style={{
+                    padding: "11px 16px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 7,
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  Annuleren
+                </button>
+              </div>
+            </form>
+          )}
         </article>
 
       ))}
     </main>
   );
 }
-
 
 
 
