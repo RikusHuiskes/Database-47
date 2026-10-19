@@ -119,7 +119,7 @@ export default function Home() {
       ]);
 
     if (categoryResult.error) {
-      setError("CategorieÃ«n laden mislukt: " + categoryResult.error.message);
+      setError("Categorieën laden mislukt: " + categoryResult.error.message);
     } else {
       setCategories((categoryResult.data ?? []) as Category[]);
     }
@@ -368,7 +368,7 @@ setShowForm(false);
     >
       <header>
         <h1>DATABASE 47</h1>
-        <p>Regionale evenementenagenda â€” Lot-et-Garonne</p>
+        <p>Regionale evenementenagenda — Lot-et-Garonne</p>
       </header>
 
       <hr />
@@ -410,7 +410,7 @@ setShowForm(false);
       >
         {[
           ["Evenementen", events.length],
-          ["CategorieÃ«n", categories.length],
+          ["Categorieën", categories.length],
           [
             "Wacht op controle",
            events.filter(
@@ -438,7 +438,7 @@ setShowForm(false);
       <h2>Databaseverbinding</h2>
       <p>
         {supabase
-          ? `${categories.length} categorieÃ«n en ${events.length} evenementen geladen.`
+          ? `${categories.length} categorieën en ${events.length} evenementen geladen.`
           : "Supabase-instellingen ontbreken."}
       </p>
 
@@ -542,7 +542,7 @@ setShowForm(false);
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Bijvoorbeeld: MarchÃ© nocturne"
+              placeholder="Bijvoorbeeld: Marché nocturne"
             />
           </div>
 
@@ -668,7 +668,7 @@ setShowForm(false);
                 />
               </div>
               <div>
-                <label style={labelStyle}>Prijs tot (â‚¬)</label>
+                <label style={labelStyle}>Prijs tot (€)</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -823,4 +823,7 @@ setShowForm(false);
     </main>
   );
 }
+
+
+
 
