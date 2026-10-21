@@ -141,7 +141,10 @@ async function officialPdfUrl(): Promise<string> {
   if (!response.ok) throw new Error(`De officiële gemeentepagina gaf HTTP ${response.status}.`);
   const html = await response.text();
   const links = [...html.matchAll(/<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)];
-  const match = links.find((item) => /agenda|culturel|eden/i.test(item[1] + item[3] + item[4]));
+  // The page may contain an agenda navigation link before the actual PDF.
+  // Prefer the municipal file-download link explicitly labelled as a PDF.
+  const match = links.find((item) => /\.pdf\b/i.test(item[2] + item[4]))
+    ?? links.find((item) => /agenda|culturel|eden/i.test(item[1] + item[3] + item[4]));
   if (!match) throw new Error("De officiële gemeentepagina bevat geen link naar het actuele agenda-PDF.");
   const url = new URL(match[2].replace(/&amp;/g, "&"), EYMET_AGENDA_URL);
   if (url.protocol !== "https:" || !["www.eymet-dordogne.fr", "eymet-dordogne.fr", "api.neopse.com"].includes(url.hostname)) {
@@ -160,7 +163,10 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
   const response = await fetch(pdfUrl, { cache: "no-store", headers: { accept: "application/pdf,*/*" }, signal: AbortSignal.timeout(25_000) });
   if (!response.ok) throw new Error(`Het gemeentelijke agenda-PDF gaf HTTP ${response.status}.`);
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (!bytes.length || new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") throw new Error("De gemeentelijke agendabron leverde geen geldig PDF-bestand op.");
+  if (!bytes.length || new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") {
+    const contentType = response.headers.get("content-type") ?? "onbekend bestandstype";
+    throw new Error(`De officiële PDF-link leverde geen geldig PDF-bestand op (${contentType}; ${new URL(pdfUrl).hostname}).`);
+  }
 
   const { getDocument } = await loadPdfJs();
   const pdf = await getDocument({ data: bytes, isEvalSupported: false, useSystemFonts: true }).promise;
