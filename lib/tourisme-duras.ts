@@ -14,6 +14,12 @@ export type ImportedEvent = {
   is_free: boolean;
   website_url: string | null;
   booking_url: string | null;
+  contact_phone: string | null;
+  image_url: string | null;
+  organizer_name: string | null;
+  source_category: string | null;
+  latitude: number | null;
+  longitude: number | null;
   source_url: string;
   status: "pending";
   verified: false;
@@ -50,6 +56,72 @@ function textOf(html: string): string {
   return decodeHtml(html.replace(/<\/(?:p|div|li|br|h[1-6])\s*>/gi, " ")
     .replace(/<br\s*\/?>/gi, " ").replace(/<[^>]*>/g, " "))
     .replace(/[\u00a0\s]+/g, " ").trim();
+}
+
+function linesOf(html: string): string[] {
+  return decodeHtml(html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|div|li|h[1-6]|tr|td|dt|dd|section|article)\s*>/gi, "\n")
+    .replace(/<[^>]*>/g, " "))
+    .split(/[\r\n]+/)
+    .map((line) => line.replace(/[\u00a0\s]+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function webUrl(href: string, base: string): string | null {
+  try {
+    const decoded = decodeHtml(href).trim();
+    const normalized = !/^[a-z][a-z\d+.-]*:/i.test(decoded) && !decoded.startsWith("/") && decoded.includes(".")
+      ? `https://${decoded}`
+      : decoded;
+    const url = new URL(normalized, base);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function linkByLabel(html: string, pattern: RegExp, base: string): string | null {
+  for (const match of html.matchAll(/<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)) {
+    if (pattern.test(textOf(match[4]))) return webUrl(match[2], base);
+  }
+  return null;
+}
+
+function valueAfterLabel(lines: string[], label: RegExp): string | null {
+  const index = lines.findIndex((line) => label.test(line));
+  if (index < 0) return null;
+  const inline = lines[index].replace(label, "").trim();
+  if (inline) return inline;
+  const next = lines[index + 1];
+  return next && !/^(?:Adresse|Téléphone|Tel(?: mobile)?|Site internet|Réserver en ligne|Organisateur|Tarifs?|Informations ouverture|Longitude|Latitude)\s*:?$/i.test(next)
+    ? next
+    : null;
+}
+
+function elementStart(html: string, id: string): number {
+  const match = new RegExp(`<[^>]+\\bid=["']${id}["'][^>]*>`, "i").exec(html);
+  return match?.index ?? -1;
+}
+
+function imageFromHtml(html: string, base: string, title: string): string | null {
+  const images = [...html.matchAll(/<img\b([^>]+)>/gi)].map((match) => {
+    const attrs = match[1];
+    const src = attrs.match(/\b(?:src|data-src)=["']([^"']+)["']/i)?.[1];
+    const alt = attrs.match(/\balt=["']([^"']*)["']/i)?.[1] ?? "";
+    const url = src ? webUrl(src, base) : null;
+    const filename = url ? decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "") : "";
+    return { url, alt: textOf(alt), filename, raw: attrs };
+  }).filter((image) => image.url
+    && !/logo|carte|captcha|icon|placeholder|(?:^|[-_])map(?:[-_.]|$)/i.test(`${image.alt} ${image.raw} ${image.filename}`)
+    && !/\/images\/menu\//i.test(image.url ?? "")
+    && !/photo_meubl(?:é|e)s_et_g(?:î|i)tes/i.test(image.filename));
+  const normalizedTitle = slugify(title);
+  const titleWords = normalizedTitle.split("-").filter((word) => word.length >= 4);
+  return images.find((image) => slugify(`${image.alt} ${image.filename}`).includes(normalizedTitle))?.url
+    ?? images.find((image) => titleWords.some((word) => slugify(`${image.alt} ${image.filename}`).includes(word)))?.url
+    ?? images.find((image) => /\.(?:jpe?g|png|webp)(?:[?#]|$)/i.test(image.url ?? ""))?.url
+    ?? null;
 }
 
 function slugify(value: string): string {
@@ -131,10 +203,12 @@ export function parseFrenchEventDate(label: string, now = new Date()): { start_a
       year = endYear - 1;
     }
   } else if (!explicitYear) {
+    // Only roll a year-less January/February date forward when it is clearly
+    // the next calendar year. Other past dates remain in the past and are
+    // filtered out by the importer instead of silently becoming next year's event.
     const relevantMonth = endDay != null && endMonth != null ? endMonth : startMonth;
-    const relevantDay = endDay != null && endMonth != null ? endDay : startDay;
-    const relevantDate = new Date(year, relevantMonth, relevantDay, hour, minute);
-    if (relevantDate.getTime() < now.getTime() - 30 * 24 * 60 * 60 * 1000) {
+    const currentMonthInParis = Number(new Intl.DateTimeFormat("en", { timeZone: "Europe/Paris", month: "numeric" }).format(now)) - 1;
+    if (currentMonthInParis >= 10 && relevantMonth <= 1 && relevantMonth < currentMonthInParis) {
       year += 1;
       endYear = year;
     }
@@ -182,17 +256,105 @@ export function parseTourismeDurasHtml(html: string, now = new Date()): Imported
 
     const communeMatch = cardText.match(/Commune\s*:\s*(.+?)(?=\s+Date\s*:|$)/i);
     const city = communeMatch ? communeMatch[1].trim() : null;
+    const cardLines = linesOf(card);
+    const typeIndex = cardLines.findIndex((line) => /^Type de manifestation\s*:/i.test(line));
+    const categoryInline = typeIndex >= 0 ? cardLines[typeIndex].replace(/^Type de manifestation\s*:\s*/i, "").trim() : "";
+    const sourceCategory = categoryInline || (typeIndex >= 0 ? cardLines[typeIndex + 1] ?? null : null);
     const paragraphs = [...card.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
       .map((match) => textOf(match[1]))
-      .filter((text) => text && text !== title && !/^(Commune|Date|Type de manifestation|Téléphone|Tel mobile|Plus d'informations)\s*:/i.test(text));
+      .filter((text) => text && text !== title && !/^Réserver en ligne$/i.test(text)
+        && !/^(Commune|Date|Type de manifestation|Téléphone|Tel mobile|Plus d'informations)\s*:/i.test(text));
     const description = paragraphs.join("\n\n").slice(0, 2000) || null;
     events.push({
       title, slug: `${slugify(title)}-${parsedDate.start_at.slice(0, 10)}`, short_description: description?.slice(0, 250) ?? null,
       description, start_at: parsedDate.start_at, end_at: parsedDate.end_at,
       venue_name: null, address: null, postcode: null, city,
       price_from: null, price_to: null, is_free: false, website_url: null,
-      booking_url: null, source_url: sourceUrl, status: "pending", verified: false,
+      booking_url: null, contact_phone: null, image_url: imageFromHtml(card, "https://www.tourismeduras.com", title),
+      organizer_name: null, source_category: sourceCategory, latitude: null, longitude: null,
+      source_url: sourceUrl, status: "pending", verified: false,
     });
   }
   return events;
+}
+
+/** Adds practical details from an event's own public Tourism Duras page. */
+export function enrichTourismeDurasEvent(event: ImportedEvent, html: string): ImportedEvent {
+  const base = event.source_url;
+  const lines = linesOf(html);
+  const practicalStart = elementStart(html, "perso_pane_56");
+  const locationStart = elementStart(html, "perso_pane_59");
+  const descriptionStart = elementStart(html, "perso_pane_57");
+  const practicalHtml = practicalStart >= 0
+    ? html.slice(practicalStart, locationStart > practicalStart ? locationStart : undefined)
+    : html;
+  const descriptionHtml = descriptionStart >= 0
+    ? html.slice(descriptionStart, practicalStart > descriptionStart ? practicalStart : undefined)
+    : "";
+  const practicalLines = linesOf(practicalHtml);
+  const descriptionLines = linesOf(descriptionHtml);
+  const descriptionIndex = descriptionLines.findIndex((line) => /^Description\s*:/i.test(line));
+  const detailDescription = descriptionIndex >= 0
+    ? [
+        descriptionLines[descriptionIndex].replace(/^Description\s*:\s*/i, "").trim(),
+        ...descriptionLines.slice(descriptionIndex + 1).filter((line) => !/^Date de (?:début|fin)\s*:/i.test(line)),
+      ].filter(Boolean).join("\n\n").trim()
+    : "";
+  const addressIndex = practicalLines.findIndex((line) => /^Adresse\s*:?\s*$/i.test(line) || /^Adresse\s*:/i.test(line));
+  const addressLines: string[] = [];
+  if (addressIndex >= 0) {
+    const inline = practicalLines[addressIndex].replace(/^Adresse\s*:?\s*/i, "").trim();
+    if (inline) addressLines.push(inline);
+    for (const line of practicalLines.slice(addressIndex + 1)) {
+      if (/^(?:Téléphone|Tel(?: mobile)?|Site internet|Réserver en ligne|Organisateur|Tarifs?|Informations ouverture)\s*:?/i.test(line)) break;
+      if (/\b\d{5}\b/.test(line) && addressLines.length > 0) {
+        addressLines.push(line);
+        break;
+      }
+      if (addressLines.length < 3) addressLines.push(line);
+    }
+  }
+  const postcodeLine = addressLines.find((line) => /\b\d{5}\b/.test(line)) ?? "";
+  const postcodeMatch = postcodeLine.match(/\b(\d{5})\s*(.*)$/);
+  const streetLines = addressLines.filter((line) => line !== postcodeLine);
+  const address = streetLines.length > 1 ? streetLines.slice(1).join(", ") : streetLines[0] ?? null;
+  const venueName = streetLines.length > 1 ? streetLines[0] : null;
+  const locationText = locationStart >= 0 ? linesOf(html.slice(locationStart)) : lines;
+  const latitude = valueAfterLabel(locationText, /^Latitude\s*:?/i);
+  const longitude = valueAfterLabel(locationText, /^Longitude\s*:?/i);
+  const phone = practicalLines.find((line) => /^(?:Téléphone|Tel(?: mobile)?|Tél\.)\s*:/i.test(line));
+  const phoneInline = phone?.replace(/^(?:Téléphone|Tel(?: mobile)?|Tél\.)\s*:/i, "").trim();
+  const phoneIndex = phone ? practicalLines.indexOf(phone) : -1;
+  const phoneValue = phoneInline || (phoneIndex >= 0 ? practicalLines[phoneIndex + 1] : null) || null;
+  const tariffText = valueAfterLabel(practicalLines, /^Tarifs?\s*:?/i) ?? "";
+  const prices = [...tariffText.matchAll(/(\d+(?:[,.]\d{1,2})?)\s*(?:€|euros?\b)/gi)]
+    .map((match) => Number(match[1].replace(",", ".")))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const organizer = valueAfterLabel(practicalLines, /^Organisateur\s*:?/i)
+    ?? textOf(practicalHtml).match(/Organisateur\s*:\s*(.+?)(?=\s+(?:Tarifs?|Langues|Mode de paiement|Capacité|Informations ouverture)\s*:?|$)/i)?.[1]?.trim()
+    ?? null;
+  const image = imageFromHtml(html, base, event.title);
+
+  return {
+    ...event,
+    short_description: detailDescription
+      ? detailDescription.slice(0, 250)
+      : /^Réserver en ligne$/i.test(event.short_description ?? "") ? null : event.short_description,
+    venue_name: venueName || event.venue_name,
+    address: address || event.address,
+    postcode: postcodeMatch?.[1] ?? event.postcode,
+    city: postcodeMatch?.[2]?.trim() || event.city,
+    website_url: linkByLabel(practicalHtml, /^Site internet$/i, base) ?? event.website_url,
+    booking_url: linkByLabel(practicalHtml, /Réserver en ligne/i, base) ?? event.booking_url,
+    contact_phone: phoneValue || event.contact_phone,
+    price_from: prices.length ? prices[0] : event.price_from,
+    price_to: prices.length > 1 ? prices[prices.length - 1] : event.price_to,
+    is_free: prices.length ? false : /\bgratuit(?:e|s|es)?\b/i.test(tariffText) || event.is_free,
+    organizer_name: organizer || event.organizer_name,
+    image_url: image || event.image_url,
+    latitude: latitude ? Number.parseFloat(latitude.replace(",", ".")) : event.latitude,
+    longitude: longitude ? Number.parseFloat(longitude.replace(",", ".")) : event.longitude,
+    description: detailDescription || event.description,
+  };
 }
