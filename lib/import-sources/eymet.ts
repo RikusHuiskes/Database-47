@@ -4,6 +4,11 @@ export const EYMET_AGENDA_URL = "https://www.pays-bergerac-tourisme.com/fr/agend
 export const EYMET_SOURCE_NAME = "Pays de Bergerac Tourisme — agenda L’Eden d’Eymet";
 const CULTURAL_PAGE = "https://www.eymet-dordogne.fr/fr/rb/304280/lespace-culturel";
 const EDEN_ADDRESS = "27 avenue de la Bastide";
+const SOURCE_HEADERS = {
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "accept-language": "fr-FR,fr;q=0.9,en;q=0.7",
+};
 
 function decode(value: string): string {
   return value
@@ -135,27 +140,40 @@ function eventFromDetail(html: string, sourceUrl: string, now: Date): ImportedEv
 }
 
 export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[]> {
-  const response = await fetch(EYMET_AGENDA_URL, {
-    cache: "no-store",
-    headers: { "user-agent": "Database47-EventImporter/1.0 (local events; source attribution included)" },
-    signal: AbortSignal.timeout(20_000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(EYMET_AGENDA_URL, {
+      cache: "no-store", headers: SOURCE_HEADERS, signal: AbortSignal.timeout(20_000),
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "onbekende verbindingsfout";
+    const cause = error instanceof Error && error.cause instanceof Error ? ` (${error.cause.message})` : "";
+    throw new Error(`De agendawebsite is niet bereikbaar (${reason}${cause}). Bron: ${EYMET_AGENDA_URL}`);
+  }
   if (!response.ok) throw new Error(`Pays de Bergerac Tourisme gaf HTTP ${response.status}.`);
   const urls = detailLinks(await response.text());
   if (!urls.length) throw new Error("De agenda bevat geen herkenbare Eymet-detailpagina’s; de import is afgebroken om lege resultaten te voorkomen.");
 
   const events: ImportedEvent[] = [];
+  let failedDetails = 0;
   for (let offset = 0; offset < urls.length; offset += 5) {
     const chunk = await Promise.all(urls.slice(offset, offset + 5).map(async (url) => {
-      const detail = await fetch(url, {
-        cache: "no-store",
-        headers: { "user-agent": "Database47-EventImporter/1.0 (local events; source attribution included)" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      if (!detail.ok) return [];
-      return eventFromDetail(await detail.text(), url, now);
+      try {
+        const detail = await fetch(url, { cache: "no-store", headers: SOURCE_HEADERS, signal: AbortSignal.timeout(12_000) });
+        if (!detail.ok) {
+          failedDetails += 1;
+          return [];
+        }
+        return eventFromDetail(await detail.text(), url, now);
+      } catch {
+        failedDetails += 1;
+        return [];
+      }
     }));
     events.push(...chunk.flat());
+  }
+  if (!events.length && failedDetails === urls.length) {
+    throw new Error(`De agendalijst is bereikbaar, maar alle ${urls.length} detailpagina’s mislukten. Probeer het opnieuw; de gegevens zijn niet geïmporteerd.`);
   }
   return events;
 }
