@@ -242,6 +242,18 @@ export default function Home() {
     setLoading(false);
   }
 
+  async function removeExpiredEvents() {
+    if (!supabase) return;
+    const { data: deletedCount, error: cleanupError } = await supabase.rpc("delete_expired_events");
+    if (cleanupError) {
+      setError("Verlopen evenementen opruimen mislukt: " + cleanupError.message);
+      return;
+    }
+    if (typeof deletedCount === "number" && deletedCount > 0) {
+      setMessage(`${deletedCount} verlopen evenement${deletedCount === 1 ? "" : "en"} automatisch verwijderd.`);
+    }
+  }
+
   useEffect(() => {
     if (!supabase) {
       setError("Supabase-instellingen ontbreken. Controleer Vercel.");
@@ -269,7 +281,9 @@ export default function Home() {
       setUser(data.session?.user ? { email: data.session.user.email } : null);
       if (data.session) {
         const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
-        if (active) setIsAdmin(!adminError && adminStatus === true);
+        const confirmedAdmin = !adminError && adminStatus === true;
+        if (active) setIsAdmin(confirmedAdmin);
+        if (confirmedAdmin) await removeExpiredEvents();
       } else {
         setIsAdmin(false);
       }
@@ -283,6 +297,23 @@ export default function Home() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
+
+  useEffect(() => {
+    if (!supabase || !isAdmin) return;
+    const timer = window.setInterval(async () => {
+      const { data: deletedCount, error: cleanupError } = await supabase.rpc("delete_expired_events");
+      if (cleanupError) {
+        setError("Verlopen evenementen opruimen mislukt: " + cleanupError.message);
+        return;
+      }
+      if (typeof deletedCount === "number" && deletedCount > 0) {
+        setMessage(`${deletedCount} verlopen evenement${deletedCount === 1 ? "" : "en"} automatisch verwijderd.`);
+        await loadData();
+      }
+    }, 60 * 60 * 1000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, supabase]);
 
   async function signIn(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -305,7 +336,9 @@ export default function Home() {
     setUser(data.user ? { email: data.user.email } : null);
     setPassword("");
     const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
-    setIsAdmin(!adminError && adminStatus === true);
+    const confirmedAdmin = !adminError && adminStatus === true;
+    setIsAdmin(confirmedAdmin);
+    if (confirmedAdmin) await removeExpiredEvents();
     await loadData();
   }
 
