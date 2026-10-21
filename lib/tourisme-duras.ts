@@ -110,10 +110,16 @@ function imageFromHtml(html: string, base: string, title: string): string | null
     const src = attrs.match(/\b(?:src|data-src)=["']([^"']+)["']/i)?.[1];
     const alt = attrs.match(/\balt=["']([^"']*)["']/i)?.[1] ?? "";
     const url = src ? webUrl(src, base) : null;
-    return { url, alt: textOf(alt), raw: attrs };
-  }).filter((image) => image.url && !/logo|map|carte|captcha|icon/i.test(`${image.alt} ${image.raw}`));
+    const filename = url ? decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "") : "";
+    return { url, alt: textOf(alt), filename, raw: attrs };
+  }).filter((image) => image.url
+    && !/logo|map|carte|captcha|icon|placeholder/i.test(`${image.alt} ${image.raw} ${image.filename}`)
+    && !/\/images\/menu\//i.test(image.url ?? "")
+    && !/photo_meubl(?:é|e)s_et_g(?:î|i)tes/i.test(image.filename));
   const normalizedTitle = slugify(title);
-  return images.find((image) => slugify(`${image.alt} ${image.url}`.split("?")[0]).includes(normalizedTitle))?.url
+  const titleWords = normalizedTitle.split("-").filter((word) => word.length >= 4);
+  return images.find((image) => slugify(`${image.alt} ${image.filename}`).includes(normalizedTitle))?.url
+    ?? images.find((image) => titleWords.some((word) => slugify(`${image.alt} ${image.filename}`).includes(word)))?.url
     ?? images.find((image) => /\.(?:jpe?g|png|webp)(?:[?#]|$)/i.test(image.url ?? ""))?.url
     ?? null;
 }
@@ -250,8 +256,8 @@ export function parseTourismeDurasHtml(html: string, now = new Date()): Imported
 
     const communeMatch = cardText.match(/Commune\s*:\s*(.+?)(?=\s+Date\s*:|$)/i);
     const city = communeMatch ? communeMatch[1].trim() : null;
-    const typeMatch = card.match(/Type de manifestation\s*:\s*([^<]+)/i);
-    const sourceCategory = typeMatch ? textOf(typeMatch[1]).trim() || null : null;
+    const typeMatch = cardText.match(/Type de manifestation\s*:\s*(.+?)(?=\s+(?:Commune|Date|Téléphone|Tel mobile)\s*:|$)/i);
+    const sourceCategory = typeMatch ? typeMatch[1].trim() || null : null;
     const paragraphs = [...card.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
       .map((match) => textOf(match[1]))
       .filter((text) => text && text !== title && !/^(Commune|Date|Type de manifestation|Téléphone|Tel mobile|Plus d'informations)\s*:/i.test(text));

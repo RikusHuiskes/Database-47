@@ -101,10 +101,10 @@ function toLocalDateTime(value?: string | null) {
 function inferredCategorySlug(event: ImportedEvent): string | null {
   const title = `${event.title} ${event.description ?? ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const kind = (event.source_category ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/randonnee|balade|vtt|marche sportive|circuit|nature/.test(title)) return "nature-randonnee";
   if (/marche|brocante|vide-grenier|foire/.test(title) || /manifestation commerciale/.test(kind)) return "marches-brocantes";
   if (/concert|musique|chorale/.test(title) || /concert|musique/.test(kind)) return "concerts-musique";
   if (/theatre|spectacle|representation/.test(title) || /theatre|spectacle/.test(kind)) return "theatre-spectacles";
-  if (/randonnee|balade|vtt|marche sportive|circuit|nature/.test(title)) return "nature-randonnee";
   if (/atelier|stage|cours|initiation/.test(title)) return "ateliers-cours";
   if (/exposition|photophore|peinture|sculpture|photograph/.test(title)) return "art-expositions";
   if (/enfant|famille|jeunesse|kid/.test(title)) return "enfants-famille";
@@ -581,6 +581,7 @@ setShowForm(false);
     let inserted = 0;
     let enriched = 0;
     let skipped = 0;
+    let skippedWithoutCategory = 0;
     let failedTitle = "";
     let failureMessage = "";
     for (const event of importPreview) {
@@ -609,9 +610,8 @@ setShowForm(false);
         continue;
       }
       if (!event.category_id) {
-        failedTitle = event.title;
-        failureMessage = `Import gestopt bij “${event.title}”: kies eerst een categorie. ${inserted} nieuwe evenementen zijn toegevoegd; ${enriched} bestaande evenementen zijn aangevuld.`;
-        break;
+        skippedWithoutCategory += 1;
+        continue;
       }
       const { category_id, ...eventPayload } = event;
       const { error: insertError } = await supabase.rpc("submit_pending_event", {
@@ -629,7 +629,7 @@ setShowForm(false);
     }
     await loadData();
     if (failedTitle) setError(failureMessage);
-    else setMessage(`${inserted} nieuwe evenementen toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen overgeslagen. Nieuwe inzendingen blijven wachten op controle.`);
+    else setMessage(`${inserted} nieuwe evenementen toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen en ${skippedWithoutCategory} nieuwe evenementen zonder categorie overgeslagen. Nieuwe inzendingen blijven wachten op controle.`);
     setImportPreview([]);
     setImporting(false);
   }
@@ -828,7 +828,7 @@ setShowForm(false);
       {importNotice && (
         <section style={{ padding: 18, marginBottom: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
           <p role="status">{importNotice}</p>
-          <p style={{ color: "#64748b" }}>De import haalt waar beschikbaar adres, website, reserveringslink, telefoon en foto van de detailpagina op. Afgelopen of onduidelijke datums worden overgeslagen. Elk nieuw evenement blijft eerst op Wacht op controle.</p>
+          <p style={{ color: "#64748b" }}>De import haalt waar beschikbaar adres, website, reserveringslink, telefoon en foto van de detailpagina op. Wachtende evenementen worden aangevuld; goedgekeurde evenementen blijven ongewijzigd. Nieuwe evenementen zonder gekozen categorie worden overgeslagen. Elk nieuw evenement blijft eerst op Wacht op controle.</p>
           {categories.length === 0 && <p role="alert" style={{ color: "#9f1239" }}>Er zijn geen categorieën geladen. Importeer nog niet; de categorieën moeten eerst in deze database beschikbaar zijn.</p>}
           <ul style={{ maxHeight: 320, overflowY: "auto", paddingLeft: 22 }}>
             {importPreview.map((event) => (
@@ -860,10 +860,10 @@ setShowForm(false);
             <button
               type="button"
               onClick={() => void importTourismeDuras()}
-              disabled={importing || !isAdmin || categories.length === 0 || importPreview.some((event) => !event.category_id)}
+              disabled={importing || !isAdmin || categories.length === 0}
               style={{ padding: "12px 18px", border: 0, borderRadius: 8, background: importing ? "#94a3b8" : "#16734b", color: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
             >
-              {importing ? "Importeren..." : `${importPreview.length} evenementen toevoegen of aanvullen als concept`}
+              {importing ? "Importeren..." : "Wachtende imports aanvullen en nieuwe evenementen importeren"}
             </button>
           )}
         </section>
