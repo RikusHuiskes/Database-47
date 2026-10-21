@@ -15,20 +15,20 @@ function normalize(value: string) {
 }
 
 function linesFrom(items: PdfItem[]): string[] {
-  const lines: Array<{ y: number; parts: Array<{ x: number; text: string }> }> = [];
-  for (const item of items) {
+  const positioned = items.flatMap((item) => {
     const text = item.str?.replace(/\s+/g, " ").trim();
-    if (!text) continue;
-    const x = item.transform?.[4] ?? 0;
-    const y = item.transform?.[5] ?? 0;
-    let line = lines.find((candidate) => Math.abs(candidate.y - y) < 2.5);
-    if (!line) {
-      line = { y, parts: [] };
-      lines.push(line);
+    return text ? [{ x: item.transform?.[4] ?? 0, y: item.transform?.[5] ?? 0, text }] : [];
+  }).sort((a, b) => b.y - a.y);
+  const lines: Array<{ y: number; parts: Array<{ x: number; text: string }> }> = [];
+  for (const part of positioned) {
+    const line = lines[lines.length - 1];
+    if (!line || Math.abs(line.y - part.y) >= 2.5) {
+      lines.push({ y: part.y, parts: [{ x: part.x, text: part.text }] });
+    } else {
+      line.parts.push({ x: part.x, text: part.text });
     }
-    line.parts.push({ x, text });
   }
-  return lines.sort((a, b) => b.y - a.y)
+  return lines
     .map((line) => line.parts.sort((a, b) => a.x - b.x).map((part) => part.text).join(" ").replace(/\s+/g, " ").trim())
     .filter(Boolean);
 }

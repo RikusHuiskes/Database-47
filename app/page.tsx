@@ -88,6 +88,18 @@ const labelStyle = {
   fontSize: 14,
 };
 
+async function readApiJson<T>(response: Response): Promise<T> {
+  const body = await response.text();
+  if (!body.trim()) {
+    throw new Error(`De server gaf geen antwoord terug (HTTP ${response.status}). Probeer het opnieuw; als dit blijft gebeuren moet de importserver worden nagekeken.`);
+  }
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    throw new Error(`De server gaf geen leesbaar antwoord terug (HTTP ${response.status}). Probeer het opnieuw.`);
+  }
+}
+
 function makeSlug(value: string) {
   return value
     .normalize("NFD")
@@ -170,6 +182,8 @@ export default function Home() {
   const [importSourceName, setImportSourceName] = useState("");
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [savingCategoryId, setSavingCategoryId] = useState<string | null>(null);
+  const [eventCategoryDrafts, setEventCategoryDrafts] = useState<Record<string, string>>({});
+  const [savingEventCategoryId, setSavingEventCategoryId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -201,7 +215,7 @@ export default function Home() {
     void fetch("/api/local-areas")
       .then(async (response) => {
         if (!response.ok) throw new Error("Plaatsen konden niet worden geladen.");
-        return response.json();
+        return readApiJson<{ areas?: LocalAreaOption[]; error?: string }>(response);
       })
       .then((result) => {
         if (active) setLocalAreas((result.areas ?? []) as LocalAreaOption[]);
@@ -243,13 +257,13 @@ export default function Home() {
     });
     void fetch(`/api/nearby-events?${params}`)
       .then(async (response) => {
-        const result = await response.json();
+        const result = await readApiJson<{ events?: NearbyEvent[]; error?: string; locationless_count?: number }>(response);
         if (!response.ok) throw new Error(result.error ?? "Evenementen konden niet worden geladen.");
         return result;
       })
       .then((result) => {
         if (!active) return;
-        setNearbyEvents((result.events ?? []) as NearbyEvent[]);
+        setNearbyEvents(result.events ?? []);
         setLocationlessCount(Number(result.locationless_count ?? 0));
       })
       .catch((cause) => {
@@ -552,6 +566,40 @@ export default function Home() {
     });
   }
 
+  async function saveEventCategory(event: EventRow) {
+    if (!supabase) {
+      setError("Geen databaseverbinding. Probeer opnieuw nadat de pagina is vernieuwd.");
+      return;
+    }
+    if (!isAdmin) {
+      setError("Log in als beheerder om de categorie te wijzigen.");
+      return;
+    }
+    const categoryId = eventCategoryDrafts[event.id] ?? event.category_id ?? "";
+    setError("");
+    setMessage("");
+    setSavingEventCategoryId(event.id);
+    const { error: saveError } = await supabase.rpc("set_event_category", {
+      p_event_id: event.id,
+      p_category_id: categoryId || null,
+    });
+    setSavingEventCategoryId(null);
+    if (saveError) {
+      setError(`Categorie voor “${event.title}” opslaan mislukt: ${saveError.message}`);
+      return;
+    }
+    const categoryName = categories.find((category) => category.id === categoryId)?.name ?? "Geen categorie";
+    setEvents((current) => current.map((item) => item.id === event.id
+      ? { ...item, category_id: categoryId || null, category_name: categoryId ? categoryName : null }
+      : item));
+    setEventCategoryDrafts((current) => {
+      const next = { ...current };
+      delete next[event.id];
+      return next;
+    });
+    setMessage(`Categorie voor “${event.title}” gewijzigd naar ${categoryName}.`);
+  }
+
   function updateEditDraft(field: keyof EventEditDraft, value: string | boolean) {
     setEditDraft((current) =>
       current ? ({ ...current, [field]: value } as EventEditDraft) : current
@@ -722,14 +770,15 @@ setShowForm(false);
     setImportSourceName(sourceName);
     try {
       const response = await fetch(endpoint, { cache: "no-store" });
-      const result = await response.json();
+      const result = await readApiJson<{ events?: ImportedEvent[]; error?: string }>(response);
       if (!response.ok) throw new Error(result.error ?? "De agenda kon niet worden ingelezen.");
-      const preview = (result.events as ImportedEvent[]).map((event) => ({
+      const importedEvents = result.events ?? [];
+      const preview = importedEvents.map((event) => ({
         ...event,
         category_id: suggestedCategoryId(event, categories),
       }));
       setImportPreview(preview);
-      setImportNotice(`${result.events.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Controleer de bron en gegevens; nieuwe activiteiten worden pas na import in de wachtrij voor controle gezet.`);
+      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Controleer de bron en gegevens; nieuwe activiteiten worden pas na import in de wachtrij voor controle gezet.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
     } finally {
@@ -1418,8 +1467,31 @@ setShowForm(false);
         >
           <h3>{event.title}</h3>
           {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 8, marginBottom: 12 }} />}
-          {event.category_name && (
-            <p><strong>Categorie:</strong> {event.category_name}</p>
+          {isAdmin ? (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 10, margin: "8px 0 14px", padding: 12, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 8 }}>
+              <label style={{ ...labelStyle, margin: 0, flex: "1 1 260px" }}>
+                Categorie voor dit evenement
+                <select
+                  value={eventCategoryDrafts[event.id] ?? event.category_id ?? ""}
+                  onChange={(e) => setEventCategoryDrafts((current) => ({ ...current, [event.id]: e.target.value }))}
+                  disabled={savingEventCategoryId === event.id || categories.length === 0}
+                  style={inputStyle}
+                >
+                  <option value="">Geen categorie</option>
+                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Categorie"}</option>)}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => void saveEventCategory(event)}
+                disabled={savingEventCategoryId === event.id || categories.length === 0}
+                style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: savingEventCategoryId === event.id ? "#94a3b8" : "#1b4662", color: "white", cursor: savingEventCategoryId === event.id ? "wait" : "pointer" }}
+              >
+                {savingEventCategoryId === event.id ? "Opslaan…" : "Categorie opslaan"}
+              </button>
+            </div>
+          ) : (
+            <p><strong>Categorie:</strong> {event.category_name ?? "Nog niet ingedeeld"}</p>
           )}
           <p>{formatDate(event.start_at)}</p>
           {(event.venue_name || event.address || event.postcode || event.city) && (
