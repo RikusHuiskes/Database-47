@@ -1,5 +1,50 @@
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { ImportedEvent } from "../tourisme-duras";
+
+// PDF.js 5 creates a DOMMatrix at module load time, even when only extracting
+// text. Vercel's Node runtime has no browser DOMMatrix, so provide the affine
+// matrix operations PDF.js needs before loading it. (No canvas rendering is
+// used by this importer.)
+class PdfDomMatrix {
+  a: number; b: number; c: number; d: number; e: number; f: number;
+
+  constructor(values?: number[] | string) {
+    const matrix = typeof values === "string" ? values.match(/-?\d*\.?\d+(?:e[+-]?\d+)?/gi)?.map(Number) : values;
+    [this.a, this.b, this.c, this.d, this.e, this.f] = matrix?.length === 6 ? matrix as [number, number, number, number, number, number] : [1, 0, 0, 1, 0, 0];
+  }
+
+  multiplySelf(other: PdfDomMatrix) {
+    const { a, b, c, d, e, f } = this;
+    this.a = a * other.a + c * other.b; this.b = b * other.a + d * other.b;
+    this.c = a * other.c + c * other.d; this.d = b * other.c + d * other.d;
+    this.e = a * other.e + c * other.f + e; this.f = b * other.e + d * other.f + f;
+    return this;
+  }
+
+  preMultiplySelf(other: PdfDomMatrix) {
+    const result = new PdfDomMatrix([other.a, other.b, other.c, other.d, other.e, other.f]).multiplySelf(this);
+    Object.assign(this, result);
+    return this;
+  }
+
+  translate(tx = 0, ty = 0) { return new PdfDomMatrix([this.a, this.b, this.c, this.d, this.e, this.f]).multiplySelf(new PdfDomMatrix([1, 0, 0, 1, tx, ty])); }
+  scale(scaleX = 1, scaleY = scaleX) { return new PdfDomMatrix([this.a, this.b, this.c, this.d, this.e, this.f]).multiplySelf(new PdfDomMatrix([scaleX, 0, 0, scaleY, 0, 0])); }
+
+  invertSelf() {
+    const determinant = this.a * this.d - this.b * this.c;
+    if (!determinant) throw new Error("Cannot invert a singular PDF matrix.");
+    const { a, b, c, d, e, f } = this;
+    this.a = d / determinant; this.b = -b / determinant; this.c = -c / determinant; this.d = a / determinant;
+    this.e = (c * f - d * e) / determinant; this.f = (b * e - a * f) / determinant;
+    return this;
+  }
+}
+
+async function loadPdfJs() {
+  if (!(globalThis as typeof globalThis & { DOMMatrix?: unknown }).DOMMatrix) {
+    Object.assign(globalThis, { DOMMatrix: PdfDomMatrix });
+  }
+  return import("pdfjs-dist/legacy/build/pdf.mjs");
+}
 
 export const EYMET_AGENDA_URL = "https://www.eymet-dordogne.fr/fr/rb/304280/lespace-culturel";
 export const EYMET_SOURCE_NAME = "Commune d’Eymet — agenda culturel officiel";
@@ -117,6 +162,7 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (!bytes.length || new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") throw new Error("De gemeentelijke agendabron leverde geen geldig PDF-bestand op.");
 
+  const { getDocument } = await loadPdfJs();
   const pdf = await getDocument({ data: bytes, isEvalSupported: false, useSystemFonts: true }).promise;
   const byDate = new Map<string, ImportedEvent>();
   let month = 0;
