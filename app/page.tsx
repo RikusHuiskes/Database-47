@@ -127,6 +127,8 @@ export default function Home() {
   const [nearbyLoading, setNearbyLoading] = useState(true);
   const [nearbyError, setNearbyError] = useState("");
   const [locationlessCount, setLocationlessCount] = useState(0);
+  const [submissionNotice, setSubmissionNotice] = useState("");
+  const [submissionError, setSubmissionError] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -612,14 +614,16 @@ export default function Home() {
     e.preventDefault();
     setMessage("");
     setError("");
+    setSubmissionNotice("");
+    setSubmissionError("");
 
     if (!supabase) {
-      setError("Geen Supabase-verbinding.");
+      setSubmissionError("Je tip kon niet worden verstuurd omdat de database niet bereikbaar is.");
       return;
     }
 
     if (!title.trim() || !startAt) {
-      setError("Vul minimaal de titel en startdatum in.");
+      setSubmissionError("Vul minimaal de titel en startdatum in.");
       return;
     }
 
@@ -652,11 +656,7 @@ export default function Home() {
 });
 
     if (insertError) {
-      setError(
-        "Opslaan mislukt: " +
-          insertError.message +
-          ". Controleer eventueel de INSERT-rechten in Supabase."
-      );
+      setSubmissionError("Je tip kon niet worden verstuurd. Probeer het later opnieuw.");
       setSaving(false);
       return;
     }
@@ -666,6 +666,7 @@ setShowForm(false);
 
 
     await loadData();
+    setSubmissionNotice(`Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.`);
     setSaving(false);
   }
 
@@ -808,6 +809,9 @@ setShowForm(false);
         <p style={{ color: "#475569", lineHeight: 1.6, maxWidth: 720 }}>
           Kies een plaats en hoe ver je wilt zoeken. Je kunt ook je huidige locatie gebruiken; die wordt alleen voor deze zoekopdracht gebruikt.
         </p>
+        <p style={{ color: "#334155", lineHeight: 1.6, maxWidth: 760 }}>
+          DATABASE 47 brengt activiteiten uit de dorpen en steden om je heen samen. We tonen alleen gecontroleerde evenementen en verwijzen waar mogelijk naar de organisator of oorspronkelijke bron.
+        </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", alignItems: "end", gap: 14, maxWidth: 780 }}>
           <label style={labelStyle}>
             Zoek rond
@@ -854,7 +858,236 @@ setShowForm(false);
             </article>
           ))}
         </div>
+        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid #e2e8f0" }}>
+          <strong>Ken je een activiteit die hier ontbreekt?</strong>
+          <p style={{ margin: "6px 0 12px", color: "#475569" }}>Tip ons. Een beheerder controleert de gegevens voordat de activiteit zichtbaar wordt.</p>
+          <button type="button" onClick={() => { setShowForm((current) => !current); setError(""); setMessage(""); }} style={{ padding: "11px 16px", border: 0, borderRadius: 8, background: "#173f5f", color: "white", cursor: "pointer", fontSize: 15 }}>
+            {showForm ? "Tipformulier sluiten" : "Een activiteit doorgeven"}
+          </button>
+        </div>
       </section>
+
+      {showForm && (
+        <form
+          onSubmit={saveEvent}
+          style={{
+            display: "grid",
+            gap: 16,
+            padding: 20,
+            background: "white",
+            border: "1px solid #d8dee8",
+            borderRadius: 12,
+            marginBottom: 28,
+          }}
+        >
+          <h2>Geef een activiteit door</h2>
+          <p style={{ marginTop: 0, color: "#64748b" }}>
+            Je tip komt eerst bij de beheerder ter controle. Een link naar de organisator of informatiebron helpt ons de gegevens te verifiëren.
+          </p>
+
+          <div>
+            <label style={labelStyle}>Titel *</label>
+            <input
+              style={inputStyle}
+              maxLength={180}
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Bijvoorbeeld: Marché nocturne"
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Categorie</label>
+            <select
+              style={inputStyle}
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <option value="">Kies een categorie</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name ?? category.slug ?? category.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Korte beschrijving</label>
+            <input
+              style={inputStyle}
+              value={shortDescription}
+              onChange={(e) => setShortDescription(e.target.value)}
+              maxLength={250}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Uitgebreide beschrijving</label>
+            <textarea
+              style={{ ...inputStyle, minHeight: 110 }}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Begindatum en -tijd *</label>
+            <input
+              style={inputStyle}
+              type="datetime-local"
+              required
+              value={startAt}
+              onChange={(e) => setStartAt(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Einddatum en -tijd</label>
+            <input
+              style={inputStyle}
+              type="datetime-local"
+              value={endAt}
+              onChange={(e) => setEndAt(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Locatie / zaal</label>
+            <input
+              style={inputStyle}
+              value={venueName}
+              onChange={(e) => setVenueName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Adres</label>
+            <input
+              style={inputStyle}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Postcode</label>
+            <input
+              style={inputStyle}
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Plaats *</label>
+            <input
+              style={inputStyle}
+              required
+              maxLength={120}
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Bijvoorbeeld: Duras"
+            />
+          </div>
+
+          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={isFree}
+              onChange={(e) => setIsFree(e.target.checked)}
+            />
+            Dit evenement is gratis
+          </label>
+
+          {!isFree && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div>
+               <label style={labelStyle}>Prijs vanaf (&euro;)</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={priceFrom}
+                  onChange={(e) => setPriceFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Prijs tot (€)</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={priceTo}
+                  onChange={(e) => setPriceTo(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label style={labelStyle}>Website</label>
+            <input
+              style={inputStyle}
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Reserveringslink</label>
+            <input
+              style={inputStyle}
+              type="url"
+              value={bookingUrl}
+              onChange={(e) => setBookingUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Informatiebron *</label>
+            <input
+              style={inputStyle}
+              type="url"
+              required
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              padding: 14,
+              border: 0,
+              borderRadius: 8,
+              background: saving ? "#94a3b8" : "#16734b",
+              color: "white",
+              cursor: saving ? "wait" : "pointer",
+              fontSize: 16,
+            }}
+          >
+            {saving ? "Opslaan..." : "Evenement opslaan"}
+          </button>
+        </form>
+      )}
+
+      {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
+      {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
       <details style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
@@ -1084,222 +1317,6 @@ setShowForm(false);
             </button>
           )}
         </section>
-      )}
-
-      {showForm && (
-        <form
-          onSubmit={saveEvent}
-          style={{
-            display: "grid",
-            gap: 16,
-            padding: 20,
-            background: "white",
-            border: "1px solid #d8dee8",
-            borderRadius: 12,
-            marginBottom: 28,
-          }}
-        >
-          <h2>Nieuw evenement invoeren</h2>
-          <p style={{ marginTop: 0, color: "#64748b" }}>
-            Velden met * zijn verplicht. Het evenement wordt eerst ter controle
-            aangeboden.
-          </p>
-
-          <div>
-            <label style={labelStyle}>Titel *</label>
-            <input
-              style={inputStyle}
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Bijvoorbeeld: Marché nocturne"
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Categorie</label>
-            <select
-              style={inputStyle}
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <option value="">Kies een categorie</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name ?? category.slug ?? category.id}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label style={labelStyle}>Korte beschrijving</label>
-            <input
-              style={inputStyle}
-              value={shortDescription}
-              onChange={(e) => setShortDescription(e.target.value)}
-              maxLength={250}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Uitgebreide beschrijving</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: 110 }}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Begindatum en -tijd *</label>
-            <input
-              style={inputStyle}
-              type="datetime-local"
-              required
-              value={startAt}
-              onChange={(e) => setStartAt(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Einddatum en -tijd</label>
-            <input
-              style={inputStyle}
-              type="datetime-local"
-              value={endAt}
-              onChange={(e) => setEndAt(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Locatie / zaal</label>
-            <input
-              style={inputStyle}
-              value={venueName}
-              onChange={(e) => setVenueName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Adres</label>
-            <input
-              style={inputStyle}
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Postcode</label>
-            <input
-              style={inputStyle}
-              value={postcode}
-              onChange={(e) => setPostcode(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Plaats</label>
-            <input
-              style={inputStyle}
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Bijvoorbeeld: Duras"
-            />
-          </div>
-
-          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={isFree}
-              onChange={(e) => setIsFree(e.target.checked)}
-            />
-            Dit evenement is gratis
-          </label>
-
-          {!isFree && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-                gap: 12,
-              }}
-            >
-              <div>
-               <label style={labelStyle}>Prijs vanaf (&euro;)</label>
-                <input
-                  style={inputStyle}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={priceFrom}
-                  onChange={(e) => setPriceFrom(e.target.value)}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Prijs tot (€)</label>
-                <input
-                  style={inputStyle}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={priceTo}
-                  onChange={(e) => setPriceTo(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label style={labelStyle}>Website</label>
-            <input
-              style={inputStyle}
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Reserveringslink</label>
-            <input
-              style={inputStyle}
-              type="url"
-              value={bookingUrl}
-              onChange={(e) => setBookingUrl(e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Bronlink</label>
-            <input
-              style={inputStyle}
-              type="url"
-              value={sourceUrl}
-              onChange={(e) => setSourceUrl(e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              padding: 14,
-              border: 0,
-              borderRadius: 8,
-              background: saving ? "#94a3b8" : "#16734b",
-              color: "white",
-              cursor: saving ? "wait" : "pointer",
-              fontSize: 16,
-            }}
-          >
-            {saving ? "Opslaan..." : "Evenement opslaan"}
-          </button>
-        </form>
       )}
 
       <h2>Evenementen beheren</h2>
