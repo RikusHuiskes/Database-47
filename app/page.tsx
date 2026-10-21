@@ -35,8 +35,16 @@ type EventRow = {
   postcode?: string | null;
   website_url?: string | null;
   booking_url?: string | null;
+  contact_phone?: string | null;
+  image_url?: string | null;
+  organizer_name?: string | null;
+  source_category?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   source_url?: string | null;
 };
+
+type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 type EventEditDraft = {
   title: string;
@@ -90,6 +98,38 @@ function toLocalDateTime(value?: string | null) {
   return localDate.toISOString().slice(0, 16);
 }
 
+function inferredCategorySlug(event: ImportedEvent): string | null {
+  const title = `${event.title} ${event.description ?? ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const kind = (event.source_category ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/marche|brocante|vide-grenier|foire/.test(title) || /manifestation commerciale/.test(kind)) return "marches-brocantes";
+  if (/concert|musique|chorale/.test(title) || /concert|musique/.test(kind)) return "concerts-musique";
+  if (/theatre|spectacle|representation/.test(title) || /theatre|spectacle/.test(kind)) return "theatre-spectacles";
+  if (/randonnee|balade|vtt|marche sportive|circuit|nature/.test(title)) return "nature-randonnee";
+  if (/atelier|stage|cours|initiation/.test(title)) return "ateliers-cours";
+  if (/exposition|photophore|peinture|sculpture|photograph/.test(title)) return "art-expositions";
+  if (/enfant|famille|jeunesse|kid/.test(title)) return "enfants-famille";
+  if (/restaurant|repas|diner|dejeuner|choucroute|tartiflette|garbure|loto gourmand/.test(title)) return "restaurants-gastronomie";
+  if (/animation et fete locale|fetes et manifestations/.test(kind)) return "festivals-fetes";
+  if (/sports et loisirs|sport/.test(kind)) return "sport";
+  if (/culturelle|culture|musee|patrimoine/.test(kind)) return "culture-musees";
+  return null;
+}
+
+function suggestedCategoryId(event: ImportedEvent, categories: Category[]): string {
+  const slug = inferredCategorySlug(event);
+  return categories.find((category) => category.slug === slug)?.id ?? "";
+}
+
+function safeHttpUrl(value?: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -108,7 +148,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(true);
   const [importLoading, setImportLoading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importPreview, setImportPreview] = useState<ImportedEvent[]>([]);
+  const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importNotice, setImportNotice] = useState("");
 
   const [title, setTitle] = useState("");
@@ -502,7 +542,11 @@ setShowForm(false);
       const response = await fetch("/api/import-tourisme-duras", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "De agenda kon niet worden ingelezen.");
-      setImportPreview(result.events as ImportedEvent[]);
+      const preview = (result.events as ImportedEvent[]).map((event) => ({
+        ...event,
+        category_id: suggestedCategoryId(event, categories),
+      }));
+      setImportPreview(preview);
       setImportNotice(`${result.events.length} evenementen met een herkenbare datum gevonden. Controleer de lijst en kies daarna zelf of je ze importeert.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
@@ -520,7 +564,7 @@ setShowForm(false);
     const sourceUrls = importPreview.map((event) => event.source_url);
     const existingResult = await supabase
       .from("events")
-      .select("title,start_at,source_url")
+      .select("title,start_at,source_url,status,verified")
       .in("source_url", sourceUrls)
       .limit(1000);
     if (existingResult.error) {
@@ -535,22 +579,48 @@ setShowForm(false);
       ...(existingResult.data ?? []).map((event) => `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`),
     ]);
     let inserted = 0;
+    let enriched = 0;
     let skipped = 0;
     let failedTitle = "";
     let failureMessage = "";
     for (const event of importPreview) {
       const titleDateKey = `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`;
+      const existing = (existingResult.data ?? []).find((row) => row.source_url === event.source_url);
+      if (existing) {
+        if (existing.status === "pending" && existing.verified === false) {
+          const { error: enrichError } = await supabase.rpc("enrich_pending_tourisme_event", {
+            p_source_url: event.source_url,
+            p_event: event,
+            p_category_id: event.category_id || null,
+          });
+          if (enrichError) {
+            failedTitle = event.title;
+            failureMessage = `Aanvullen van “${event.title}” is mislukt: ${enrichError.message}. ${enriched} evenementen zijn aangevuld.`;
+            break;
+          }
+          enriched += 1;
+        } else {
+          skipped += 1;
+        }
+        continue;
+      }
       if (knownSourceUrls.has(event.source_url) || knownTitleDates.has(titleDateKey)) {
         skipped += 1;
         continue;
       }
+      if (!event.category_id) {
+        failedTitle = event.title;
+        failureMessage = `Import gestopt bij “${event.title}”: kies eerst een categorie. ${inserted} nieuwe evenementen zijn toegevoegd; ${enriched} bestaande evenementen zijn aangevuld.`;
+        break;
+      }
+      const { category_id, ...eventPayload } = event;
       const { error: insertError } = await supabase.rpc("submit_pending_event", {
-        p_event: event,
-        p_category_id: null,
+        p_event: eventPayload,
+        p_category_id: category_id,
       });
       if (insertError) {
         failedTitle = event.title;
-        failureMessage = `Import gestopt bij “${event.title}”: ${insertError.message}. ${inserted} evenementen zijn toegevoegd; ${skipped} dubbelen overgeslagen.`;
+        failureMessage = `Import gestopt bij “${event.title}”: ${insertError.message}. ${inserted} nieuwe evenementen zijn toegevoegd; ${enriched} bestaande evenementen zijn aangevuld; ${skipped} zijn overgeslagen.`;
         break;
       }
       inserted += 1;
@@ -559,9 +629,15 @@ setShowForm(false);
     }
     await loadData();
     if (failedTitle) setError(failureMessage);
-    else setMessage(`${inserted} evenementen toegevoegd als ‘in afwachting van controle’; ${skipped} bestaande of dubbele evenementen overgeslagen.`);
+    else setMessage(`${inserted} nieuwe evenementen toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen overgeslagen. Nieuwe inzendingen blijven wachten op controle.`);
     setImportPreview([]);
     setImporting(false);
+  }
+
+  function setImportCategory(sourceUrl: string, categoryId: string) {
+    setImportPreview((current) => current.map((event) =>
+      event.source_url === sourceUrl ? { ...event, category_id: categoryId } : event
+    ));
   }
 
   function formatDate(value?: string | null) {
@@ -752,11 +828,31 @@ setShowForm(false);
       {importNotice && (
         <section style={{ padding: 18, marginBottom: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
           <p role="status">{importNotice}</p>
-          <p style={{ color: "#64748b" }}>Nieuwe evenementen worden eerst ter controle aangeboden. Herhalende of niet-eenduidige datums worden overgeslagen. Als de bron geen tijd vermeldt, gebruikt de import 10:00.</p>
+          <p style={{ color: "#64748b" }}>De import haalt waar beschikbaar adres, website, reserveringslink, telefoon en foto van de detailpagina op. Afgelopen of onduidelijke datums worden overgeslagen. Elk nieuw evenement blijft eerst op Wacht op controle.</p>
+          {categories.length === 0 && <p role="alert" style={{ color: "#9f1239" }}>Er zijn geen categorieën geladen. Importeer nog niet; de categorieën moeten eerst in deze database beschikbaar zijn.</p>}
           <ul style={{ maxHeight: 320, overflowY: "auto", paddingLeft: 22 }}>
             {importPreview.map((event) => (
               <li key={event.source_url} style={{ marginBottom: 8 }}>
-                <strong>{event.title}</strong> — {formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}{event.city ? ` · ${event.city}` : ""}
+                <strong>{event.title}</strong> — {formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}
+                <div>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city || "Adres niet op de bronpagina gevonden"}</div>
+                {event.source_category && <div>Type bij bron: {event.source_category}</div>}
+                {event.contact_phone && <div>Telefoon: {event.contact_phone}</div>}
+                {event.website_url && <div>Website gevonden</div>}
+                {event.booking_url && <div>Reserveringslink gevonden</div>}
+                {event.image_url && <div>Foto gevonden</div>}
+                <label style={{ display: "block", marginTop: 6 }}>
+                  Categorie voor Database 47: {" "}
+                  <select
+                    value={event.category_id}
+                    onChange={(e) => setImportCategory(event.source_url, e.target.value)}
+                    disabled={categories.length === 0 || importing}
+                    style={{ ...inputStyle, maxWidth: 340, padding: 7 }}
+                  >
+                    <option value="">Kies een categorie</option>
+                    {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? category.id}</option>)}
+                  </select>
+                </label>
+                <a href={event.source_url} target="_blank" rel="noreferrer">Bronpagina bekijken</a>
               </li>
             ))}
           </ul>
@@ -764,10 +860,10 @@ setShowForm(false);
             <button
               type="button"
               onClick={() => void importTourismeDuras()}
-              disabled={importing || !isAdmin}
+              disabled={importing || !isAdmin || categories.length === 0 || importPreview.some((event) => !event.category_id)}
               style={{ padding: "12px 18px", border: 0, borderRadius: 8, background: importing ? "#94a3b8" : "#16734b", color: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
             >
-              {importing ? "Importeren..." : `${importPreview.length} evenementen importeren als concept`}
+              {importing ? "Importeren..." : `${importPreview.length} evenementen toevoegen of aanvullen als concept`}
             </button>
           )}
         </section>
@@ -1010,13 +1106,20 @@ setShowForm(false);
           }}
         >
           <h3>{event.title}</h3>
+          {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 8, marginBottom: 12 }} />}
           {event.category_name && (
             <p><strong>Categorie:</strong> {event.category_name}</p>
           )}
           <p>{formatDate(event.start_at)}</p>
-          {(event.venue_name || event.city) && (
-            <p>{[event.venue_name, event.city].filter(Boolean).join(", ")}</p>
+          {(event.venue_name || event.address || event.postcode || event.city) && (
+            <p>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ")}</p>
           )}
+          {event.contact_phone && <p>Telefoon: <a href={`tel:${event.contact_phone.replace(/[^+\d]/g, "")}`}>{event.contact_phone}</a></p>}
+          {safeHttpUrl(event.website_url) && <p><a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website</a></p>}
+          {safeHttpUrl(event.booking_url) && <p><a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a></p>}
+          {event.source_category && <p>Type bij bron: {event.source_category}</p>}
+          {event.organizer_name && <p>Organisator: {event.organizer_name}</p>}
+          {safeHttpUrl(event.source_url) && <p><a href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Bronpagina</a></p>}
           {event.short_description && <p>{event.short_description}</p>}
           {event.description && <p>{event.description}</p>}
           <p>
