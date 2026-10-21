@@ -187,7 +187,7 @@ export function parseTourismeDurasHtml(html: string, now = new Date()): Imported
       .filter((text) => text && text !== title && !/^(Commune|Date|Type de manifestation|Téléphone|Tel mobile|Plus d'informations)\s*:/i.test(text));
     const description = paragraphs.join("\n\n").slice(0, 2000) || null;
     events.push({
-      title, slug: slugify(title), short_description: description?.slice(0, 250) ?? null,
+      title, slug: `${slugify(title)}-${parsedDate.start_at.slice(0, 10)}`, short_description: description?.slice(0, 250) ?? null,
       description, start_at: parsedDate.start_at, end_at: parsedDate.end_at,
       venue_name: null, address: null, postcode: null, city,
       price_from: null, price_to: null, is_free: false, website_url: null,
