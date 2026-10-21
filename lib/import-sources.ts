@@ -8,7 +8,7 @@ export type ExternalEventSource = {
   name: string;
   fetchEvents: () => Promise<ImportedEvent[]>;
   categorySlugFor: (event: ImportedEvent) => string | null;
-  persistPendingEvent: (event: ImportedEvent, categoryId: string) => Promise<"inserted" | "enriched" | "skipped">;
+  persistPendingEvent: (event: ImportedEvent, categoryId: string | null) => Promise<"inserted" | "enriched" | "skipped">;
 };
 
 export type ImportSourceSummary = {
@@ -31,10 +31,7 @@ export async function runExternalEventImport(
   for (const event of events) {
     const slug = source.categorySlugFor(event);
     const categoryId = categories.find((category) => category.slug === slug)?.id;
-    if (!categoryId) {
-      summary.skippedWithoutCategory += 1;
-      continue;
-    }
+    if (!categoryId) summary.skippedWithoutCategory += 1;
     const result = await source.persistPendingEvent(event, categoryId);
     summary[result] += 1;
   }

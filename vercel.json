@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/import-tourisme-duras",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-expired-events",
+      "schedule": "15 7 * * *"
     }
   ]
 }

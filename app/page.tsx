@@ -22,6 +22,7 @@ type EventRow = {
   title: string;
   slug: string;
   category_name?: string | null;
+  category_id?: string | null;
   start_at: string;
   end_at?: string | null;
   venue_name?: string | null;
@@ -52,6 +53,7 @@ type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: bo
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 type EventEditDraft = {
+  category_id: string;
   title: string;
   short_description: string;
   description: string;
@@ -307,6 +309,7 @@ export default function Home() {
 
           return {
             ...event,
+            category_id: link?.category_id ?? null,
             category_name: category?.name ?? category?.slug ?? null,
           };
         }
@@ -505,6 +508,7 @@ export default function Home() {
     setMessage("");
     setEditingEventId(event.id);
     setEditDraft({
+      category_id: event.category_id ?? "",
       title: event.title ?? "",
       short_description: event.short_description ?? "",
       description: event.description ?? "",
@@ -582,6 +586,19 @@ export default function Home() {
       setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
       setUpdatingEventId(null);
       return;
+    }
+
+    if (editDraft.category_id !== (event.category_id ?? "")) {
+      const { error: categoryError } = await supabase.rpc("set_event_category", {
+        p_event_id: event.id,
+        p_category_id: editDraft.category_id || null,
+      });
+      if (categoryError) {
+        setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError.message}`);
+        setUpdatingEventId(null);
+        await loadData();
+        return;
+      }
     }
 
     setEditingEventId(null);
@@ -748,14 +765,11 @@ setShowForm(false);
         skipped += 1;
         continue;
       }
-      if (!event.category_id) {
-        skippedWithoutCategory += 1;
-        continue;
-      }
+      if (!event.category_id) skippedWithoutCategory += 1;
       const { category_id, ...eventPayload } = event;
       const { error: insertError } = await supabase.rpc("submit_pending_event", {
         p_event: eventPayload,
-        p_category_id: category_id,
+        p_category_id: category_id || null,
       });
       if (insertError) {
         failedTitle = event.title;
@@ -768,7 +782,7 @@ setShowForm(false);
     }
     await loadData();
     if (failedTitle) setError(failureMessage);
-    else setMessage(`${inserted} nieuwe evenementen toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen en ${skippedWithoutCategory} nieuwe evenementen zonder categorie overgeslagen. Nieuwe inzendingen blijven wachten op controle.`);
+    else setMessage(`${inserted} nieuwe evenementen toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen overgeslagen. ${skippedWithoutCategory} import(s) hebben nog geen categorie en staan klaar om handmatig in te delen. Nieuwe inzendingen blijven wachten op controle.`);
     setImportPreview([]);
     setImporting(false);
   }
@@ -1452,6 +1466,20 @@ setShowForm(false);
                   value={editDraft.title}
                   onChange={(e) => updateEditDraft("title", e.target.value)}
                 />
+              </label>
+
+              <label style={labelStyle}>
+                Categorie
+                <select
+                  style={inputStyle}
+                  value={editDraft.category_id}
+                  onChange={(e) => updateEditDraft("category_id", e.target.value)}
+                >
+                  <option value="">Geen categorie</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name ?? category.slug}</option>
+                  ))}
+                </select>
               </label>
 
               <label style={labelStyle}>
