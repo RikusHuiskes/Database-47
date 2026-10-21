@@ -124,6 +124,8 @@ function sourceLabel(value?: string | null): string {
   if (!value) return "Bron niet vermeld";
   try {
     const host = new URL(value).hostname.replace(/^www\./, "");
+    if (host === "eymet-dordogne.fr") return "Commune d’Eymet — agenda officiel";
+    if (host === "api.neopse.com") return "Commune d’Eymet — officiële agenda-PDF";
     if (host === "pays-bergerac-tourisme.com") return "Pays de Bergerac Tourisme — agenda L’Eden d’Eymet";
     if (host === "tourismeduras.com") return "Tourisme Duras";
     return host;
@@ -1309,7 +1311,7 @@ setShowForm(false);
         {isAdmin && (
           <button
             type="button"
-            onClick={() => void previewEventSource("/api/import-eymet", "Pays de Bergerac Tourisme — agenda L’Eden d’Eymet")}
+            onClick={() => void previewEventSource("/api/import-eymet", "Commune d’Eymet — agenda cultureel officieel")}
             disabled={importLoading || importing}
             style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", cursor: importLoading || importing ? "wait" : "pointer", fontSize: 15 }}
           >

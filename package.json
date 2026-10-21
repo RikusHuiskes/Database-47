@@ -1,4 +1,3 @@
-
 {
   "name": "database-47",
   "version": "0.1.0",
@@ -10,14 +9,15 @@
     "test:import": "node --test lib/tourisme-duras.test.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "latest",
     "next": "latest",
+    "pdfjs-dist": "5.4.296",
     "react": "latest",
-    "react-dom": "latest",
-    "@supabase/supabase-js": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
+    "@types/node": "latest",
     "@types/react": "latest",
-    "@types/node": "latest"
+    "typescript": "latest"
   }
 }
