@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import type { ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
+import type { LocalAreaTown } from "../lib/local-area";
 type Category = {
   id: string;
   name?: string;
@@ -44,6 +45,9 @@ type EventRow = {
   longitude?: number | null;
   source_url?: string | null;
 };
+
+type LocalAreaOption = LocalAreaTown & { latitude: number | null; longitude: number | null };
+type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
 
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
@@ -115,6 +119,14 @@ function safeHttpUrl(value?: string | null): string | null {
 }
 
 export default function Home() {
+  const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
+  const [selectedAreaId, setSelectedAreaId] = useState("duras");
+  const [visitorLocation, setVisitorLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState(25);
+  const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
+  const [nearbyLoading, setNearbyLoading] = useState(true);
+  const [nearbyError, setNearbyError] = useState("");
+  const [locationlessCount, setLocationlessCount] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +173,82 @@ export default function Home() {
     if (!url || !key) return null;
     return createClient(url, key);
   });
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/local-areas")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Plaatsen konden niet worden geladen.");
+        return response.json();
+      })
+      .then((result) => {
+        if (active) setLocalAreas((result.areas ?? []) as LocalAreaOption[]);
+      })
+      .catch((cause) => {
+        if (active) setNearbyError(cause instanceof Error ? cause.message : "Plaatsen konden niet worden geladen.");
+      });
+    return () => { active = false; };
+  }, []);
+
+  const selectedArea = localAreas.find((area) => area.id === selectedAreaId);
+  const searchLatitude = visitorLocation?.latitude ?? selectedArea?.latitude ?? null;
+  const searchLongitude = visitorLocation?.longitude ?? selectedArea?.longitude ?? null;
+  const searchLabel = visitorLocation ? "jouw locatie" : selectedArea?.name ?? "Duras";
+
+  useEffect(() => {
+    if (searchLatitude == null || searchLongitude == null) {
+      if (localAreas.length > 0) {
+        setNearbyLoading(false);
+        setNearbyError("De gekozen plaats heeft geen bruikbare locatiegegevens.");
+      }
+      return;
+    }
+
+    let active = true;
+    setNearbyLoading(true);
+    setNearbyError("");
+    const params = new URLSearchParams({
+      lat: String(searchLatitude),
+      lon: String(searchLongitude),
+      radius: String(radiusKm),
+    });
+    void fetch(`/api/nearby-events?${params}`)
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Evenementen konden niet worden geladen.");
+        return result;
+      })
+      .then((result) => {
+        if (!active) return;
+        setNearbyEvents((result.events ?? []) as NearbyEvent[]);
+        setLocationlessCount(Number(result.locationless_count ?? 0));
+      })
+      .catch((cause) => {
+        if (active) setNearbyError(cause instanceof Error ? cause.message : "Evenementen konden niet worden geladen.");
+      })
+      .finally(() => { if (active) setNearbyLoading(false); });
+    return () => { active = false; };
+  }, [localAreas.length, searchLatitude, searchLongitude, radiusKm]);
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setNearbyError("Deze browser kan je locatie niet bepalen. Kies een plaats uit de lijst.");
+      return;
+    }
+    setNearbyError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setVisitorLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      },
+      () => setNearbyError("Je locatie is niet gedeeld. Kies een plaats uit de lijst of probeer het opnieuw."),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  function selectArea(areaId: string) {
+    setVisitorLocation(null);
+    setSelectedAreaId(areaId);
+  }
 
   async function loadData() {
     if (!supabase) {
@@ -692,7 +780,7 @@ setShowForm(false);
 
   function formatDate(value?: string | null) {
     if (!value) return "Datum onbekend";
-    return new Date(value).toLocaleString("fr-FR", {
+    return new Date(value).toLocaleString("nl-NL", {
       dateStyle: "medium",
       timeStyle: "short",
     });
@@ -710,11 +798,66 @@ setShowForm(false);
     >
       <header>
         <h1>DATABASE 47</h1>
-        <p>Regionale evenementenagenda — Lot-et-Garonne</p>
+        <p>Activiteiten dichtbij huis — Duras en omgeving</p>
       </header>
 
       <hr />
 
+      <section aria-labelledby="nearby-heading" style={{ margin: "28px 0 42px", padding: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 14 }}>
+        <h2 id="nearby-heading" style={{ marginTop: 0, fontSize: 30 }}>Wat is er te doen bij jou in de buurt?</h2>
+        <p style={{ color: "#475569", lineHeight: 1.6, maxWidth: 720 }}>
+          Kies een plaats en hoe ver je wilt zoeken. Je kunt ook je huidige locatie gebruiken; die wordt alleen voor deze zoekopdracht gebruikt.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", alignItems: "end", gap: 14, maxWidth: 780 }}>
+          <label style={labelStyle}>
+            Zoek rond
+            <select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
+              {localAreas.map((area) => (
+                <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>
+                  {area.name} ({area.postcode})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Zoek binnen
+            <select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
+              {[10, 25, 50].map((radius) => <option key={radius} value={radius}>{radius} kilometer</option>)}
+            </select>
+          </label>
+          <button type="button" onClick={useCurrentLocation} style={{ padding: 12, border: "1px solid #cbd5e1", borderRadius: 8, background: "#f8fafc", cursor: "pointer", fontSize: 15 }}>
+            Gebruik mijn locatie
+          </button>
+        </div>
+        <p role="status" aria-live="polite" style={{ color: "#475569", margin: "18px 0 12px" }}>
+          {nearbyLoading ? "Evenementen in de buurt zoeken…" : `${nearbyEvents.length} aankomende ${nearbyEvents.length === 1 ? "activiteit" : "activiteiten"} binnen ${radiusKm} km van ${searchLabel}.`}
+        </p>
+        {visitorLocation && <p style={{ color: "#64748b", marginTop: -4, fontSize: 14 }}>Zoeken rond je huidige locatie.</p>}
+        {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
+        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p>Geen aankomende activiteiten gevonden. Probeer een grotere straal of een andere plaats.</p>}
+        {locationlessCount > 0 && <p style={{ color: "#64748b", fontSize: 14 }}>{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
+        <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+          {nearbyEvents.map((event) => (
+            <article key={event.id} style={{ display: "grid", gridTemplateColumns: event.image_url ? "minmax(120px, 220px) minmax(0, 1fr)" : "1fr", gap: 18, padding: 18, border: "1px solid #d8dee8", borderRadius: 12 }}>
+              {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ width: "100%", maxHeight: 190, height: "100%", minHeight: 120, objectFit: "cover", borderRadius: 8 }} />}
+              <div>
+                <h3 style={{ margin: "0 0 8px", fontSize: 21 }}>{event.title}</h3>
+                <p style={{ margin: "6px 0", color: "#475569" }}>{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
+                <p style={{ margin: "6px 0", color: "#475569" }}>{event.distance_is_approximate ? "Ongeveer " : ""}{event.distance_km} km · {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
+                {(event.short_description || event.description) && <p style={{ lineHeight: 1.55 }}>{event.short_description || event.description}</p>}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+                  {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website</a>}
+                  {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
+                  {safeHttpUrl(event.source_url) && <a href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie</a>}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <details style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
+      <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
       <h2>Beheerdersdashboard</h2>
 
       {authLoading ? (
@@ -742,6 +885,7 @@ setShowForm(false);
         </form>
       )}
 
+      {isAdmin && <>
       <div
         style={{
           display: "grid",
@@ -1158,7 +1302,7 @@ setShowForm(false);
         </form>
       )}
 
-      <h2>Evenementen</h2>
+      <h2>Evenementen beheren</h2>
 
       {loading && <p>Gegevens laden...</p>}
 
@@ -1480,6 +1624,8 @@ setShowForm(false);
         </article>
 
       ))}
+      </>}
+      </details>
     </main>
   );
 }

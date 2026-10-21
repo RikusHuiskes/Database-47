@@ -32,6 +32,19 @@ source URL for deduplication, and skip events without a mapped category. Sources
 that require login or do not permit automated access need an authorized feed or
 manual export instead of scraping.
 
+## Nearby events experience
+
+The public home page lets visitors search around Duras, Monteton, Eymet,
+Monségur, Marmande, Pineuilh, Sainte-Foy-la-Grande, or their current location.
+Visitors choose a 10, 25, or 50 km radius. This radius only filters the public
+results; it never limits what importers can store in the shared event database.
+The nearby-events API returns only verified, approved events whose end date (or
+start date when there is no end date) has not passed. When an event has no saved
+coordinates, the API uses the French government's commune center service where
+the place can be identified. Distances based on a commune center are marked as
+approximate. An event with no identifiable location is left out of radius
+results until its location is completed.
+
 ## Database migrations
 
 Apply SQL migrations to the intended Supabase project before deploying app code

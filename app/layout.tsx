@@ -2,8 +2,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "DATABASE 47",
-  description: "Regionale activiteitenagenda voor Lot-et-Garonne",
+  title: "Activiteiten dichtbij — DATABASE 47",
+  description: "Ontdek activiteiten en evenementen rond Duras, Monteton, Eymet en omgeving.",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="nl">
       <body
         style={{
           margin: 0,
