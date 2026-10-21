@@ -120,6 +120,18 @@ function safeHttpUrl(value?: string | null): string | null {
   }
 }
 
+function sourceLabel(value?: string | null): string {
+  if (!value) return "Bron niet vermeld";
+  try {
+    const host = new URL(value).hostname.replace(/^www\./, "");
+    if (host === "pays-bergerac-tourisme.com") return "Pays de Bergerac Tourisme — agenda L’Eden d’Eymet";
+    if (host === "tourismeduras.com") return "Tourisme Duras";
+    return host;
+  } catch {
+    return "Bron niet vermeld";
+  }
+}
+
 export default function Home() {
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
   const [selectedAreaId, setSelectedAreaId] = useState("duras");
@@ -150,6 +162,7 @@ export default function Home() {
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importNotice, setImportNotice] = useState("");
+  const [importSourceName, setImportSourceName] = useState("");
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
   const [savingCategoryId, setSavingCategoryId] = useState<string | null>(null);
 
@@ -687,15 +700,16 @@ setShowForm(false);
     setSaving(false);
   }
 
-  async function previewTourismeDuras() {
+  async function previewEventSource(endpoint: string, sourceName: string) {
     if (!isAdmin) return;
     setError("");
     setMessage("");
     setImportNotice("");
     setImportLoading(true);
     setImportPreview([]);
+    setImportSourceName(sourceName);
     try {
-      const response = await fetch("/api/import-tourisme-duras", { cache: "no-store" });
+      const response = await fetch(endpoint, { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "De agenda kon niet worden ingelezen.");
       const preview = (result.events as ImportedEvent[]).map((event) => ({
@@ -703,12 +717,16 @@ setShowForm(false);
         category_id: suggestedCategoryId(event, categories),
       }));
       setImportPreview(preview);
-      setImportNotice(`${result.events.length} evenementen met een herkenbare datum gevonden. Controleer de lijst en kies daarna zelf of je ze importeert.`);
+      setImportNotice(`${result.events.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Controleer de bron en gegevens; nieuwe activiteiten worden pas na import in de wachtrij voor controle gezet.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
     } finally {
       setImportLoading(false);
     }
+  }
+
+  async function previewTourismeDuras() {
+    await previewEventSource("/api/import-tourisme-duras", "Tourisme Duras");
   }
 
   async function importTourismeDuras() {
@@ -782,7 +800,7 @@ setShowForm(false);
     }
     await loadData();
     if (failedTitle) setError(failureMessage);
-    else setMessage(`${inserted} nieuwe evenementen toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen overgeslagen. ${skippedWithoutCategory} import(s) hebben nog geen categorie en staan klaar om handmatig in te delen. Nieuwe inzendingen blijven wachten op controle.`);
+    else setMessage(`${inserted} nieuwe evenementen van ${importSourceName} toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen overgeslagen. ${skippedWithoutCategory} import(s) hebben nog geen categorie en staan klaar om handmatig in te delen. Nieuwe inzendingen blijven wachten op controle.`);
     setImportPreview([]);
     setImporting(false);
   }
@@ -868,6 +886,7 @@ setShowForm(false);
                   {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
                   {safeHttpUrl(event.source_url) && <a href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie</a>}
                 </div>
+                {event.source_url && <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 13 }}>Bron: {sourceLabel(event.source_url)}</p>}
               </div>
             </article>
           ))}
@@ -1287,12 +1306,22 @@ setShowForm(false);
             {importLoading ? "Agenda ophalen..." : "Tourisme Duras importeren"}
           </button>
         )}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => void previewEventSource("/api/import-eymet", "Pays de Bergerac Tourisme — agenda L’Eden d’Eymet")}
+            disabled={importLoading || importing}
+            style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", cursor: importLoading || importing ? "wait" : "pointer", fontSize: 15 }}
+          >
+            {importLoading ? "Agenda ophalen..." : "Eymet-agenda importeren"}
+          </button>
+        )}
       </div>
 
       {importNotice && (
         <section style={{ padding: 18, marginBottom: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
           <p role="status">{importNotice}</p>
-          <p style={{ color: "#64748b" }}>De import haalt waar beschikbaar adres, website, reserveringslink, telefoon en foto van de detailpagina op. Wachtende evenementen worden aangevuld; goedgekeurde evenementen blijven ongewijzigd. Nieuwe evenementen zonder gekozen categorie worden overgeslagen. Elk nieuw evenement blijft eerst op Wacht op controle.</p>
+          <p style={{ color: "#64748b" }}>Bron: <strong>{importSourceName}</strong>. Waar beschikbaar worden adres, website, reserveringslink, telefoon en foto van de detailpagina opgehaald. Iedere activiteit toont hieronder de bronlink en blijft na import op Wacht op controle totdat jij haar goedkeurt. Je kunt de voorgestelde categorie vóór of na import wijzigen.</p>
           {categories.length === 0 && <p role="alert" style={{ color: "#9f1239" }}>Er zijn geen categorieën geladen. Importeer nog niet; de categorieën moeten eerst in deze database beschikbaar zijn.</p>}
           <ul style={{ maxHeight: 320, overflowY: "auto", paddingLeft: 22 }}>
             {importPreview.map((event) => (
@@ -1300,6 +1329,7 @@ setShowForm(false);
                 <strong>{event.title}</strong> — {formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}
                 <div>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city || "Adres niet op de bronpagina gevonden"}</div>
                 {event.source_category && <div>Type bij bron: {event.source_category}</div>}
+                <div>Bron: <strong>{sourceLabel(event.source_url)}</strong></div>
                 {event.contact_phone && <div>Telefoon: {event.contact_phone}</div>}
                 {event.website_url && <div>Website gevonden</div>}
                 {event.booking_url && <div>Reserveringslink gevonden</div>}
@@ -1316,7 +1346,7 @@ setShowForm(false);
                     {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? category.id}</option>)}
                   </select>
                 </label>
-                <a href={event.source_url} target="_blank" rel="noreferrer">Bronpagina bekijken</a>
+                <a href={event.source_url} target="_blank" rel="noreferrer">Bronpagina bekijken: {sourceLabel(event.source_url)}</a>
               </li>
             ))}
           </ul>
@@ -1367,6 +1397,7 @@ setShowForm(false);
           {safeHttpUrl(event.booking_url) && <p><a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a></p>}
           {event.source_category && <p>Type bij bron: {event.source_category}</p>}
           {event.organizer_name && <p>Organisator: {event.organizer_name}</p>}
+          {event.source_url && <p>Bron: {sourceLabel(event.source_url)}</p>}
           {safeHttpUrl(event.source_url) && <p><a href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Bronpagina</a></p>}
           {event.short_description && <p>{event.short_description}</p>}
           {event.description && <p>{event.description}</p>}

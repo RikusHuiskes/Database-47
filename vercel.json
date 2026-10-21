@@ -6,6 +6,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/import-eymet",
+      "schedule": "5 7 * * *"
+    },
+    {
       "path": "/api/cron/cleanup-expired-events",
       "schedule": "15 7 * * *"
     }
