@@ -113,7 +113,7 @@ function imageFromHtml(html: string, base: string, title: string): string | null
     const filename = url ? decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "") : "";
     return { url, alt: textOf(alt), filename, raw: attrs };
   }).filter((image) => image.url
-    && !/logo|map|carte|captcha|icon|placeholder/i.test(`${image.alt} ${image.raw} ${image.filename}`)
+    && !/logo|carte|captcha|icon|placeholder|(?:^|[-_])map(?:[-_.]|$)/i.test(`${image.alt} ${image.raw} ${image.filename}`)
     && !/\/images\/menu\//i.test(image.url ?? "")
     && !/photo_meubl(?:é|e)s_et_g(?:î|i)tes/i.test(image.filename));
   const normalizedTitle = slugify(title);
@@ -256,11 +256,14 @@ export function parseTourismeDurasHtml(html: string, now = new Date()): Imported
 
     const communeMatch = cardText.match(/Commune\s*:\s*(.+?)(?=\s+Date\s*:|$)/i);
     const city = communeMatch ? communeMatch[1].trim() : null;
-    const typeMatch = cardText.match(/Type de manifestation\s*:\s*(.+?)(?=\s+(?:Commune|Date|Téléphone|Tel mobile)\s*:|$)/i);
-    const sourceCategory = typeMatch ? typeMatch[1].trim() || null : null;
+    const cardLines = linesOf(card);
+    const typeIndex = cardLines.findIndex((line) => /^Type de manifestation\s*:/i.test(line));
+    const categoryInline = typeIndex >= 0 ? cardLines[typeIndex].replace(/^Type de manifestation\s*:\s*/i, "").trim() : "";
+    const sourceCategory = categoryInline || (typeIndex >= 0 ? cardLines[typeIndex + 1] ?? null : null);
     const paragraphs = [...card.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)]
       .map((match) => textOf(match[1]))
-      .filter((text) => text && text !== title && !/^(Commune|Date|Type de manifestation|Téléphone|Tel mobile|Plus d'informations)\s*:/i.test(text));
+      .filter((text) => text && text !== title && !/^Réserver en ligne$/i.test(text)
+        && !/^(Commune|Date|Type de manifestation|Téléphone|Tel mobile|Plus d'informations)\s*:/i.test(text));
     const description = paragraphs.join("\n\n").slice(0, 2000) || null;
     events.push({
       title, slug: `${slugify(title)}-${parsedDate.start_at.slice(0, 10)}`, short_description: description?.slice(0, 250) ?? null,
@@ -290,9 +293,12 @@ export function enrichTourismeDurasEvent(event: ImportedEvent, html: string): Im
     : "";
   const practicalLines = linesOf(practicalHtml);
   const descriptionLines = linesOf(descriptionHtml);
-  const descriptionIndex = descriptionLines.findIndex((line) => /^Description\s*:?\s*$/i.test(line));
+  const descriptionIndex = descriptionLines.findIndex((line) => /^Description\s*:/i.test(line));
   const detailDescription = descriptionIndex >= 0
-    ? descriptionLines.slice(descriptionIndex + 1).filter((line) => !/^Date de (?:début|fin)\s*:/i.test(line)).join("\n\n").trim()
+    ? [
+        descriptionLines[descriptionIndex].replace(/^Description\s*:\s*/i, "").trim(),
+        ...descriptionLines.slice(descriptionIndex + 1).filter((line) => !/^Date de (?:début|fin)\s*:/i.test(line)),
+      ].filter(Boolean).join("\n\n").trim()
     : "";
   const addressIndex = practicalLines.findIndex((line) => /^Adresse\s*:?\s*$/i.test(line) || /^Adresse\s*:/i.test(line));
   const addressLines: string[] = [];
@@ -332,6 +338,9 @@ export function enrichTourismeDurasEvent(event: ImportedEvent, html: string): Im
 
   return {
     ...event,
+    short_description: detailDescription
+      ? detailDescription.slice(0, 250)
+      : /^Réserver en ligne$/i.test(event.short_description ?? "") ? null : event.short_description,
     venue_name: venueName || event.venue_name,
     address: address || event.address,
     postcode: postcodeMatch?.[1] ?? event.postcode,
