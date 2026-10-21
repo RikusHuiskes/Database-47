@@ -243,15 +243,17 @@ export default function Home() {
   }
 
   async function removeExpiredEvents() {
-    if (!supabase) return;
+    if (!supabase) return null;
     const { data: deletedCount, error: cleanupError } = await supabase.rpc("delete_expired_events");
     if (cleanupError) {
       setError("Verlopen evenementen opruimen mislukt: " + cleanupError.message);
-      return;
+      return null;
     }
-    if (typeof deletedCount === "number" && deletedCount > 0) {
-      setMessage(`${deletedCount} verlopen evenement${deletedCount === 1 ? "" : "en"} automatisch verwijderd.`);
-    }
+    const count = typeof deletedCount === "number" ? deletedCount : 0;
+    setMessage(count > 0
+      ? `${count} verlopen evenement${count === 1 ? "" : "en"} automatisch verwijderd.`
+      : "Controle voltooid: geen verlopen evenementen gevonden.");
+    return count;
   }
 
   useEffect(() => {
@@ -279,16 +281,20 @@ export default function Home() {
       if (!active) return;
       if (sessionError) setError("Sessie controleren mislukt: " + sessionError.message);
       setUser(data.session?.user ? { email: data.session.user.email } : null);
+      let confirmedAdmin = false;
       if (data.session) {
         const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
-        const confirmedAdmin = !adminError && adminStatus === true;
+        confirmedAdmin = !adminError && adminStatus === true;
         if (active) setIsAdmin(confirmedAdmin);
-        if (confirmedAdmin) await removeExpiredEvents();
       } else {
         setIsAdmin(false);
       }
       setAuthLoading(false);
-      void loadData();
+      await loadData();
+      if (confirmedAdmin && active) {
+        const deletedCount = await removeExpiredEvents();
+        if (deletedCount && deletedCount > 0) await loadData();
+      }
     });
 
     return () => {
@@ -338,8 +344,11 @@ export default function Home() {
     const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
     const confirmedAdmin = !adminError && adminStatus === true;
     setIsAdmin(confirmedAdmin);
-    if (confirmedAdmin) await removeExpiredEvents();
     await loadData();
+    if (confirmedAdmin) {
+      const deletedCount = await removeExpiredEvents();
+      if (deletedCount && deletedCount > 0) await loadData();
+    }
   }
 
   async function signOut() {
