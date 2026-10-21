@@ -34,7 +34,7 @@ manual export instead of scraping.
 
 Potential local sources to evaluate next (not connected yet):
 `marie-marmande.fr`, `marie.monsegur.eu`, `eymet-dordogne.fr`, `pineuilh.fr`,
-`www.saintefoylagrande.fr`, and `bergerac.fr`.
+`www.saintefoylagrande.fr`, `bergerac.fr`, and `pays-bergerac-tourisme.com`.
 Before connecting each one, confirm how its agenda is published and what reuse or
 automated access it permits. Visitor-submitted events require an information
 source and stay pending until a manager checks them.
