@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import type { ImportedEvent } from "../lib/tourisme-duras";
+import { inferEventCategorySlug } from "../lib/import-sources";
 type Category = {
   id: string;
   name?: string;
@@ -98,25 +99,8 @@ function toLocalDateTime(value?: string | null) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function inferredCategorySlug(event: ImportedEvent): string | null {
-  const title = `${event.title} ${event.description ?? ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const kind = (event.source_category ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (/randonnee|balade|vtt|marche sportive|circuit|nature/.test(title)) return "nature-randonnee";
-  if (/marche|brocante|vide-grenier|foire/.test(title) || /manifestation commerciale/.test(kind)) return "marches-brocantes";
-  if (/concert|musique|chorale/.test(title) || /concert|musique/.test(kind)) return "concerts-musique";
-  if (/theatre|spectacle|representation/.test(title) || /theatre|spectacle/.test(kind)) return "theatre-spectacles";
-  if (/atelier|stage|cours|initiation/.test(title)) return "ateliers-cours";
-  if (/exposition|photophore|peinture|sculpture|photograph/.test(title)) return "art-expositions";
-  if (/enfant|famille|jeunesse|kid/.test(title)) return "enfants-famille";
-  if (/restaurant|repas|diner|dejeuner|choucroute|tartiflette|garbure|loto gourmand/.test(title)) return "restaurants-gastronomie";
-  if (/animation et fete locale|fetes et manifestations/.test(kind)) return "festivals-fetes";
-  if (/sports et loisirs|sport/.test(kind)) return "sport";
-  if (/culturelle|culture|musee|patrimoine/.test(kind)) return "culture-musees";
-  return null;
-}
-
 function suggestedCategoryId(event: ImportedEvent, categories: Category[]): string {
-  const slug = inferredCategorySlug(event);
+  const slug = inferEventCategorySlug(event);
   return categories.find((category) => category.slug === slug)?.id ?? "";
 }
 
@@ -150,6 +134,8 @@ export default function Home() {
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importNotice, setImportNotice] = useState("");
+  const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
+  const [savingCategoryId, setSavingCategoryId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -400,6 +386,28 @@ export default function Home() {
         : `“${event.title}” is afgewezen.`
     );
     setUpdatingEventId(null);
+  }
+
+  async function saveCategoryName(category: Category) {
+    if (!supabase || !isAdmin) return;
+    const name = (categoryNames[category.id] ?? category.name ?? "").trim();
+    if (!name) {
+      setError("Een categorienaam mag niet leeg zijn.");
+      return;
+    }
+    setSavingCategoryId(category.id);
+    setError("");
+    const { error: saveError } = await supabase.rpc("update_category_name", {
+      p_category_id: category.id,
+      p_name: name,
+    });
+    setSavingCategoryId(null);
+    if (saveError) {
+      setError("Categorienaam opslaan mislukt: " + saveError.message);
+      return;
+    }
+    setCategories((current) => current.map((item) => item.id === category.id ? { ...item, name } : item));
+    setMessage(`Categorie “${name}” opgeslagen.`);
   }
 
   function beginEdit(event: EventRow) {
@@ -775,6 +783,29 @@ setShowForm(false);
           ? `${categories.length} categorieën en ${events.length} evenementen geladen.`
           : "Supabase-instellingen ontbreken."}
       </p>
+
+      {isAdmin && (
+        <details style={{ margin: "18px 0", padding: 16, background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 700 }}>Categorieën beheren</summary>
+          <p style={{ color: "#64748b" }}>Pas alleen de zichtbare naam aan. De vaste categoriecode blijft gelijk, zodat importen en bestaande evenementkoppelingen blijven werken.</p>
+          <div style={{ display: "grid", gap: 10 }}>
+            {categories.map((category) => (
+              <div key={category.id} style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) auto", gap: 8, alignItems: "center" }}>
+                <input
+                  aria-label={`Naam van categorie ${category.name ?? category.slug ?? ""}`}
+                  style={inputStyle}
+                  value={categoryNames[category.id] ?? category.name ?? category.slug ?? ""}
+                  onChange={(event) => setCategoryNames((current) => ({ ...current, [category.id]: event.target.value }))}
+                  maxLength={80}
+                />
+                <button type="button" onClick={() => void saveCategoryName(category)} disabled={savingCategoryId === category.id}>
+                  {savingCategoryId === category.id ? "Opslaan…" : "Opslaan"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {error && (
         <p
