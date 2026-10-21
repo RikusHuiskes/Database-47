@@ -17,10 +17,12 @@ type EventRecord = {
   short_description?: string | null;
   description?: string | null;
   image_url?: string | null;
+  is_free?: boolean | null;
   website_url?: string | null;
   booking_url?: string | null;
   contact_phone?: string | null;
   source_url?: string | null;
+  category_id?: string | null;
   status?: string | null;
   verified?: boolean | null;
   latitude?: number | string | null;
@@ -103,7 +105,7 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const { data, error } = await supabase
     .from("events")
-    .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude")
+    .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude")
     .eq("status", "approved")
     .eq("verified", true)
     .order("start_at", { ascending: true })
@@ -111,7 +113,19 @@ export async function GET(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: "Evenementen konden niet worden geladen." }, { status: 502 });
 
-  const upcoming = ((data ?? []) as EventRecord[]).filter((event) => isUpcoming(event, now));
+  const rows = (data ?? []) as EventRecord[];
+  const eventIds = rows.map((event) => event.id);
+  let categoryByEvent = new Map<string, string>();
+  if (eventIds.length > 0) {
+    const { data: links } = await supabase
+      .from("event_categories")
+      .select("event_id,category_id")
+      .in("event_id", eventIds);
+    categoryByEvent = new Map((links ?? []).map((link) => [link.event_id, link.category_id]));
+  }
+
+  const upcoming = rows.map((event) => ({ ...event, category_id: categoryByEvent.get(event.id) ?? null }))
+    .filter((event) => isUpcoming(event, now));
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
   const results = await Promise.all(upcoming.map(async (event) => {

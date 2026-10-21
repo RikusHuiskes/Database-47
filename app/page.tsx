@@ -139,6 +139,9 @@ export default function Home() {
   const [selectedAreaId, setSelectedAreaId] = useState("duras");
   const [visitorLocation, setVisitorLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState(25);
+  const [eventSearch, setEventSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [freeOnly, setFreeOnly] = useState(false);
   const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
   const [nearbyLoading, setNearbyLoading] = useState(true);
   const [nearbyError, setNearbyError] = useState("");
@@ -213,6 +216,13 @@ export default function Home() {
   const searchLatitude = visitorLocation?.latitude ?? selectedArea?.latitude ?? null;
   const searchLongitude = visitorLocation?.longitude ?? selectedArea?.longitude ?? null;
   const searchLabel = visitorLocation ? "jouw locatie" : selectedArea?.name ?? "Duras";
+  const visibleNearbyEvents = nearbyEvents.filter((event) => {
+    const query = eventSearch.trim().toLocaleLowerCase("nl-NL");
+    const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
+      .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
+    const matchesCategory = categoryFilter === "all" || event.category_id === categoryFilter;
+    return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
+  });
 
   useEffect(() => {
     if (searchLatitude == null || searchLongitude == null) {
@@ -831,20 +841,22 @@ setShowForm(false);
         color: "#172033",
       }}
     >
-      <header>
-        <h1>DATABASE 47</h1>
-        <p>Activiteiten dichtbij huis — Duras en omgeving</p>
+      <header className="site-header">
+        <p style={{ marginBottom: 6, color: "#56716b", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", fontSize: 12 }}>Dichtbij Duras · Lot-et-Garonne</p>
+        <h1 style={{ margin: "0 0 8px", fontSize: 38 }}>Uit in de buurt</h1>
+        <p style={{ marginTop: 0, color: "#475569", fontSize: 18 }}>Lokale activiteiten, overzichtelijk dichtbij.</p>
+        <button type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth" }); } }} style={{ padding: "10px 14px", border: "1px solid #b7c9bb", borderRadius: 999, background: "#ffffffa8", color: "#183b38", fontSize: 14 }}>Beheerder? Inloggen</button>
       </header>
 
       <hr />
 
-      <section aria-labelledby="nearby-heading" style={{ margin: "28px 0 42px", padding: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 14 }}>
+      <section className="search-panel" aria-labelledby="nearby-heading" style={{ margin: "28px 0 42px", padding: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 14 }}>
         <h2 id="nearby-heading" style={{ marginTop: 0, fontSize: 30 }}>Wat is er te doen bij jou in de buurt?</h2>
         <p style={{ color: "#475569", lineHeight: 1.6, maxWidth: 720 }}>
           Kies een plaats en hoe ver je wilt zoeken. Je kunt ook je huidige locatie gebruiken; die wordt alleen voor deze zoekopdracht gebruikt.
         </p>
         <p style={{ color: "#334155", lineHeight: 1.6, maxWidth: 760 }}>
-          DATABASE 47 brengt activiteiten uit de dorpen en steden om je heen samen. We tonen alleen gecontroleerde evenementen en verwijzen waar mogelijk naar de organisator of oorspronkelijke bron.
+          Een vertrouwd overzicht van wat er binnenkort te doen is rond Duras, Eymet, Monségur en de omliggende dorpen. Kies zelf hoe ver je wilt reizen.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", alignItems: "end", gap: 14, maxWidth: 780 }}>
           <label style={labelStyle}>
@@ -867,19 +879,38 @@ setShowForm(false);
             Gebruik mijn locatie
           </button>
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14, marginTop: 18, maxWidth: 780 }}>
+          <label style={labelStyle}>
+            Zoek op activiteit of plaats
+            <input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt, concert, Eymet" />
+          </label>
+          <label style={labelStyle}>
+            Soort activiteit
+            <select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+              <option value="all">Alle soorten</option>
+              {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
+            </select>
+          </label>
+          <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
+            <input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />
+            Alleen gratis activiteiten
+          </label>
+        </div>
         <p role="status" aria-live="polite" style={{ color: "#475569", margin: "18px 0 12px" }}>
-          {nearbyLoading ? "Evenementen in de buurt zoeken…" : `${nearbyEvents.length} aankomende ${nearbyEvents.length === 1 ? "activiteit" : "activiteiten"} binnen ${radiusKm} km van ${searchLabel}.`}
+          {nearbyLoading ? "Evenementen in de buurt zoeken…" : `${visibleNearbyEvents.length} ${visibleNearbyEvents.length === 1 ? "activiteit" : "activiteiten"} gevonden binnen ${radiusKm} km van ${searchLabel}. Alleen gecontroleerde evenementen worden getoond.`}
         </p>
         {visitorLocation && <p style={{ color: "#64748b", marginTop: -4, fontSize: 14 }}>Zoeken rond je huidige locatie.</p>}
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
-        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p>Geen aankomende activiteiten gevonden. Probeer een grotere straal of een andere plaats.</p>}
+        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p>Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
+        {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p>Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
         {locationlessCount > 0 && <p style={{ color: "#64748b", fontSize: 14 }}>{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
         <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
-          {nearbyEvents.map((event) => (
-            <article key={event.id} style={{ display: "grid", gridTemplateColumns: event.image_url ? "minmax(120px, 220px) minmax(0, 1fr)" : "1fr", gap: 18, padding: 18, border: "1px solid #d8dee8", borderRadius: 12 }}>
+          {visibleNearbyEvents.map((event) => (
+            <article className="activity-card" key={event.id} style={{ display: "grid", gridTemplateColumns: event.image_url ? "minmax(120px, 220px) minmax(0, 1fr)" : "1fr", gap: 18, padding: 18, border: "1px solid #d8dee8", borderRadius: 12 }}>
               {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ width: "100%", maxHeight: 190, height: "100%", minHeight: 120, objectFit: "cover", borderRadius: 8 }} />}
               <div>
                 <h3 style={{ margin: "0 0 8px", fontSize: 21 }}>{event.title}</h3>
+                {event.category_id && <p style={{ margin: "0 0 8px", color: "#56716b", fontWeight: 700, fontSize: 14 }}>{categories.find((category) => category.id === event.category_id)?.name ?? "Activiteit"}</p>}
                 <p style={{ margin: "6px 0", color: "#475569" }}>{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
                 <p style={{ margin: "6px 0", color: "#475569" }}>{event.distance_is_approximate ? "Ongeveer " : ""}{event.distance_km} km · {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
                 {(event.short_description || event.description) && <p style={{ lineHeight: 1.55 }}>{event.short_description || event.description}</p>}
@@ -1124,7 +1155,7 @@ setShowForm(false);
       {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
-      <details style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
+      <details id="beheer" style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
       <h2>Beheerdersdashboard</h2>
 

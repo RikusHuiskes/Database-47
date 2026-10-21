@@ -1,0 +1,84 @@
+:root {
+  color-scheme: light;
+  --ink: #183b38;
+  --muted: #586d68;
+  --paper: #fbfaf6;
+  --line: #dfe6df;
+  --green: #1f5a4d;
+  --sun: #f2c66d;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body { background: var(--paper) !important; color: var(--ink) !important; }
+
+main {
+  max-width: 1120px !important;
+  padding: 28px clamp(16px, 4vw, 44px) 72px !important;
+}
+
+.site-header {
+  position: relative;
+  margin: 14px 0 26px;
+  padding: clamp(26px, 5vw, 54px);
+  overflow: hidden;
+  border: 1px solid #d7e2d8;
+  border-radius: 24px;
+  background: linear-gradient(115deg, #edf3e9 0%, #f8f2df 68%, #f4e4c4 100%);
+  box-shadow: 0 14px 40px #324d3b12;
+}
+
+.site-header::after {
+  position: absolute;
+  right: -38px;
+  bottom: -115px;
+  width: 290px;
+  height: 290px;
+  border: 1px solid #ffffff9c;
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px #ffffff3b, 0 0 0 58px #ffffff26;
+  content: "";
+  pointer-events: none;
+}
+
+.site-header h1 { color: #183b38; letter-spacing: -1.4px; }
+.site-header a { position: relative; z-index: 1; }
+
+.search-panel {
+  box-shadow: 0 12px 32px #183b380b;
+}
+
+.activity-card {
+  background: #fff;
+  box-shadow: 0 5px 20px #183b3808;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.activity-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px #183b3814;
+}
+
+input, select, textarea, button { font: inherit; }
+button, select, input[type="checkbox"] { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 3px solid #e3ad45;
+  outline-offset: 3px;
+}
+
+a { color: #245e78; }
+
+@media (max-width: 620px) {
+  main { padding: 14px 12px 48px !important; }
+  .site-header { margin-top: 4px; border-radius: 18px; }
+  .site-header h1 { font-size: 32px !important; }
+  .activity-card { grid-template-columns: 1fr !important; }
+  .activity-card img { min-height: 170px !important; max-height: 220px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
+}
