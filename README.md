@@ -33,7 +33,8 @@ that require login or do not permit automated access need an authorized feed or
 manual export instead of scraping.
 
 Potential local sources to evaluate next (not connected yet):
-`marie-marmande.fr`, `marie.monsegur.eu`, `eymet-dordogne.fr`, and `pineuilh.fr`.
+`marie-marmande.fr`, `marie.monsegur.eu`, `eymet-dordogne.fr`, `pineuilh.fr`,
+and `www.saintefoylagrande.fr`.
 Before connecting each one, confirm how its agenda is published and what reuse or
 automated access it permits. Visitor-submitted events require an information
 source and stay pending until a manager checks them.
