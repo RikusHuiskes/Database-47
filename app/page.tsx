@@ -743,7 +743,7 @@ setShowForm(false);
       setImportPreview(preview);
       const withPhotos = preview.filter((event) => safeHttpUrl(event.image_url)).length;
       const withCategory = preview.filter((event) => event.category_id).length;
-      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. ${withPhotos} hebben een evenementfoto uit een passende detailpagina; ${importedEvents.length - withPhotos} hebben geen foto op de beschikbare bronpagina. ${withCategory} zijn alvast in een categorie ingedeeld. Controleer de bron en pas categorieën zo nodig aan; nieuwe activiteiten komen na import op Wacht op controle.`);
+      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Dit is een voorvertoning; er is nog niets opgeslagen. ${withPhotos} hebben een evenementfoto uit een passende detailpagina; ${importedEvents.length - withPhotos} hebben geen foto op de beschikbare bronpagina. ${withCategory} hebben alvast een voorgestelde categorie. Na import kun je elk evenement controleren en de categorie wijzigen via WIJZIGEN.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
     } finally {
@@ -829,12 +829,6 @@ setShowForm(false);
     else setMessage(`${inserted} nieuwe evenementen van ${importSourceName} toegevoegd en ${enriched} wachtende imports aangevuld; ${skipped} goedgekeurde of dubbele evenementen overgeslagen. ${skippedWithoutCategory} import(s) hebben nog geen categorie en staan klaar om handmatig in te delen. Nieuwe inzendingen blijven wachten op controle.`);
     setImportPreview([]);
     setImporting(false);
-  }
-
-  function setImportCategory(sourceUrl: string, categoryId: string) {
-    setImportPreview((current) => current.map((event) =>
-      event.source_url === sourceUrl ? { ...event, category_id: categoryId } : event
-    ));
   }
 
   function formatDate(value?: string | null) {
@@ -1348,15 +1342,25 @@ setShowForm(false);
             <span className="import-preview-kicker">Importvoorvertoning</span>
             <h3>{importSourceName}</h3>
             <p role="status">{importNotice}</p>
-            <p>Nieuwe activiteiten komen na import eerst in <strong>Wacht op controle</strong>. Controleer de gegevens en kies zo nodig per activiteit een andere categorie. De oorspronkelijke bronlink blijft bewaard.</p>
+            <p>Nieuwe activiteiten komen na import eerst in <strong>Wacht op controle</strong>. De bronlink blijft bewaard. Na import pas je per evenement de categorie aan met <strong>WIJZIGEN</strong>.</p>
           </div>
           {categories.length === 0 && <p role="alert" style={{ color: "#9f1239" }}>Er zijn geen categorieën geladen. Importeer nog niet; de categorieën moeten eerst in deze database beschikbaar zijn.</p>}
+          {importPreview.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void importTourismeDuras()}
+              disabled={importing || !isAdmin || categories.length === 0}
+              style={{ marginBottom: 14, padding: "12px 18px", border: 0, borderRadius: 8, background: importing ? "#94a3b8" : "#16734b", color: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
+            >
+              {importing ? "Importeren..." : `Importeer ${importPreview.length} activiteiten naar Wacht op controle`}
+            </button>
+          )}
           <div className="import-preview-list">
             {importPreview.map((event) => (
               <article className="import-event-card" key={event.source_url}>
                 {safeHttpUrl(event.image_url) ? <img className="import-event-image" src={safeHttpUrl(event.image_url)!} alt={`Foto bij ${event.title}`} loading="lazy" /> : <div className="import-event-image import-event-image-placeholder" aria-label="Geen evenementfoto op de beschikbare bronpagina"><span>Foto niet gevonden</span></div>}
                 <div className="import-event-content">
-                  <div className="import-event-topline"><span className="import-status-pill">Wacht op controle na import</span>{event.source_category && <span className="import-source-category">{event.source_category}</span>}</div>
+                  <div className="import-event-topline"><span className="import-status-pill">Voorbeeld — nog niet opgeslagen</span>{event.source_category && <span className="import-source-category">{event.source_category}</span>}</div>
                   <h4>{event.title}</h4>
                   <p className="import-event-date">{formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}</p>
                   <p className="import-event-place">{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city || "Adres niet op de bronpagina gevonden"}</p>
@@ -1366,33 +1370,12 @@ setShowForm(false);
                     {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</a>}
                     {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
                   </div>
-                  <label className="import-category-control">
-                    <span>Categorie controleren</span>
-                    <select
-                      value={event.category_id}
-                      onChange={(e) => setImportCategory(event.source_url, e.target.value)}
-                      disabled={categories.length === 0 || importing}
-                      style={inputStyle}
-                    >
-                      <option value="">Kies een categorie</option>
-                      {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? category.id}</option>)}
-                    </select>
-                  </label>
+                  <p className="import-category-suggestion"><strong>Voorgestelde categorie:</strong> {categories.find((category) => category.id === event.category_id)?.name ?? "Nog te bepalen"}. Je kunt deze na import wijzigen via WIJZIGEN.</p>
                   <a className="import-source-link" href={event.source_url} target="_blank" rel="noreferrer">Oorspronkelijke bron bekijken ↗ <span>{sourceLabel(event.source_url)}</span></a>
                 </div>
               </article>
             ))}
           </div>
-          {importPreview.length > 0 && (
-            <button
-              type="button"
-              onClick={() => void importTourismeDuras()}
-              disabled={importing || !isAdmin || categories.length === 0}
-              style={{ padding: "12px 18px", border: 0, borderRadius: 8, background: importing ? "#94a3b8" : "#16734b", color: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
-            >
-              {importing ? "Importeren..." : "Wachtende imports aanvullen en nieuwe evenementen importeren"}
-            </button>
-          )}
         </section>
       )}
 
