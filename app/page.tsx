@@ -778,7 +778,9 @@ setShowForm(false);
         category_id: suggestedCategoryId(event, categories),
       }));
       setImportPreview(preview);
-      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Controleer de bron en gegevens; nieuwe activiteiten worden pas na import in de wachtrij voor controle gezet.`);
+      const withPhotos = preview.filter((event) => safeHttpUrl(event.image_url)).length;
+      const withCategory = preview.filter((event) => event.category_id).length;
+      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. ${withPhotos} hebben een evenementfoto uit een passende detailpagina; ${importedEvents.length - withPhotos} hebben geen foto op de beschikbare bronpagina. ${withCategory} zijn alvast in een categorie ingedeeld. Controleer de bron en pas categorieën zo nodig aan; nieuwe activiteiten komen na import op Wacht op controle.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
     } finally {
@@ -819,8 +821,28 @@ setShowForm(false);
     let skippedWithoutCategory = 0;
     let failedTitle = "";
     let failureMessage = "";
+    const isEymetImport = /eymet/i.test(importSourceName);
     for (const event of importPreview) {
       const titleDateKey = `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`;
+      if (isEymetImport) {
+        const { category_id, ...eventPayload } = event;
+        const { data: syncResult, error: syncError } = await supabase.rpc("sync_eymet_pending_event", {
+          p_event: eventPayload,
+          p_category_id: category_id || null,
+        });
+        if (syncError) {
+          failedTitle = event.title;
+          failureMessage = `Opslaan van “${event.title}” in Wacht op controle is mislukt: ${syncError.message}. ${inserted} nieuwe Eymet-activiteiten zijn toegevoegd; ${enriched} wachtende zijn bijgewerkt. Controleer of de Eymet-databasestap actief is.`;
+          break;
+        }
+        if (syncResult === "inserted") inserted += 1;
+        else if (syncResult === "enriched") enriched += 1;
+        else skipped += 1;
+        knownSourceUrls.add(event.source_url);
+        knownTitleDates.add(titleDateKey);
+        if (!category_id) skippedWithoutCategory += 1;
+        continue;
+      }
       const existing = (existingResult.data ?? []).find((row) => row.source_url === event.source_url);
       if (existing) {
         if (existing.status === "pending" && existing.verified === false) {
@@ -1412,7 +1434,7 @@ setShowForm(false);
           <div className="import-preview-list">
             {importPreview.map((event) => (
               <article className="import-event-card" key={event.source_url}>
-                {safeHttpUrl(event.image_url) ? <img className="import-event-image" src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <div className="import-event-image import-event-image-placeholder" aria-hidden="true"><span>Activiteit</span></div>}
+                {safeHttpUrl(event.image_url) ? <img className="import-event-image" src={safeHttpUrl(event.image_url)!} alt={`Foto bij ${event.title}`} loading="lazy" /> : <div className="import-event-image import-event-image-placeholder" aria-label="Geen evenementfoto op de beschikbare bronpagina"><span>Foto niet gevonden</span></div>}
                 <div className="import-event-content">
                   <div className="import-event-topline"><span className="import-status-pill">Wacht op controle na import</span>{event.source_category && <span className="import-source-category">{event.source_category}</span>}</div>
                   <h4>{event.title}</h4>
@@ -1421,7 +1443,7 @@ setShowForm(false);
                   {(event.short_description || event.description) && <p className="import-event-description">{event.short_description || event.description}</p>}
                   <div className="import-event-meta">
                     {event.contact_phone && <span>Tel. {event.contact_phone}</span>}
-                    {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website organisator</a>}
+                    {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</a>}
                     {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
                   </div>
                   <label className="import-category-control">

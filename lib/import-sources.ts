@@ -42,16 +42,17 @@ export function inferEventCategorySlug(event: ImportedEvent): string | null {
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const title = normalize(`${event.title} ${event.description ?? ""}`);
   const kind = normalize(event.source_category ?? "");
-  if (/randonnee|balade|vtt|marche sportive|circuit|nature/.test(title)) return "nature-randonnee";
+  if (/randonnee|balade|vtt|marche sportive|circuit|nature|biodiversite|jardin|paysage/.test(title) || /loisir nature/.test(kind)) return "nature-randonnee";
   if (/marche|brocante|vide-grenier|foire/.test(title) || /manifestation commerciale/.test(kind)) return "marches-brocantes";
-  if (/concert|musique|chorale/.test(title) || /concert|musique/.test(kind)) return "concerts-musique";
-  if (/theatre|spectacle|representation/.test(title) || /theatre|spectacle/.test(kind)) return "theatre-spectacles";
+  if (/concert|musique|chorale|jazz|opera|recital/.test(title) || /concert|musique/.test(kind)) return "concerts-musique";
+  if (/theatre|spectacle|representation|cabaret|danse|cirque/.test(title) || /theatre|spectacle/.test(kind)) return "theatre-spectacles";
   if (/atelier|stage|cours|initiation/.test(title)) return "ateliers-cours";
-  if (/exposition|photophore|peinture|sculpture|photograph/.test(title)) return "art-expositions";
+  if (/exposition|photophore|peinture|sculpture|photograph|vernissage/.test(title)) return "art-expositions";
   if (/enfant|famille|jeunesse|kid/.test(title)) return "enfants-famille";
   if (/restaurant|repas|diner|dejeuner|choucroute|tartiflette|garbure|loto gourmand/.test(title)) return "restaurants-gastronomie";
-  if (/animation et fete locale|fetes et manifestations/.test(kind)) return "festivals-fetes";
-  if (/sports et loisirs|sport/.test(kind)) return "sport";
-  if (/culturelle|culture|musee|patrimoine/.test(kind)) return "culture-musees";
+  if (/fete|festival|carnaval|reveillon|fête/.test(title) || /animation et fete locale|fetes et manifestations/.test(kind)) return "festivals-fetes";
+  if (/sports et loisirs|sport|competition|tournoi/.test(kind) || /course|match|competition|tournoi/.test(title)) return "sport";
+  if (/culturelle|culture|musee|patrimoine|conference|colloque|debat|cinema|film/.test(kind)
+    || /musee|patrimoine|conference|colloque|debat|cinema|film|histoire/.test(title)) return "culture-musees";
   return null;
 }

@@ -1,4 +1,5 @@
 import { enrichTourismeDurasEvent, parseTourismeDurasHtml } from "./tourisme-duras";
+import { enrichImportedEventFromDetail } from "./import-event-enrichment";
 
 export const TOURISME_DURAS_AGENDA_URL = "https://www.tourismeduras.com/s-eclater-rencontrer/agenda-des-sorties";
 
@@ -32,7 +33,14 @@ async function enrichDetails(events: ReturnType<typeof parseTourismeDurasHtml>) 
           signal: AbortSignal.timeout(7_000),
           cache: "no-store",
         });
-        if (response.ok) enriched[index] = enrichTourismeDurasEvent(event, await response.text());
+        if (response.ok) {
+          const detailHtml = await response.text();
+          enriched[index] = enrichImportedEventFromDetail(
+            enrichTourismeDurasEvent(event, detailHtml),
+            detailHtml,
+            event.source_url,
+          );
+        }
       } catch {
         // Keep listing data if an individual detail page is temporarily unavailable.
       }

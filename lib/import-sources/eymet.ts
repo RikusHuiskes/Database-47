@@ -1,4 +1,5 @@
 import type { ImportedEvent } from "../tourisme-duras";
+import { enrichImportedEventFromDetail, fetchEventDetailHtml } from "../import-event-enrichment";
 
 // PDF.js 5 creates a DOMMatrix at module load time, even when only extracting
 // text. Vercel's Node runtime has no browser DOMMatrix, so provide the affine
@@ -48,6 +49,7 @@ async function loadPdfJs() {
 
 export const EYMET_AGENDA_URL = "https://www.eymet-dordogne.fr/fr/rb/304280/lespace-culturel";
 export const EYMET_SOURCE_NAME = "Commune d’Eymet — agenda culturel officiel";
+const EYMET_ENRICHMENT_URL = "https://www.pays-bergerac-tourisme.com/fr/agenda/calendrier-des-animations/programmation-espace-culturel-leden-eymet";
 const MONTHS: Record<string, number> = {
   janvier: 1, février: 2, fevrier: 2, mars: 3, avril: 4, mai: 5, juin: 6,
   juillet: 7, août: 8, aout: 8, septembre: 9, octobre: 10, novembre: 11, décembre: 12, decembre: 12,
@@ -152,6 +154,62 @@ function slug(value: string) {
   return normalize(value).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+type DetailCandidate = { url: string; labels: string[] };
+
+function eymetDetailCandidates(html: string): DetailCandidate[] {
+  const found = new Map<string, string[]>();
+  for (const match of html.matchAll(/<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)) {
+    let url: URL;
+    try { url = new URL(match[2].replace(/&amp;/g, "&"), EYMET_ENRICHMENT_URL); } catch { continue; }
+    if (url.protocol !== "https:" || url.hostname !== "www.pays-bergerac-tourisme.com" || !/^\/fr\/diffusio\/eymet\//.test(url.pathname)) continue;
+    const labels = found.get(url.toString()) ?? [];
+    const label = match[4].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    if (label && !/^voir détail$/i.test(label)) labels.push(label);
+    found.set(url.toString(), labels);
+  }
+  return [...found].map(([url, labels]) => ({ url, labels }));
+}
+
+const MATCH_STOP_WORDS = new Set(["les", "des", "une", "pour", "dans", "avec", "aux", "sur", "par", "journee", "journees", "evenement", "eymet"]);
+function titleTokens(value: string) {
+  return normalize(value).split(/[^a-z0-9]+/).filter((word) => word.length > 2 && !MATCH_STOP_WORDS.has(word));
+}
+
+function detailMatchScore(title: string, candidate: DetailCandidate): number {
+  let pathTitle = "";
+  try { pathTitle = new URL(candidate.url).pathname.split("/").pop()?.replace(/_TFO.*$/i, "").replace(/-+/g, " ") ?? ""; } catch { /* Invalid URL cannot match. */ }
+  const wanted = new Set(titleTokens(title));
+  if (!wanted.size) return 0;
+  const variants = [...candidate.labels, pathTitle].map((label) => new Set(titleTokens(label)));
+  const best = Math.max(...variants.map((tokens) => {
+    const overlap = [...wanted].filter((token) => tokens.has(token)).length;
+    return overlap / Math.max(wanted.size, tokens.size);
+  }));
+  return best;
+}
+
+async function enrichEymetEvents(events: ImportedEvent[], candidates: DetailCandidate[]): Promise<ImportedEvent[]> {
+  const enriched = [...events];
+  let next = 0;
+  const worker = async () => {
+    while (next < events.length) {
+      const index = next++;
+      const event = events[index];
+      const ranked = candidates
+        .map((candidate) => ({ candidate, score: detailMatchScore(event.title, candidate) }))
+        .sort((a, b) => b.score - a.score);
+      const best = ranked[0];
+      // Only use an individually matching event page. A generic or weak match
+      // could attach another event's photo, so unmatched items stay explicit.
+      if (!best || best.score < 0.68 || (ranked[1] && best.score - ranked[1].score < 0.08)) continue;
+      const html = await fetchEventDetailHtml(best.candidate.url, ["www.pays-bergerac-tourisme.com"]);
+      if (html) enriched[index] = enrichImportedEventFromDetail(event, html, best.candidate.url);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(6, events.length) }, () => worker()));
+  return enriched;
+}
+
 function duplicateKey(value: string) {
   // The PDF index and detailed calendar sometimes spell the same show with
   // slightly different apostrophes or pluralization.
@@ -230,9 +288,11 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
       if (["saison-culturelle", "culturelle", "programmé-par-la-ville", "programme", "informations"].includes(normalizedTitle)) continue;
       if (!isUpcoming(date, now)) continue;
 
-      // Link to the original official agenda PDF so each imported item has
-      // verifiable provenance; the municipal landing page remains website_url.
-      const sourceUrl = pdfUrl;
+      // Keep the municipality's official cultural programme as the original
+      // citation. A unique fragment lets each separate programme item be
+      // tracked and updated independently; third-party event pages are only
+      // supplementary detail/photo sources and never replace this citation.
+      const sourceUrl = `${EYMET_AGENDA_URL}#agenda-${slug(title)}-${date.start.slice(0, 10)}`;
       const key = `${duplicateKey(title)}:${date.start.slice(0, 10)}`;
       if (byDate.has(key)) continue;
       sequence += 1;
@@ -240,7 +300,7 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
         title,
         slug: `${normalizedTitle}-${date.start.slice(0, 10)}-${sequence}`,
         short_description: null,
-        description: `Evenement vermeld in de officiële agenda van de gemeente Eymet. Controleer de bron voor de exacte aanvangstijd, locatie en actuele informatie.`,
+        description: `Activiteit uit het officiële culturele programma van de gemeente Eymet. Controleer de bron voor de actuele praktische informatie.`,
         start_at: date.start,
         end_at: date.end,
         venue_name: "Locatie in Eymet — controleren bij de bron",
@@ -250,7 +310,7 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
         price_from: null,
         price_to: null,
         is_free: false,
-        website_url: EYMET_AGENDA_URL,
+        website_url: null,
         booking_url: null,
         contact_phone: "+33 5 53 22 22 10",
         image_url: null,
@@ -266,5 +326,16 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
   }
   await pdf.destroy();
   if (!byDate.size) throw new Error("Er zijn geen toekomstige evenementen uit de officiële Eymet-agenda herkend. Er is niets geïmporteerd om onjuiste invoer te voorkomen.");
-  return [...byDate.values()].sort((a, b) => a.start_at.localeCompare(b.start_at));
+  const listedEvents = [...byDate.values()].sort((a, b) => a.start_at.localeCompare(b.start_at));
+  // The municipal PDF stays the original source. The regional tourism agenda
+  // is consulted only for an exact event detail page, photo and practical data.
+  // If the publisher has no matching event page/photo, the preview marks that
+  // item as missing a photo rather than borrowing an unrelated image.
+  const enrichmentResponse = await fetch(EYMET_ENRICHMENT_URL, {
+    cache: "no-store", headers: { accept: "text/html" }, signal: AbortSignal.timeout(12_000),
+  }).catch(() => null);
+  if (!enrichmentResponse?.ok) return listedEvents;
+  const enrichmentHtml = await enrichmentResponse.text();
+  if (!enrichmentHtml || enrichmentHtml.length > 8_000_000) return listedEvents;
+  return enrichEymetEvents(listedEvents, eymetDetailCandidates(enrichmentHtml));
 }
