@@ -144,11 +144,18 @@ function looksLikeTitle(value: string) {
     && !/^[a-zà-ÿ]/u.test(title)
     && !/[.!?;:]$/.test(title)
     && !/(?:@|https?:\/\/|www\.)/i.test(title)
-    && !/^(?:programmé|residence|duree|plein|reduit|tout public|a partir|samedi|dimanche|vendredi|octobre|novembre|decembre|janvier|fevrier|mars|avril|mai|juin|juillet|septembre|202\d|facebook|contact|tel\b|telephone|a l evenement|revisites par|sublimer chaque|des spectacles|www\.)/i.test(normalized);
+    && !/^(?:programmé|residence|duree|plein|reduit|tout public|a partir|samedi|dimanche|vendredi|octobre|novembre|decembre|janvier|fevrier|mars|avril|mai|juin|juillet|septembre|202\d|facebook|contact|tel\b|telephone|a l evenement|revisites par|sublimer chaque|des spectacles|creee en|l association|association|www\.)/i.test(normalized)
+    && !/\b(?:proposant|seront au rendez|vous faire vivre|organise|organisent|retrouver les|contactez|renseignements)\b/i.test(normalized);
 }
 
 function slug(value: string) {
   return normalize(value).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function duplicateKey(value: string) {
+  // The PDF index and detailed calendar sometimes spell the same show with
+  // slightly different apostrophes or pluralization.
+  return normalize(value).replace(/[^a-z0-9]/g, "").replace(/s/g, "");
 }
 
 async function officialPdfUrl(): Promise<string> {
@@ -226,7 +233,7 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
       // Link to the original official agenda PDF so each imported item has
       // verifiable provenance; the municipal landing page remains website_url.
       const sourceUrl = pdfUrl;
-      const key = `${normalizedTitle}:${date.start.slice(0, 10)}`;
+      const key = `${duplicateKey(title)}:${date.start.slice(0, 10)}`;
       if (byDate.has(key)) continue;
       sequence += 1;
       byDate.set(key, {
