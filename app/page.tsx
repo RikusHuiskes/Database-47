@@ -166,6 +166,8 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editError, setEditError] = useState("");
+  const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
   const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -555,6 +557,8 @@ export default function Home() {
   function beginEdit(event: EventRow) {
     setError("");
     setMessage("");
+    setEditError("");
+    setSavedEventId(null);
     setEditingEventId(event.id);
     setEditDraft({
       category_id: event.category_id ?? "",
@@ -614,38 +618,39 @@ export default function Home() {
     e.preventDefault();
     setError("");
     setMessage("");
+    setEditError("");
 
     if (!supabase || !editDraft) {
-      setError("Geen Supabase-verbinding.");
+      setEditError("Geen databaseverbinding. Vernieuw de pagina en probeer opnieuw.");
       return;
     }
     if (!editDraft.title.trim() || !editDraft.start_at) {
-      setError("Vul minimaal de titel en startdatum in.");
+      setEditError("Vul minimaal de titel en startdatum in.");
       return;
     }
 
     setUpdatingEventId(event.id);
-    const payload = {
-      title: editDraft.title.trim(),
-      slug: makeSlug(editDraft.title),
-      short_description: editDraft.short_description.trim() || null,
-      description: editDraft.description.trim() || null,
-      start_at: new Date(editDraft.start_at).toISOString(),
-      end_at: editDraft.end_at ? new Date(editDraft.end_at).toISOString() : null,
-      venue_name: editDraft.venue_name.trim() || null,
-      address: editDraft.address.trim() || null,
-      postcode: editDraft.postcode.trim() || null,
-      city: editDraft.city.trim() || null,
-      price_from: editDraft.is_free || !editDraft.price_from ? null : Number(editDraft.price_from),
-      price_to: editDraft.is_free || !editDraft.price_to ? null : Number(editDraft.price_to),
-      is_free: editDraft.is_free,
-      website_url: editDraft.website_url.trim() || null,
-      booking_url: editDraft.booking_url.trim() || null,
-      source_url: editDraft.source_url.trim() || null,
-    };
-
     let eventSaved = false;
     try {
+      // Keep the importer’s stable, source-specific slug when editing an event.
+      // Rebuilding it from the title can collide with another imported occurrence.
+      const payload = {
+        title: editDraft.title.trim(),
+        short_description: editDraft.short_description.trim() || null,
+        description: editDraft.description.trim() || null,
+        start_at: new Date(editDraft.start_at).toISOString(),
+        end_at: editDraft.end_at ? new Date(editDraft.end_at).toISOString() : null,
+        venue_name: editDraft.venue_name.trim() || null,
+        address: editDraft.address.trim() || null,
+        postcode: editDraft.postcode.trim() || null,
+        city: editDraft.city.trim() || null,
+        price_from: editDraft.is_free || !editDraft.price_from ? null : Number(editDraft.price_from),
+        price_to: editDraft.is_free || !editDraft.price_to ? null : Number(editDraft.price_to),
+        is_free: editDraft.is_free,
+        website_url: editDraft.website_url.trim() || null,
+        booking_url: editDraft.booking_url.trim() || null,
+        source_url: editDraft.source_url.trim() || null,
+      };
       const { data, error: updateError } = await supabase
         .from("events")
         .update(payload)
@@ -654,11 +659,11 @@ export default function Home() {
         .maybeSingle();
 
       if (updateError) {
-        setError("Opslaan mislukt: " + updateError.message);
+        setEditError("Opslaan mislukt: " + updateError.message);
         return;
       }
       if (!data) {
-        setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
+        setEditError("De database heeft geen opgeslagen wijziging bevestigd. Controleer of je als beheerder bent ingelogd en probeer opnieuw.");
         return;
       }
       eventSaved = true;
@@ -666,7 +671,7 @@ export default function Home() {
       if (editDraft.category_id !== (event.category_id ?? "")) {
         const categoryError = await persistEventCategory(event.id, editDraft.category_id, event.category_id ?? null);
         if (categoryError) {
-          setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError}`);
+          setEditError(`De overige wijzigingen zijn opgeslagen, maar de categorie is niet aangepast: ${categoryError}`);
           await loadData();
           return;
         }
@@ -674,14 +679,15 @@ export default function Home() {
 
       setEditingEventId(null);
       setEditDraft(null);
-      setMessage(`“${payload.title}” is bijgewerkt.`);
+      setSavedEventId(event.id);
+      setMessage(`“${payload.title}” is opgeslagen. Het bewerkingsvenster is gesloten.`);
       try {
         await loadData();
       } catch {
-        setError("De wijziging is opgeslagen, maar de lijst kon niet worden vernieuwd. Klik op Vernieuwen.");
+        setMessage("De wijziging is opgeslagen en het bewerkingsvenster is gesloten. Klik op Vernieuwen om de lijst bij te werken.");
       }
     } catch (cause) {
-      setError(eventSaved
+      setEditError(eventSaved
         ? "De wijziging is opgeslagen, maar er ging iets mis bij het bijwerken van de pagina. Klik op Vernieuwen."
         : `Opslaan is niet gelukt door een verbindingsprobleem: ${cause instanceof Error ? cause.message : "probeer het opnieuw."}`);
     } finally {
@@ -1470,6 +1476,11 @@ setShowForm(false);
           }}
         >
           <h3>{event.title}</h3>
+          {savedEventId === event.id && editingEventId !== event.id && (
+            <p role="status" aria-live="polite" style={{ padding: 10, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>
+              Wijzigingen opgeslagen. Het bewerkingsvenster is gesloten.
+            </p>
+          )}
           {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 8, marginBottom: 12 }} />}
           <p><strong>Categorie:</strong> {event.category_name ?? "Nog niet ingedeeld"}</p>
           <p>{formatDate(event.start_at)}</p>
@@ -1718,6 +1729,12 @@ setShowForm(false);
                 />
               </label>
 
+              {editError && (
+                <p role="alert" aria-live="assertive" style={{ margin: 0, padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8, overflowWrap: "anywhere" }}>
+                  {editError}
+                </p>
+              )}
+
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 <button
                   type="submit"
@@ -1739,6 +1756,7 @@ setShowForm(false);
                   onClick={() => {
                     setEditingEventId(null);
                     setEditDraft(null);
+                    setEditError("");
                     setError("");
                   }}
                   style={{
