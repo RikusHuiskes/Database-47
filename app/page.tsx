@@ -588,53 +588,27 @@ export default function Home() {
 
   async function persistEventCategory(eventId: string, categoryId: string) {
     if (!supabase) return "Geen Supabase-verbinding.";
-    const categoryRpcArgs = {
-      p_event_id: eventId,
-      p_category_id: categoryId || null,
-    };
-    const { error: rpcError } = await supabase.rpc("set_event_category", categoryRpcArgs);
-    if (!rpcError) return null;
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) return `Beheerdersessie controleren mislukt: ${sessionError.message}`;
+    if (!session?.access_token) return "Je beheerdersessie is verlopen. Log opnieuw in.";
 
-    const missingRpc = rpcError.code === "PGRST202" || /schema cache|could not find the function/i.test(rpcError.message);
-    if (!missingRpc) return rpcError.message;
-
-    // Older database versions used the same two named parameters in reverse
-    // order. Try that signature once for Preview/Production compatibility.
-    const { error: legacyRpcError } = await supabase.rpc("set_event_category", {
-      p_category_id: categoryId || null,
-      p_event_id: eventId,
-    });
-    if (!legacyRpcError) return null;
-    if (legacyRpcError.code !== "PGRST202" && !/schema cache|could not find the function/i.test(legacyRpcError.message)) {
-      return legacyRpcError.message;
+    let response: Response;
+    try {
+      response = await fetch("/api/admin/event-category", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ eventId, categoryId: categoryId || null }),
+      });
+    } catch {
+      return "Categorie opslaan mislukt: geen verbinding met de beheerservice.";
     }
 
-    // The RPC can be missing from a stale PostgREST schema cache on Preview.
-    // Keep category edits working through the table API, guarded by an
-    // admin-only RLS policy installed alongside this application.
-    if (categoryId) {
-      const { error: insertError } = await supabase
-        .from("event_categories")
-        .upsert(
-          { event_id: eventId, category_id: categoryId },
-          { onConflict: "event_id,category_id", ignoreDuplicates: true }
-        );
-      if (insertError) return `Categorie opslaan mislukt: ${insertError.message}`;
-
-      const { error: cleanupError } = await supabase
-        .from("event_categories")
-        .delete()
-        .eq("event_id", eventId)
-        .neq("category_id", categoryId);
-      if (cleanupError) return `Categorie opslaan mislukt: ${cleanupError.message}`;
-      return null;
-    }
-
-    const { error: clearError } = await supabase
-      .from("event_categories")
-      .delete()
-      .eq("event_id", eventId);
-    return clearError ? `Categorie verwijderen mislukt: ${clearError.message}` : null;
+    const result = await response.json().catch(() => null) as { error?: string } | null;
+    if (!response.ok) return result?.error ?? `Categorie opslaan mislukt (HTTP ${response.status}).`;
+    return null;
   }
 
   async function saveEventEdits(
