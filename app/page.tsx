@@ -166,6 +166,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [updatingEventId, setUpdatingEventId] = useState<string | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
   const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState("");
@@ -1251,11 +1252,7 @@ setShowForm(false);
           ["Categorieën", categories.length],
           [
             "Wacht op controle",
-           events.filter(
-  (event) =>
-    event.status?.toLowerCase() === "pending" &&
-    event.verified === false
-).length,
+            events.filter((event) => event.status?.toLowerCase() === "pending").length,
           ],
         ].map(([label, count]) => (
           <div
@@ -1426,13 +1423,41 @@ setShowForm(false);
 
       <h2>Evenementen beheren</h2>
 
+      {(() => {
+        const pendingEvents = events.filter((event) => event.status?.toLowerCase() === "pending");
+        const adminVisibleEvents = adminEventFilter === "pending" ? pendingEvents : events;
+        return <>
+          <div role="group" aria-label="Filter evenementen" style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "12px 0 18px" }}>
+            <button
+              type="button"
+              aria-pressed={adminEventFilter === "pending"}
+              onClick={() => setAdminEventFilter("pending")}
+              style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: adminEventFilter === "pending" ? "#173f5f" : "white", color: adminEventFilter === "pending" ? "white" : "#172033", cursor: "pointer", fontWeight: 700 }}
+            >
+              Wacht op controle ({pendingEvents.length})
+            </button>
+            <button
+              type="button"
+              aria-pressed={adminEventFilter === "all"}
+              onClick={() => setAdminEventFilter("all")}
+              style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: adminEventFilter === "all" ? "#173f5f" : "white", color: adminEventFilter === "all" ? "white" : "#172033", cursor: "pointer", fontWeight: 700 }}
+            >
+              Alle evenementen ({events.length})
+            </button>
+          </div>
+          {!loading && adminVisibleEvents.length === 0 && (
+            <p role="status" style={{ padding: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, color: "#166534" }}>
+              {adminEventFilter === "pending" ? "Er staan geen evenementen op Wacht op controle." : "Er zijn nog geen evenementen opgeslagen."}
+            </p>
+          )}
+
       {loading && <p>Gegevens laden...</p>}
 
       {!loading && events.length === 0 && (
         <p>Er zijn nog geen evenementen opgeslagen.</p>
       )}
 
-      {events.map((event) => (
+      {adminVisibleEvents.map((event) => (
         <article
           key={event.id}
           style={{
@@ -1732,6 +1757,8 @@ setShowForm(false);
         </article>
 
       ))}
+        </>;
+      })()}
       </>}
       </details>
     </main>
