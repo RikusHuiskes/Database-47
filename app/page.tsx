@@ -180,9 +180,6 @@ export default function Home() {
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importNotice, setImportNotice] = useState("");
   const [importSourceName, setImportSourceName] = useState("");
-  const [eventCategoryDrafts, setEventCategoryDrafts] = useState<Record<string, string>>({});
-  const [savingEventCategoryId, setSavingEventCategoryId] = useState<string | null>(null);
-  const [changingCategoryEventId, setChangingCategoryEventId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -519,6 +516,41 @@ export default function Home() {
     setUpdatingEventId(null);
   }
 
+  async function deleteEvent(event: EventRow) {
+    if (!supabase || !isAdmin) {
+      setError("Log in als beheerder om een evenement te verwijderen.");
+      return;
+    }
+    if (!window.confirm(`Weet je zeker dat je “${event.title}” definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
+
+    setError("");
+    setMessage("");
+    setUpdatingEventId(event.id);
+    const { data, error: deleteError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", event.id)
+      .select("id")
+      .maybeSingle();
+    setUpdatingEventId(null);
+
+    if (deleteError) {
+      setError(`Verwijderen van “${event.title}” is mislukt: ${deleteError.message}`);
+      return;
+    }
+    if (!data) {
+      setError(`“${event.title}” is niet verwijderd. Controleer of je als beheerder bent ingelogd.`);
+      return;
+    }
+
+    setEvents((current) => current.filter((item) => item.id !== event.id));
+    if (editingEventId === event.id) {
+      setEditingEventId(null);
+      setEditDraft(null);
+    }
+    setMessage(`“${event.title}” is verwijderd.`);
+  }
+
   function beginEdit(event: EventRow) {
     setError("");
     setMessage("");
@@ -543,45 +575,35 @@ export default function Home() {
     });
   }
 
-  async function saveEventCategory(event: EventRow) {
-    if (!supabase) {
-      setError("Geen databaseverbinding. Probeer opnieuw nadat de pagina is vernieuwd.");
-      return;
-    }
-    if (!isAdmin) {
-      setError("Log in als beheerder om de categorie te wijzigen.");
-      return;
-    }
-    const categoryId = eventCategoryDrafts[event.id] ?? event.category_id ?? "";
-    setError("");
-    setMessage("");
-    setSavingEventCategoryId(event.id);
-    const { error: saveError } = await supabase.rpc("set_event_category", {
-      p_event_id: event.id,
-      p_category_id: categoryId || null,
-    });
-    setSavingEventCategoryId(null);
-    if (saveError) {
-      setError(`Categorie voor “${event.title}” opslaan mislukt: ${saveError.message}`);
-      return;
-    }
-    const categoryName = categories.find((category) => category.id === categoryId)?.name ?? "Geen categorie";
-    setEvents((current) => current.map((item) => item.id === event.id
-      ? { ...item, category_id: categoryId || null, category_name: categoryId ? categoryName : null }
-      : item));
-    setEventCategoryDrafts((current) => {
-      const next = { ...current };
-      delete next[event.id];
-      return next;
-    });
-    setChangingCategoryEventId(null);
-    setMessage(`Categorie voor “${event.title}” gewijzigd naar ${categoryName}.`);
-  }
-
   function updateEditDraft(field: keyof EventEditDraft, value: string | boolean) {
     setEditDraft((current) =>
       current ? ({ ...current, [field]: value } as EventEditDraft) : current
     );
+  }
+
+  async function persistEventCategory(eventId: string, categoryId: string, previousCategoryId: string | null) {
+    if (!supabase) return "Geen Supabase-verbinding.";
+    const { error: rpcError } = await supabase.rpc("set_event_category", {
+      p_event_id: eventId,
+      p_category_id: categoryId || null,
+    });
+    if (!rpcError) return null;
+
+    const missingRpc = rpcError.code === "PGRST202" || /schema cache|could not find the function/i.test(rpcError.message);
+    if (!missingRpc) return rpcError.message;
+
+    const { error: clearError } = await supabase.from("event_categories").delete().eq("event_id", eventId);
+    if (clearError) return `${rpcError.message}; categorie rechtstreeks aanpassen is ook niet toegestaan: ${clearError.message}`;
+    if (categoryId) {
+      const { error: insertError } = await supabase.from("event_categories").insert({ event_id: eventId, category_id: categoryId });
+      if (insertError) {
+        if (previousCategoryId) {
+          await supabase.from("event_categories").insert({ event_id: eventId, category_id: previousCategoryId });
+        }
+        return `${rpcError.message}; categorie rechtstreeks aanpassen is ook niet toegestaan: ${insertError.message}`;
+      }
+    }
+    return null;
   }
 
   async function saveEventEdits(
@@ -640,12 +662,9 @@ export default function Home() {
     }
 
     if (editDraft.category_id !== (event.category_id ?? "")) {
-      const { error: categoryError } = await supabase.rpc("set_event_category", {
-        p_event_id: event.id,
-        p_category_id: editDraft.category_id || null,
-      });
+      const categoryError = await persistEventCategory(event.id, editDraft.category_id, event.category_id ?? null);
       if (categoryError) {
-        setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError.message}`);
+        setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError}`);
         setUpdatingEventId(null);
         await loadData();
         return;
@@ -758,7 +777,7 @@ setShowForm(false);
       setImportPreview(preview);
       const withPhotos = preview.filter((event) => safeHttpUrl(event.image_url)).length;
       const withCategory = preview.filter((event) => event.category_id).length;
-      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Dit is een voorvertoning; er is nog niets opgeslagen. ${withPhotos} hebben een evenementfoto uit een passende detailpagina; ${importedEvents.length - withPhotos} hebben geen foto op de beschikbare bronpagina. ${withCategory} hebben alvast een voorgestelde categorie. Na import kun je elk evenement controleren en de categorie wijzigen via WIJZIGEN.`);
+      setImportNotice(`${importedEvents.length} toekomstige of lopende activiteiten gevonden bij ${sourceName}. Dit is een voorvertoning; er is nog niets opgeslagen. ${withPhotos} hebben een evenementfoto uit een passende detailpagina; ${importedEvents.length - withPhotos} hebben geen foto op de beschikbare bronpagina. ${withCategory} hebben alvast een voorgestelde categorie. Na import kun je elk evenement controleren en de categorie wijzigen via BEWERKEN.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
     } finally {
@@ -1357,7 +1376,7 @@ setShowForm(false);
             <span className="import-preview-kicker">Importvoorvertoning</span>
             <h3>{importSourceName}</h3>
             <p role="status">{importNotice}</p>
-            <p>Nieuwe activiteiten komen na import eerst in <strong>Wacht op controle</strong>. De bronlink blijft bewaard. Na import pas je per evenement de categorie aan met <strong>WIJZIGEN</strong>.</p>
+            <p>Nieuwe activiteiten komen na import eerst in <strong>Wacht op controle</strong>. De bronlink blijft bewaard. Na import pas je per evenement de categorie aan met <strong>BEWERKEN</strong>.</p>
           </div>
           {categories.length === 0 && <p role="alert" style={{ color: "#9f1239" }}>Er zijn geen categorieën geladen. Importeer nog niet; de categorieën moeten eerst in deze database beschikbaar zijn.</p>}
           {importPreview.length > 0 && (
@@ -1385,7 +1404,7 @@ setShowForm(false);
                     {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</a>}
                     {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
                   </div>
-                  <p className="import-category-suggestion"><strong>Voorgestelde categorie:</strong> {categories.find((category) => category.id === event.category_id)?.name ?? "Nog te bepalen"}. Je kunt deze na import wijzigen via WIJZIGEN.</p>
+                  <p className="import-category-suggestion"><strong>Voorgestelde categorie:</strong> {categories.find((category) => category.id === event.category_id)?.name ?? "Nog te bepalen"}. Je kunt deze na import wijzigen via BEWERKEN.</p>
                   <a className="import-source-link" href={event.source_url} target="_blank" rel="noreferrer">Oorspronkelijke bron bekijken ↗ <span>{sourceLabel(event.source_url)}</span></a>
                 </div>
               </article>
@@ -1454,39 +1473,11 @@ setShowForm(false);
               </button>}
               <button
                 type="button"
-                onClick={() => {
-                  setChangingCategoryEventId((current) => current === event.id ? null : event.id);
-                  setEventCategoryDrafts((current) => ({ ...current, [event.id]: current[event.id] ?? event.category_id ?? "" }));
-                  setError("");
-                  setMessage("");
-                }}
-                style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: "white", cursor: "pointer" }}
+                disabled={updatingEventId === event.id}
+                onClick={() => void deleteEvent(event)}
+                style={{ padding: "10px 14px", border: "1px solid #fecaca", borderRadius: 7, background: "white", color: "#b91c1c", cursor: updatingEventId === event.id ? "wait" : "pointer" }}
               >
-                WIJZIGEN
-              </button>
-            </div>
-          )}
-          {isAdmin && changingCategoryEventId === event.id && (
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 10, margin: "12px 0", padding: 12, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 8 }}>
-              <label style={{ ...labelStyle, margin: 0, flex: "1 1 260px" }}>
-                Categorie aanpassen
-                <select
-                  value={eventCategoryDrafts[event.id] ?? event.category_id ?? ""}
-                  onChange={(e) => setEventCategoryDrafts((current) => ({ ...current, [event.id]: e.target.value }))}
-                  disabled={savingEventCategoryId === event.id || categories.length === 0}
-                  style={inputStyle}
-                >
-                  <option value="">Kies een categorie</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Categorie"}</option>)}
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={() => void saveEventCategory(event)}
-                disabled={savingEventCategoryId === event.id || categories.length === 0}
-                style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: savingEventCategoryId === event.id ? "#94a3b8" : "#1b4662", color: "white", cursor: savingEventCategoryId === event.id ? "wait" : "pointer" }}
-              >
-                {savingEventCategoryId === event.id ? "Opslaan…" : "Categorie opslaan"}
+                {updatingEventId === event.id ? "Verwijderen…" : "VERWIJDEREN"}
               </button>
             </div>
           )}
