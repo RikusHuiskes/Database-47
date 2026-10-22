@@ -53,6 +53,7 @@ type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: bo
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 type EventEditDraft = {
+  category_id: string;
   title: string;
   short_description: string;
   description: string;
@@ -523,6 +524,7 @@ export default function Home() {
     setMessage("");
     setEditingEventId(event.id);
     setEditDraft({
+      category_id: event.category_id ?? "",
       title: event.title ?? "",
       short_description: event.short_description ?? "",
       description: event.description ?? "",
@@ -635,6 +637,19 @@ export default function Home() {
       setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
       setUpdatingEventId(null);
       return;
+    }
+
+    if (editDraft.category_id !== (event.category_id ?? "")) {
+      const { error: categoryError } = await supabase.rpc("set_event_category", {
+        p_event_id: event.id,
+        p_category_id: editDraft.category_id || null,
+      });
+      if (categoryError) {
+        setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError.message}`);
+        setUpdatingEventId(null);
+        await loadData();
+        return;
+      }
     }
 
     setEditingEventId(null);
@@ -1511,6 +1526,21 @@ setShowForm(false);
                   value={editDraft.title}
                   onChange={(e) => updateEditDraft("title", e.target.value)}
                 />
+              </label>
+
+              <label style={labelStyle}>
+                Categorie
+                <select
+                  style={inputStyle}
+                  value={editDraft.category_id}
+                  onChange={(e) => updateEditDraft("category_id", e.target.value)}
+                  disabled={categories.length === 0}
+                >
+                  <option value="">Kies een categorie</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Categorie"}</option>
+                  ))}
+                </select>
               </label>
 
               <label style={labelStyle}>
