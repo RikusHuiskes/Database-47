@@ -53,7 +53,6 @@ type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: bo
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 type EventEditDraft = {
-  category_id: string;
   title: string;
   short_description: string;
   description: string;
@@ -180,10 +179,9 @@ export default function Home() {
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importNotice, setImportNotice] = useState("");
   const [importSourceName, setImportSourceName] = useState("");
-  const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
-  const [savingCategoryId, setSavingCategoryId] = useState<string | null>(null);
   const [eventCategoryDrafts, setEventCategoryDrafts] = useState<Record<string, string>>({});
   const [savingEventCategoryId, setSavingEventCategoryId] = useState<string | null>(null);
+  const [changingCategoryEventId, setChangingCategoryEventId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -520,34 +518,11 @@ export default function Home() {
     setUpdatingEventId(null);
   }
 
-  async function saveCategoryName(category: Category) {
-    if (!supabase || !isAdmin) return;
-    const name = (categoryNames[category.id] ?? category.name ?? "").trim();
-    if (!name) {
-      setError("Een categorienaam mag niet leeg zijn.");
-      return;
-    }
-    setSavingCategoryId(category.id);
-    setError("");
-    const { error: saveError } = await supabase.rpc("update_category_name", {
-      p_category_id: category.id,
-      p_name: name,
-    });
-    setSavingCategoryId(null);
-    if (saveError) {
-      setError("Categorienaam opslaan mislukt: " + saveError.message);
-      return;
-    }
-    setCategories((current) => current.map((item) => item.id === category.id ? { ...item, name } : item));
-    setMessage(`Categorie “${name}” opgeslagen.`);
-  }
-
   function beginEdit(event: EventRow) {
     setError("");
     setMessage("");
     setEditingEventId(event.id);
     setEditDraft({
-      category_id: event.category_id ?? "",
       title: event.title ?? "",
       short_description: event.short_description ?? "",
       description: event.description ?? "",
@@ -597,6 +572,7 @@ export default function Home() {
       delete next[event.id];
       return next;
     });
+    setChangingCategoryEventId(null);
     setMessage(`Categorie voor “${event.title}” gewijzigd naar ${categoryName}.`);
   }
 
@@ -659,19 +635,6 @@ export default function Home() {
       setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
       setUpdatingEventId(null);
       return;
-    }
-
-    if (editDraft.category_id !== (event.category_id ?? "")) {
-      const { error: categoryError } = await supabase.rpc("set_event_category", {
-        p_event_id: event.id,
-        p_category_id: editDraft.category_id || null,
-      });
-      if (categoryError) {
-        setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError.message}`);
-        setUpdatingEventId(null);
-        await loadData();
-        return;
-      }
     }
 
     setEditingEventId(null);
@@ -821,28 +784,8 @@ setShowForm(false);
     let skippedWithoutCategory = 0;
     let failedTitle = "";
     let failureMessage = "";
-    const isEymetImport = /eymet/i.test(importSourceName);
     for (const event of importPreview) {
       const titleDateKey = `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`;
-      if (isEymetImport) {
-        const { category_id, ...eventPayload } = event;
-        const { data: syncResult, error: syncError } = await supabase.rpc("sync_eymet_pending_event", {
-          p_event: eventPayload,
-          p_category_id: category_id || null,
-        });
-        if (syncError) {
-          failedTitle = event.title;
-          failureMessage = `Opslaan van “${event.title}” in Wacht op controle is mislukt: ${syncError.message}. ${inserted} nieuwe Eymet-activiteiten zijn toegevoegd; ${enriched} wachtende zijn bijgewerkt. Controleer of de Eymet-databasestap actief is.`;
-          break;
-        }
-        if (syncResult === "inserted") inserted += 1;
-        else if (syncResult === "enriched") enriched += 1;
-        else skipped += 1;
-        knownSourceUrls.add(event.source_url);
-        knownTitleDates.add(titleDateKey);
-        if (!category_id) skippedWithoutCategory += 1;
-        continue;
-      }
       const existing = (existingResult.data ?? []).find((row) => row.source_url === event.source_url);
       if (existing) {
         if (existing.status === "pending" && existing.verified === false) {
@@ -1298,29 +1241,6 @@ setShowForm(false);
           : "Supabase-instellingen ontbreken."}
       </p>
 
-      {isAdmin && (
-        <details style={{ margin: "18px 0", padding: 16, background: "white", border: "1px solid #d8dee8", borderRadius: 10 }}>
-          <summary style={{ cursor: "pointer", fontWeight: 700 }}>Categorieën beheren</summary>
-          <p style={{ color: "#64748b" }}>Pas alleen de zichtbare naam aan. De vaste categoriecode blijft gelijk, zodat importen en bestaande evenementkoppelingen blijven werken.</p>
-          <div style={{ display: "grid", gap: 10 }}>
-            {categories.map((category) => (
-              <div key={category.id} style={{ display: "grid", gridTemplateColumns: "minmax(180px, 1fr) auto", gap: 8, alignItems: "center" }}>
-                <input
-                  aria-label={`Naam van categorie ${category.name ?? category.slug ?? ""}`}
-                  style={inputStyle}
-                  value={categoryNames[category.id] ?? category.name ?? category.slug ?? ""}
-                  onChange={(event) => setCategoryNames((current) => ({ ...current, [category.id]: event.target.value }))}
-                  maxLength={80}
-                />
-                <button type="button" onClick={() => void saveCategoryName(category)} disabled={savingCategoryId === category.id}>
-                  {savingCategoryId === category.id ? "Opslaan…" : "Opslaan"}
-                </button>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-
       {error && (
         <p
           role="alert"
@@ -1498,32 +1418,7 @@ setShowForm(false);
         >
           <h3>{event.title}</h3>
           {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 8, marginBottom: 12 }} />}
-          {isAdmin ? (
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 10, margin: "8px 0 14px", padding: 12, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 8 }}>
-              <label style={{ ...labelStyle, margin: 0, flex: "1 1 260px" }}>
-                Categorie voor dit evenement
-                <select
-                  value={eventCategoryDrafts[event.id] ?? event.category_id ?? ""}
-                  onChange={(e) => setEventCategoryDrafts((current) => ({ ...current, [event.id]: e.target.value }))}
-                  disabled={savingEventCategoryId === event.id || categories.length === 0}
-                  style={inputStyle}
-                >
-                  <option value="">Geen categorie</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Categorie"}</option>)}
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={() => void saveEventCategory(event)}
-                disabled={savingEventCategoryId === event.id || categories.length === 0}
-                style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: savingEventCategoryId === event.id ? "#94a3b8" : "#1b4662", color: "white", cursor: savingEventCategoryId === event.id ? "wait" : "pointer" }}
-              >
-                {savingEventCategoryId === event.id ? "Opslaan…" : "Categorie opslaan"}
-              </button>
-            </div>
-          ) : (
-            <p><strong>Categorie:</strong> {event.category_name ?? "Nog niet ingedeeld"}</p>
-          )}
+          <p><strong>Categorie:</strong> {event.category_name ?? "Nog niet ingedeeld"}</p>
           <p>{formatDate(event.start_at)}</p>
           {(event.venue_name || event.address || event.postcode || event.city) && (
             <p>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ")}</p>
@@ -1547,53 +1442,53 @@ setShowForm(false);
           </p>
 
           {isAdmin && editingEventId !== event.id && (
-            <button
-              type="button"
-              onClick={() => beginEdit(event)}
-              style={{
-                marginBottom: 12,
-                padding: "10px 14px",
-                border: "1px solid #cbd5e1",
-                borderRadius: 7,
-                background: "white",
-                cursor: "pointer",
-              }}
-            >
-              Bewerken
-            </button>
-          )}
-
-          {isAdmin && event.status?.toLowerCase() === "pending" && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              <button
+              <button type="button" onClick={() => beginEdit(event)} style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: "white", cursor: "pointer" }}>
+                BEWERKEN
+              </button>
+              {event.status?.toLowerCase() === "pending" && <button
                 type="button"
                 disabled={updatingEventId === event.id}
                 onClick={() => void setEventStatus(event, "approved")}
-                style={{
-                  padding: "10px 14px",
-                  border: 0,
-                  borderRadius: 7,
-                  background: updatingEventId === event.id ? "#94a3b8" : "#16734b",
-                  color: "white",
-                  cursor: updatingEventId === event.id ? "wait" : "pointer",
-                }}
+                style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: updatingEventId === event.id ? "#94a3b8" : "#16734b", color: "white", cursor: updatingEventId === event.id ? "wait" : "pointer" }}
               >
-                {updatingEventId === event.id ? "Bezig..." : "Goedkeuren"}
-              </button>
+                {updatingEventId === event.id ? "Bezig..." : "GOEDKEUREN"}
+              </button>}
               <button
                 type="button"
-                disabled={updatingEventId === event.id}
-                onClick={() => void setEventStatus(event, "rejected")}
-                style={{
-                  padding: "10px 14px",
-                  border: "1px solid #fecaca",
-                  borderRadius: 7,
-                  background: "white",
-                  color: "#b91c1c",
-                  cursor: updatingEventId === event.id ? "wait" : "pointer",
+                onClick={() => {
+                  setChangingCategoryEventId((current) => current === event.id ? null : event.id);
+                  setEventCategoryDrafts((current) => ({ ...current, [event.id]: current[event.id] ?? event.category_id ?? "" }));
+                  setError("");
+                  setMessage("");
                 }}
+                style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: "white", cursor: "pointer" }}
               >
-                Afwijzen
+                WIJZIGEN
+              </button>
+            </div>
+          )}
+          {isAdmin && changingCategoryEventId === event.id && (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 10, margin: "12px 0", padding: 12, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 8 }}>
+              <label style={{ ...labelStyle, margin: 0, flex: "1 1 260px" }}>
+                Categorie aanpassen
+                <select
+                  value={eventCategoryDrafts[event.id] ?? event.category_id ?? ""}
+                  onChange={(e) => setEventCategoryDrafts((current) => ({ ...current, [event.id]: e.target.value }))}
+                  disabled={savingEventCategoryId === event.id || categories.length === 0}
+                  style={inputStyle}
+                >
+                  <option value="">Kies een categorie</option>
+                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Categorie"}</option>)}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => void saveEventCategory(event)}
+                disabled={savingEventCategoryId === event.id || categories.length === 0}
+                style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: savingEventCategoryId === event.id ? "#94a3b8" : "#1b4662", color: "white", cursor: savingEventCategoryId === event.id ? "wait" : "pointer" }}
+              >
+                {savingEventCategoryId === event.id ? "Opslaan…" : "Categorie opslaan"}
               </button>
             </div>
           )}
@@ -1633,20 +1528,6 @@ setShowForm(false);
                   value={editDraft.title}
                   onChange={(e) => updateEditDraft("title", e.target.value)}
                 />
-              </label>
-
-              <label style={labelStyle}>
-                Categorie
-                <select
-                  style={inputStyle}
-                  value={editDraft.category_id}
-                  onChange={(e) => updateEditDraft("category_id", e.target.value)}
-                >
-                  <option value="">Geen categorie</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>{category.name ?? category.slug}</option>
-                  ))}
-                </select>
               </label>
 
               <label style={labelStyle}>

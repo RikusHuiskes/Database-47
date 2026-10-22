@@ -26,9 +26,21 @@ export async function GET(request: Request) {
       fetchEvents: fetchEymetEvents,
       categorySlugFor: inferEventCategorySlug,
       persistPendingEvent: async (event, categoryId) => {
-        const { data, error } = await supabase.rpc("sync_eymet_pending_event", { p_event: event, p_category_id: categoryId });
-        if (error) throw new Error(`Opslaan van “${event.title}” mislukt: ${error.message}`);
-        return data === "inserted" || data === "enriched" ? data : "skipped";
+        const { data: existing, error: lookupError } = await supabase
+          .from("events")
+          .select("id")
+          .eq("source_url", event.source_url)
+          .limit(1)
+          .maybeSingle();
+        if (lookupError) throw new Error(`Controleren op een bestaande Eymet-activiteit is mislukt: ${lookupError.message}`);
+        if (existing) return "skipped";
+
+        const { error: insertError } = await supabase.rpc("submit_pending_event", {
+          p_event: event,
+          p_category_id: categoryId,
+        });
+        if (insertError) throw new Error(`Opslaan van “${event.title}” is mislukt: ${insertError.message}`);
+        return "inserted";
       },
     }, categories ?? []);
     return NextResponse.json({ ok: true, ...summary });
