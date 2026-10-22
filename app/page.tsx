@@ -609,7 +609,32 @@ export default function Home() {
       return legacyRpcError.message;
     }
 
-    return `De categoriefunctie is niet beschikbaar via de databaseverbinding. Vernieuw de database-instellingen en probeer opnieuw. (${legacyRpcError.message})`;
+    // The RPC can be missing from a stale PostgREST schema cache on Preview.
+    // Keep category edits working through the table API, guarded by an
+    // admin-only RLS policy installed alongside this application.
+    if (categoryId) {
+      const { error: insertError } = await supabase
+        .from("event_categories")
+        .upsert(
+          { event_id: eventId, category_id: categoryId },
+          { onConflict: "event_id,category_id", ignoreDuplicates: true }
+        );
+      if (insertError) return `Categorie opslaan mislukt: ${insertError.message}`;
+
+      const { error: cleanupError } = await supabase
+        .from("event_categories")
+        .delete()
+        .eq("event_id", eventId)
+        .neq("category_id", categoryId);
+      if (cleanupError) return `Categorie opslaan mislukt: ${cleanupError.message}`;
+      return null;
+    }
+
+    const { error: clearError } = await supabase
+      .from("event_categories")
+      .delete()
+      .eq("event_id", eventId);
+    return clearError ? `Categorie verwijderen mislukt: ${clearError.message}` : null;
   }
 
   async function saveEventEdits(
