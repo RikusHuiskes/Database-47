@@ -103,17 +103,23 @@ export async function GET(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const now = new Date();
-  const { data, error } = await supabase
-    .from("events")
-    .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude")
-    .eq("status", "approved")
-    .eq("verified", true)
-    .order("start_at", { ascending: true })
-    .limit(500);
+  // Read every approved, verified record in pages. A single 500 row limit hid
+  // events in larger databases before the radius filter was applied.
+  const pageSize = 500;
+  const rows: EventRecord[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from("events")
+      .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude")
+      .eq("status", "approved")
+      .eq("verified", true)
+      .order("start_at", { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
-  if (error) return NextResponse.json({ error: "Evenementen konden niet worden geladen." }, { status: 502 });
-
-  const rows = (data ?? []) as EventRecord[];
+    if (error) return NextResponse.json({ error: "Evenementen konden niet worden geladen." }, { status: 502 });
+    rows.push(...((data ?? []) as EventRecord[]));
+    if (!data || data.length < pageSize) break;
+  }
   const eventIds = rows.map((event) => event.id);
   let categoryByEvent = new Map<string, string>();
   if (eventIds.length > 0) {

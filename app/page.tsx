@@ -643,39 +643,50 @@ export default function Home() {
       source_url: editDraft.source_url.trim() || null,
     };
 
-    const { data, error: updateError } = await supabase
-      .from("events")
-      .update(payload)
-      .eq("id", event.id)
-      .select("id")
-      .maybeSingle();
+    let eventSaved = false;
+    try {
+      const { data, error: updateError } = await supabase
+        .from("events")
+        .update(payload)
+        .eq("id", event.id)
+        .select("id")
+        .maybeSingle();
 
-    if (updateError) {
-      setError("Opslaan mislukt: " + updateError.message);
-      setUpdatingEventId(null);
-      return;
-    }
-    if (!data) {
-      setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
-      setUpdatingEventId(null);
-      return;
-    }
-
-    if (editDraft.category_id !== (event.category_id ?? "")) {
-      const categoryError = await persistEventCategory(event.id, editDraft.category_id, event.category_id ?? null);
-      if (categoryError) {
-        setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError}`);
-        setUpdatingEventId(null);
-        await loadData();
+      if (updateError) {
+        setError("Opslaan mislukt: " + updateError.message);
         return;
       }
-    }
+      if (!data) {
+        setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
+        return;
+      }
+      eventSaved = true;
 
-    setEditingEventId(null);
-    setEditDraft(null);
-    await loadData();
-    setMessage(`“${payload.title}” is bijgewerkt.`);
-    setUpdatingEventId(null);
+      if (editDraft.category_id !== (event.category_id ?? "")) {
+        const categoryError = await persistEventCategory(event.id, editDraft.category_id, event.category_id ?? null);
+        if (categoryError) {
+          setError(`Evenement is bijgewerkt, maar de categorie kon niet worden opgeslagen: ${categoryError}`);
+          await loadData();
+          return;
+        }
+      }
+
+      setEditingEventId(null);
+      setEditDraft(null);
+      setMessage(`“${payload.title}” is bijgewerkt.`);
+      try {
+        await loadData();
+      } catch {
+        setError("De wijziging is opgeslagen, maar de lijst kon niet worden vernieuwd. Klik op Vernieuwen.");
+      }
+    } catch (cause) {
+      setError(eventSaved
+        ? "De wijziging is opgeslagen, maar er ging iets mis bij het bijwerken van de pagina. Klik op Vernieuwen."
+        : `Opslaan is niet gelukt door een verbindingsprobleem: ${cause instanceof Error ? cause.message : "probeer het opnieuw."}`);
+    } finally {
+      // Keep the editor usable after network failures or unexpected Supabase errors.
+      setUpdatingEventId(null);
+    }
   }
 
   function resetForm() {
@@ -939,7 +950,7 @@ setShowForm(false);
           </label>
         </div>
         <p role="status" aria-live="polite" style={{ color: "#475569", margin: "18px 0 12px" }}>
-          {nearbyLoading ? "Evenementen in de buurt zoeken…" : `${visibleNearbyEvents.length} ${visibleNearbyEvents.length === 1 ? "activiteit" : "activiteiten"} gevonden binnen ${radiusKm} km van ${searchLabel}. Alleen gecontroleerde evenementen worden getoond.`}
+          {nearbyLoading ? "Evenementen in de buurt zoeken…" : `${nearbyEvents.length} gecontroleerde ${nearbyEvents.length === 1 ? "activiteit" : "activiteiten"} binnen ${radiusKm} km van ${searchLabel}; ${visibleNearbyEvents.length} getoond met je huidige filters.`}
         </p>
         {visitorLocation && <p style={{ color: "#64748b", marginTop: -4, fontSize: 14 }}>Zoeken rond je huidige locatie.</p>}
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
