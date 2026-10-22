@@ -124,12 +124,27 @@ function isUpcoming(date: { start: string; end: string | null }, now: Date) {
 }
 
 function cleanTitle(value: string) {
-  return value.replace(/\.{3,}.*$/, "").replace(/\s+\d{1,2}\s*$/, "").replace(/^[-–—\s]+|[-–—\s]+$/g, "").trim();
+  return value
+    .replace(/\.{3,}.*$/, "")
+    .replace(/\s+\d{1,2}\s*$/, "")
+    .replace(/\s+(?:tout public|tout-petit|dès?\s+\d+\s+ans)\s*$/i, "")
+    .replace(/\s+\d{1,2}\s*€\s*\/\s*\d{1,2}\s*€\s*$/i, "")
+    .replace(/^[-–—\s]+|[-–—\s]+$/g, "")
+    .trim();
 }
 
 function looksLikeTitle(value: string) {
   const title = cleanTitle(value);
-  return title.length >= 4 && title.length <= 140 && !/^(?:programmé|résidence|durée|plein|réduit|tout public|à partir|samedi|dimanche|vendredi|octobre|novembre|décembre|janvier|février|mars|avril|mai|juin|juillet|septembre|202\d|www\.)/i.test(title);
+  const normalized = normalize(title);
+  // The calendar PDF has long descriptions and contact details near date
+  // blocks. A dated line can be adjacent to those paragraphs in extracted
+  // text, so only accept plausible heading-like lines as event titles.
+  return title.length >= 4
+    && title.length <= 90
+    && !/^[a-zà-ÿ]/u.test(title)
+    && !/[.!?;:]$/.test(title)
+    && !/(?:@|https?:\/\/|www\.)/i.test(title)
+    && !/^(?:programmé|residence|duree|plein|reduit|tout public|a partir|samedi|dimanche|vendredi|octobre|novembre|decembre|janvier|fevrier|mars|avril|mai|juin|juillet|septembre|202\d|facebook|contact|tel\b|telephone|a l evenement|revisites par|sublimer chaque|des spectacles|www\.)/i.test(normalized);
 }
 
 function slug(value: string) {
@@ -208,8 +223,9 @@ export async function fetchEymetEvents(now = new Date()): Promise<ImportedEvent[
       if (["saison-culturelle", "culturelle", "programmé-par-la-ville", "programme", "informations"].includes(normalizedTitle)) continue;
       if (!isUpcoming(date, now)) continue;
 
-      // Use the official municipal page and the exact PDF page for verifiable provenance.
-      const sourceUrl = `${EYMET_AGENDA_URL}#agenda-${normalizedTitle}-${date.start.slice(0, 10)}`;
+      // Link to the original official agenda PDF so each imported item has
+      // verifiable provenance; the municipal landing page remains website_url.
+      const sourceUrl = pdfUrl;
       const key = `${normalizedTitle}:${date.start.slice(0, 10)}`;
       if (byDate.has(key)) continue;
       sequence += 1;
