@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import type { ImportedEvent } from "../lib/tourisme-duras";
+import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
 import type { LocalAreaTown } from "../lib/local-area";
 type Category = {
@@ -117,6 +117,52 @@ function toLocalDateTime(value?: string | null) {
   return localDate.toISOString().slice(0, 16);
 }
 
+function findSocialDateTime(value: string): string | null {
+  const frenchDate = parseFrenchEventDate(value);
+  if (frenchDate) return toLocalDateTime(frenchDate.start_at);
+
+  const isoDate = value.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})(?:[T\s]+(\d{1,2}):(\d{2}))?/);
+  if (isoDate) {
+    return `${isoDate[1]}-${isoDate[2].padStart(2, "0")}-${isoDate[3].padStart(2, "0")}T${(isoDate[4] ?? "10").padStart(2, "0")}:${isoDate[5] ?? "00"}`;
+  }
+
+  const numericDate = value.match(/\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (numericDate) {
+    return `${numericDate[3]}-${numericDate[2].padStart(2, "0")}-${numericDate[1].padStart(2, "0")}T${(numericDate[4] ?? "10").padStart(2, "0")}:${numericDate[5] ?? "00"}`;
+  }
+  return null;
+}
+
+function parseLocalDateTime(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, year, month, day, hour, minute] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+  if (date.getFullYear() !== Number(year) || date.getMonth() !== Number(month) - 1
+    || date.getDate() !== Number(day) || date.getHours() !== Number(hour) || date.getMinutes() !== Number(minute)) return null;
+  return date;
+}
+
+function isSocialPostUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    if (host === "fb.watch") return true;
+    if (host === "facebook.com" || host.endsWith(".facebook.com")) {
+      return /\/(?:groups\/[^/]+\/(?:posts|permalink)\/|posts\/|permalink\/|share\/p\/)/i.test(url.pathname)
+        || Boolean(url.searchParams.get("story_fbid"))
+        || (url.pathname === "/watch/" && Boolean(url.searchParams.get("v")));
+    }
+    if (host === "instagram.com" || host.endsWith(".instagram.com")) {
+      return /\/(?:p|reel|tv|stories)\/[^/]+/i.test(url.pathname);
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function suggestedCategoryId(event: ImportedEvent, categories: Category[]): string {
   const slug = inferEventCategorySlug(event);
   return categories.find((category) => category.slug === slug)?.id ?? "";
@@ -183,6 +229,17 @@ export default function Home() {
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importNotice, setImportNotice] = useState("");
   const [importSourceName, setImportSourceName] = useState("");
+  const [showSocialPostForm, setShowSocialPostForm] = useState(false);
+  const [socialPostUrl, setSocialPostUrl] = useState("");
+  const [socialPostText, setSocialPostText] = useState("");
+  const [socialPostTitle, setSocialPostTitle] = useState("");
+  const [socialPostStartAt, setSocialPostStartAt] = useState("");
+  const [socialPostEndAt, setSocialPostEndAt] = useState("");
+  const [socialPostCity, setSocialPostCity] = useState("");
+  const [socialPostVenue, setSocialPostVenue] = useState("");
+  const [socialPostImageUrl, setSocialPostImageUrl] = useState("");
+  const [socialPostCategoryId, setSocialPostCategoryId] = useState("");
+  const [socialPostError, setSocialPostError] = useState("");
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -807,6 +864,70 @@ setShowForm(false);
     await previewEventSource("/api/import-tourisme-duras", "Tourisme Duras");
   }
 
+  function previewSocialPost() {
+    setSocialPostError("");
+    if (!isAdmin) return;
+    if (!isSocialPostUrl(socialPostUrl.trim())) {
+      setSocialPostError("Vul een geldige openbare link naar het Facebook- of Instagrambericht in.");
+      return;
+    }
+    if (!socialPostTitle.trim() || !socialPostStartAt || !socialPostCity.trim() || !socialPostText.trim() || !socialPostCategoryId) {
+      setSocialPostError("Vul titel, datum en tijd, plaats, berichttekst en categorie in voordat je de voorvertoning maakt.");
+      return;
+    }
+    const sourceUrl = safeHttpUrl(socialPostUrl.trim());
+    const imageUrl = socialPostImageUrl.trim() ? safeHttpUrl(socialPostImageUrl.trim()) : null;
+    if (!sourceUrl) {
+      setSocialPostError("De berichtlink moet met http:// of https:// beginnen.");
+      return;
+    }
+    if (socialPostImageUrl.trim() && !imageUrl) {
+      setSocialPostError("De fotolink moet met http:// of https:// beginnen.");
+      return;
+    }
+    const start = parseLocalDateTime(socialPostStartAt);
+    const end = socialPostEndAt ? parseLocalDateTime(socialPostEndAt) : null;
+    if (!start || (socialPostEndAt && !end) || (end && end < start)) {
+      setSocialPostError("Controleer de datum en tijd. De einddatum mag niet vóór de begindatum liggen.");
+      return;
+    }
+    const host = new URL(sourceUrl).hostname.toLowerCase();
+    const platformName = host.includes("instagram.com") ? "Instagram" : "Facebookgroep";
+    const title = socialPostTitle.trim();
+    const event: ImportPreviewEvent = {
+      title,
+      slug: makeSlug(`${title}-${socialPostStartAt.slice(0, 10)}`),
+      short_description: null,
+      description: socialPostText.trim(),
+      start_at: start.toISOString(),
+      end_at: end?.toISOString() ?? null,
+      venue_name: socialPostVenue.trim() || null,
+      address: null,
+      postcode: null,
+      city: socialPostCity.trim(),
+      price_from: null,
+      price_to: null,
+      is_free: false,
+      website_url: null,
+      booking_url: null,
+      contact_phone: null,
+      image_url: imageUrl,
+      organizer_name: platformName,
+      source_category: `Social media · ${platformName}`,
+      latitude: null,
+      longitude: null,
+      source_url: sourceUrl,
+      status: "pending",
+      verified: false,
+      category_id: socialPostCategoryId,
+    };
+    setImportSourceName(`${platformName} · handmatige voorvertoning`);
+    setImportPreview([event]);
+    setImportNotice(`Eén bericht klaargezet voor controle. De kaart hieronder toont precies de evenementgegevens die worden opgeslagen. De tekst, datum, plaats en eventuele fotolink zijn overgenomen uit wat jij hierboven hebt ingevuld; er is nog niets opgeslagen.`);
+    setError("");
+    setMessage("");
+  }
+
   async function importTourismeDuras() {
     if (!supabase || !isAdmin || importPreview.length === 0) return;
     setError("");
@@ -1382,7 +1503,94 @@ setShowForm(false);
             {importLoading ? "Agenda ophalen..." : "Eymet-agenda importeren"}
           </button>
         )}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowSocialPostForm((open) => !open);
+              setSocialPostError("");
+            }}
+            disabled={importing}
+            style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
+          >
+            {showSocialPostForm ? "Sociale post sluiten" : "Sociale post voorvertonen"}
+          </button>
+        )}
       </div>
+
+      {isAdmin && showSocialPostForm && (
+        <section aria-label="Sociale post klaarzetten voor voorvertoning" style={{ display: "grid", gap: 14, margin: "18px 0 24px", padding: 20, border: "1px solid #d8dee8", borderRadius: 12, background: "#fff" }}>
+          <div>
+            <h3 style={{ margin: "0 0 8px" }}>Facebook- of Instagrambericht bekijken</h3>
+            <p style={{ margin: 0, color: "#52616f", lineHeight: 1.55 }}>
+              Plak de link en de tekst van één specifiek bericht. Besloten groepsberichten kunnen niet automatisch door de agenda worden uitgelezen; daarom lever je hier zelf het bericht aan. De app vraagt niet om je Facebook-wachtwoord en logt niet namens jou in. De datum kan uit de tekst worden voorgesteld, maar controleer datum en tijd altijd. De volledige berichttekst wordt als beschrijving opgeslagen. De foto verschijnt alleen als je ook een directe fotolink invult.
+            </p>
+          </div>
+          <label style={labelStyle}>
+            Link naar het oorspronkelijke bericht *
+            <input style={inputStyle} type="url" value={socialPostUrl} onChange={(event) => setSocialPostUrl(event.target.value)} placeholder="https://www.facebook.com/groups/.../posts/..." />
+          </label>
+          <label style={labelStyle}>
+            Berichttekst *
+            <textarea style={{ ...inputStyle, minHeight: 130, resize: "vertical" }} value={socialPostText} onChange={(event) => setSocialPostText(event.target.value)} placeholder="Plak de tekst van het bericht hier" />
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            <label style={labelStyle}>
+              Evenementtitel *
+              <input style={inputStyle} maxLength={180} value={socialPostTitle} onChange={(event) => setSocialPostTitle(event.target.value)} placeholder="Titel zoals die in de agenda mag staan" />
+            </label>
+            <label style={labelStyle}>
+              Plaats *
+              <input style={inputStyle} value={socialPostCity} onChange={(event) => setSocialPostCity(event.target.value)} placeholder="Duras, Eymet, Marmande…" />
+            </label>
+            <label style={labelStyle}>
+              Begindatum en -tijd *
+              <input style={inputStyle} type="datetime-local" value={socialPostStartAt} onChange={(event) => setSocialPostStartAt(event.target.value)} />
+            </label>
+            <label style={labelStyle}>
+              Einddatum en -tijd (optioneel)
+              <input style={inputStyle} type="datetime-local" value={socialPostEndAt} onChange={(event) => setSocialPostEndAt(event.target.value)} />
+            </label>
+            <label style={labelStyle}>
+              Locatie (optioneel)
+              <input style={inputStyle} value={socialPostVenue} onChange={(event) => setSocialPostVenue(event.target.value)} placeholder="Bijvoorbeeld Salle des fêtes" />
+            </label>
+            <label style={labelStyle}>
+              Fotolink (optioneel)
+              <input style={inputStyle} type="url" value={socialPostImageUrl} onChange={(event) => setSocialPostImageUrl(event.target.value)} placeholder="https://…" />
+            </label>
+            <label style={labelStyle}>
+              Categorie *
+              <select style={inputStyle} value={socialPostCategoryId} onChange={(event) => setSocialPostCategoryId(event.target.value)}>
+                <option value="">Kies een categorie</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
+              </select>
+            </label>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => {
+                const detected = findSocialDateTime(socialPostText);
+                if (detected) {
+                  setSocialPostStartAt(detected);
+                  setSocialPostError("");
+                } else {
+                  setSocialPostError("Ik kon geen duidelijke datum herkennen. Vul de datum en tijd zelf in.");
+                }
+              }}
+              style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: "white" }}
+            >
+              Datum uit bericht halen
+            </button>
+            <button type="button" onClick={previewSocialPost} disabled={importing || categories.length === 0} style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: "#173f5f", color: "white", cursor: importing ? "wait" : "pointer", fontWeight: 700 }}>
+              Maak voorvertoning
+            </button>
+          </div>
+          {categories.length === 0 && <p role="alert" style={{ margin: 0, color: "#9f1239" }}>De categorieën zijn nog niet geladen. Vernieuw de beheerderstool voordat je verdergaat.</p>}
+          {socialPostError && <p role="alert" style={{ margin: 0, padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{socialPostError}</p>}
+        </section>
+      )}
 
       {importNotice && (
         <section className="import-preview" aria-label={`Voorvertoning ${importSourceName}`}>
