@@ -867,8 +867,12 @@ setShowForm(false);
   function previewSocialPost() {
     setSocialPostError("");
     if (!isAdmin) return;
+    if (!socialPostUrl.trim()) {
+      setSocialPostError("Plak eerst de link naar één specifiek bericht. Alleen de link naar de groep is niet genoeg.");
+      return;
+    }
     if (!isSocialPostUrl(socialPostUrl.trim())) {
-      setSocialPostError("Vul een geldige openbare link naar het Facebook- of Instagrambericht in.");
+      setSocialPostError("Deze link lijkt niet naar één Facebook- of Instagrambericht te gaan. Open het bericht zelf en kopieer de link via de datum of tijd boven het bericht.");
       return;
     }
     if (!socialPostTitle.trim() || !socialPostStartAt || !socialPostCity.trim() || !socialPostText.trim() || !socialPostCategoryId) {
@@ -1527,8 +1531,9 @@ setShowForm(false);
             </p>
           </div>
           <label style={labelStyle}>
-            Link naar het oorspronkelijke bericht *
+            Link naar het oorspronkelijke bericht (niet alleen de groepslink) *
             <input style={inputStyle} type="url" value={socialPostUrl} onChange={(event) => setSocialPostUrl(event.target.value)} placeholder="https://www.facebook.com/groups/.../posts/..." />
+            <span style={{ display: "block", marginTop: 5, color: "#64748b", fontSize: 13, fontWeight: 400 }}>Open een bericht in de groep en klik op de datum of tijd ervan om de link van dat bericht te kopiëren.</span>
           </label>
           <label style={labelStyle}>
             Berichttekst *
