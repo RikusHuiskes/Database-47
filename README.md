@@ -43,26 +43,38 @@ approval.
 | Priority | Source | What it offers | Import decision |
 | --- | --- | --- | --- |
 | Existing | [Tourisme Duras](https://www.tourismeduras.com/s-eclater-rencontrer/agenda-des-sorties) | Detailed local listing and individual event pages | Daily importer already exists. |
-| 1 | [DATAtourisme API](https://www.datatourisme.fr/utiliser-les-donnees/) | National open-data API and event-only endpoint; aggregates 40+ institutional tourism databases | Best next technical connector for a 50 km Duras search. Free API key required; keep creator attribution and update date under Licence Ouverte Etalab 2.0. Check duplicates against Tourisme Duras. |
+| Paused | [DATAtourisme API](https://www.datatourisme.fr/utiliser-les-donnees/) | National open-data API and event-only endpoint; aggregates institutional tourism databases | Do not import its dates until DATAtourisme confirms its reported one-day date shift is resolved. |
 | 2 | [Eymet cultural agenda](https://www.pays-bergerac-tourisme.com/fr/agenda/calendrier-des-animations/programmation-espace-culturel-leden-eymet), published by [Eymet’s L’Eden cultural service](https://www.eymet-dordogne.fr/fr/rb/304280/lespace-culturel) | Current L’Eden program with individual event pages, dates, venue, practical details, ticket links and event images | Eymet adapter is connected. Each event keeps its Pays de Bergerac detail-page URL as its source and remains pending review. Apply the Eymet import migration before enabling the daily job. |
-| 3 | [Ville de Marmande events](https://www.mairie-marmande.fr/evenements/) | Official municipal calendar with event details and images | Strong direct source; confirm technical access and date/category handling before adapter. |
-| 4 | [Pineuilh events](https://www.pineuilh.fr/manifestations-pineuilh-gironde) and [Sainte-Foy-la-Grande events](https://www.saintefoylagrande.fr/tous-les-evenements/) | Official nearby town agendas with event cards and seasonal programs | Evaluate as separate sources after the shared regional API. |
+| Daily | [Ville de Marmande events](https://www.mairie-marmande.fr/evenements/) | Municipal listings with individual event pages, dates, venues and images | Connected to the regional daily importer. New items go to Wacht op controle with the original detail-page URL. |
+| Daily | [Miramont-de-Guyenne agenda](https://www.ville-miramontdeguyenne.fr/fr/) | Official city calendar with dated event pages | Connected to the regional daily importer. |
+| Daily | [Pineuilh events](https://www.pineuilh.fr/manifestations-pineuilh-gironde) | Official municipality calendar with dated event pages and posters | Connected to the regional daily importer. Dates from the event listing are preferred when the article contains dates for several activities. |
+| Daily | [Sainte-Foy-la-Grande events](https://www.saintefoylagrande.fr/tous-les-evenements/) | Official municipal calendar and detail pages | Connected to the regional daily importer. |
 | 5 | [Pays de Bergerac Tourisme agenda](https://www.pays-bergerac-tourisme.com/index.php/fr/agenda/calendrier-des-animations) and [Vallée du Lot-et-Garonne agenda](https://tourisme.valleedulotetgaronne.com/agenda/) | Regional tourism calendars with broad coverage, categories, event details and booking links | Useful coverage, but likely overlaps the API and town calendars; connect after source IDs and deduplication are checked. |
 | 6 | [Mairie de Monségur](https://www.mairie.monsegur.eu/) | Official site has an Agenda heading and Facebook link | Agenda appears limited/embedded; request a calendar feed or authorized export if automated access is unclear. |
 
-Other names (`marie-marmande.fr`, `marie.monsegur.eu`, `bergerac.fr`,
-`paysfoyen.fr`) should be checked against the confirmed official URLs above
-before being added. Facebook groups remain manual/authorized submissions; do
-not scrape private or login-gated content.
+Facebook groups and general Instagram searches are not included: the importer
+does not sign in as a person or collect login-gated posts. Add social sources
+only when Meta provides an authorized feed/API for the specific account or
+group, or when an administrator supplies an export. Public official calendars
+remain the automatic, original-source route.
 
 ### Daily maintenance
 
-Vercel runs the Duras source at 07:00, Eymet at 07:05 and expired-event cleanup at 07:15.
+Vercel schedules Duras at 07:00 UTC, Eymet at 08:00 UTC, regional municipal
+agendas at 09:00 UTC, and expired-event cleanup at 10:00 UTC. The separated
+hours keep the tasks in order on Hobby, where Vercel may start each daily task
+anywhere within its scheduled hour. Vercel cron jobs run only from a Production
+deployment; Preview is for manual testing.
 Cleanup uses the French date and prefers `end_at` over `start_at`; it removes
 past imported and manually entered events in every status. The new cleanup job
 requires `delete_expired_events_cron` and the server-only
 `SUPABASE_SERVICE_ROLE_KEY` Vercel variable. Apply the migration to the intended
 Supabase environment before enabling this job there.
+The regional agenda cron also uses `SUPABASE_SERVICE_ROLE_KEY`; its RPC is
+granted only to the Supabase service role. Apply
+`202610230001_regional_official_agenda_import.sql` before deployment. Its response
+includes per-city page and import counts so an unreachable official agenda is
+visible in the cron run result.
 
 ## Nearby events experience
 
