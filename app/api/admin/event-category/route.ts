@@ -37,9 +37,8 @@ export async function POST(request: Request) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !anonKey || !serviceRoleKey) {
-    return errorResponse("De veilige categorieopslag is niet volledig ingesteld in Vercel.", 503);
+  if (!url || !anonKey) {
+    return errorResponse("De databaseverbinding is niet volledig ingesteld in Vercel.", 503);
   }
 
   const userClient = createClient(url, anonKey, {
@@ -51,45 +50,20 @@ export async function POST(request: Request) {
     return errorResponse("Je beheerderssessie is ongeldig of verlopen. Log opnieuw in.", 403);
   }
 
-  const adminClient = createClient(url, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+  const { error: categoryError } = await userClient.rpc("set_event_category", {
+    p_event_id: input.eventId,
+    p_category_id: categoryId,
   });
-
-  try {
-    if (categoryId) {
-      const { data: category, error: categoryError } = await adminClient
-        .from("categories")
-        .select("id")
-        .eq("id", categoryId)
-        .maybeSingle();
-      if (categoryError) throw new Error(categoryError.message);
-      if (!category) return errorResponse("De gekozen categorie bestaat niet meer.", 404);
-
-      const { error: linkError } = await adminClient
-        .from("event_categories")
-        .upsert(
-          { event_id: input.eventId, category_id: categoryId },
-          { onConflict: "event_id,category_id", ignoreDuplicates: true }
-        );
-      if (linkError) throw new Error(linkError.message);
-
-      const { error: cleanupError } = await adminClient
-        .from("event_categories")
-        .delete()
-        .eq("event_id", input.eventId)
-        .neq("category_id", categoryId);
-      if (cleanupError) throw new Error(cleanupError.message);
-    } else {
-      const { error: clearError } = await adminClient
-        .from("event_categories")
-        .delete()
-        .eq("event_id", input.eventId);
-      if (clearError) throw new Error(clearError.message);
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Onbekende fout";
-    return errorResponse(`Categorie opslaan mislukt: ${message}`, 502);
+  if (categoryError) {
+    const missingFunction = categoryError.code === "PGRST202"
+      || categoryError.message.toLowerCase().includes("set_event_category");
+    return errorResponse(
+      missingFunction
+        ? "De database is nog niet bijgewerkt. De categorie-opslagfunctie ontbreekt; voer de migratie voor categoriebeheer uit."
+        : `Categorie opslaan mislukt: ${categoryError.message}`,
+      missingFunction ? 503 : 502
+    );
   }
+
+  return NextResponse.json({ ok: true });
 }
