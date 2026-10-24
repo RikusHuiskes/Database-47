@@ -25,6 +25,72 @@ export const LOCAL_AREA_TOWNS: LocalAreaTown[] = [
   { id: "fumel", name: "Fumel", postcode: "47500", latitude: 44.4986, longitude: 0.9657 },
 ];
 
+// Town suggestions for submitting an event. The form still allows a custom place.
+export const VISITOR_EVENT_CITY_GROUPS = [
+  {
+    label: "0–15 km vanaf Duras",
+    cities: [
+      "Duras",
+      "Saint-Sernin",
+      "Loubès-Bernac",
+      "Soumensac",
+      "Saint-Astier",
+      "Savignac-de-Duras",
+      "Esclottes",
+      "Pardaillan",
+      "Villeneuve-de-Duras",
+      "Auriac-sur-Dropt",
+      "Saint-Jean-de-Duras",
+      "Moustier",
+      "Lévignac-de-Guyenne",
+      "Baleyssagues",
+      "Sainte-Colombe-de-Duras",
+      "Allemans-du-Dropt",
+      "Lauzun",
+      "Cocumont",
+      "Seyches",
+      "Pellegrue",
+      "Monségur",
+    ],
+  },
+  {
+    label: "15–30 km vanaf Duras",
+    cities: [
+      "Miramont-de-Guyenne",
+      "Sainte-Foy-la-Grande",
+      "Eymet",
+      "Sauveterre-de-Guyenne",
+      "Marmande",
+      "La Réole",
+      "Samazan",
+      "Gensac",
+      "Castelmoron-sur-Lot",
+    ],
+  },
+  {
+    label: "30–50 km vanaf Duras",
+    cities: [
+      "Bergerac",
+      "Monbazillac",
+      "Issigeac",
+      "Villeréal",
+      "Castillon-la-Bataille",
+      "Saint-Émilion",
+      "Libourne",
+      "Langon",
+      "Saint-Macaire",
+      "Casteljaloux",
+      "Tonneins",
+      "Le Mas-d'Agenais",
+      "Montpon-Ménestérol",
+      "Mussidan",
+      "Lalinde",
+      "Beaumont-du-Périgord",
+      "Monflanquin",
+    ],
+  },
+] as const;
+
 export function normalizePlaceName(value: string): string {
   return value
     .normalize("NFD")

@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
-import { LOCAL_AREA_TOWNS, type LocalAreaTown } from "../lib/local-area";
+import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, type LocalAreaTown } from "../lib/local-area";
 type Category = {
   id: string;
   name?: string;
@@ -234,6 +234,7 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false);
   const [visitorPhoto, setVisitorPhoto] = useState<File | null>(null);
   const [visitorPhotoPreview, setVisitorPhotoPreview] = useState("");
+  const visitorPhotoInputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -932,6 +933,7 @@ export default function Home() {
     setCityChoice("");
     setCustomCity("");
     setVisitorPhoto(null);
+    if (visitorPhotoInputRef.current) visitorPhotoInputRef.current.value = "";
     setPriceFrom("");
     setPriceTo("");
     setIsFree(false);
@@ -968,8 +970,9 @@ export default function Home() {
 
     let uploadedImageUrl: string | null = null;
     let uploadedPhotoPath: string | null = null;
-    if (visitorPhoto) {
-      try {
+    let eventSaved = false;
+    try {
+      if (visitorPhoto) {
         const photoForm = new FormData();
         photoForm.set("photo", visitorPhoto);
         const response = await fetch("/api/visitor-event-photo", { method: "POST", body: photoForm });
@@ -979,65 +982,73 @@ export default function Home() {
         }
         uploadedImageUrl = result.imageUrl;
         uploadedPhotoPath = result.path;
-      } catch (cause) {
-        setSubmissionError(cause instanceof Error ? cause.message : "De foto kon niet worden opgeslagen.");
-        setSaving(false);
+      }
+
+      const payload = {
+        title: title.trim(),
+        slug: makeSlug(title),
+        short_description: shortDescription.trim() || null,
+        description: description.trim() || null,
+        start_at: new Date(startAt).toISOString(),
+        end_at: endAt ? new Date(endAt).toISOString() : null,
+        venue_name: venueName.trim() || null,
+        address: address.trim() || null,
+        postcode: postcode.trim() || null,
+        city: (cityChoice === "__other__" ? customCity : cityChoice).trim() || null,
+        price_from: isFree || priceFrom === "" ? null : Number(priceFrom),
+        price_to: isFree || priceTo === "" ? null : Number(priceTo),
+        is_free: isFree,
+        website_url: websiteUrl.trim() || null,
+        booking_url: bookingUrl.trim() || null,
+        source_url: sourceUrl.trim() || null,
+        image_url: uploadedImageUrl,
+        promotion_type: promotionType,
+        promotion_status: promotionType === "none" ? "none" : "requested",
+        advertiser_email: promotionType === "none" ? null : advertiserEmail.trim(),
+        status: "pending",
+        verified: false,
+      };
+
+      const { error: insertError } = await supabase.rpc("submit_pending_event", {
+        p_event: payload,
+        p_category_id: categoryId || null,
+      });
+
+      if (insertError) {
+        console.error("[visitor-event] submission failed", {
+          code: insertError.code,
+          message: insertError.message,
+        });
+        setSubmissionError(`De activiteit is niet opgeslagen${uploadedImageUrl ? " en de foto is opgeruimd" : ""}. Controleer de gegevens en probeer opnieuw. (${insertError.message})`);
         return;
       }
-    }
 
-    const payload = {
-      title: title.trim(),
-      slug: makeSlug(title),
-      short_description: shortDescription.trim() || null,
-      description: description.trim() || null,
-      start_at: new Date(startAt).toISOString(),
-      end_at: endAt ? new Date(endAt).toISOString() : null,
-      venue_name: venueName.trim() || null,
-      address: address.trim() || null,
-      postcode: postcode.trim() || null,
-      city: (cityChoice === "__other__" ? customCity : cityChoice).trim() || null,
-      price_from: isFree || priceFrom === "" ? null : Number(priceFrom),
-      price_to: isFree || priceTo === "" ? null : Number(priceTo),
-      is_free: isFree,
-      website_url: websiteUrl.trim() || null,
-      booking_url: bookingUrl.trim() || null,
-      source_url: sourceUrl.trim() || null,
-      image_url: uploadedImageUrl,
-      promotion_type: promotionType,
-      promotion_status: promotionType === "none" ? "none" : "requested",
-      advertiser_email: promotionType === "none" ? null : advertiserEmail.trim(),
-      status: "pending",
-      verified: false,
-    };
+      eventSaved = true;
+      resetForm();
+      setShowForm(false);
 
-    const { error: insertError } = await supabase.rpc("submit_pending_event", {
-  p_event: payload,
-  p_category_id: categoryId || null,
-});
-
-    if (insertError) {
-      if (uploadedPhotoPath) {
+      try {
+        await loadData();
+      } catch (cause) {
+        console.error("[visitor-event] refresh after submission failed", cause);
+      }
+      const photoConfirmation = uploadedImageUrl ? " De foto is meegestuurd en verschijnt na controle bij het evenement." : "";
+      setSubmissionNotice(promotionType === "none"
+        ? `Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.${photoConfirmation}`
+        : `Dank je voor je tip over “${payload.title}”. De beheerder controleert eerst het evenement en neemt contact op over de gekozen betaalde promotie. De advertentie wordt pas na goedkeuring en betaling geplaatst.${photoConfirmation}`);
+    } catch (cause) {
+      console.error("[visitor-event] save failed", cause);
+      setSubmissionError(cause instanceof Error ? cause.message : "De activiteit kon niet worden opgeslagen. Probeer het opnieuw.");
+    } finally {
+      if (!eventSaved && uploadedPhotoPath) {
         await fetch("/api/visitor-event-photo", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ path: uploadedPhotoPath }),
         }).catch(() => undefined);
       }
-      setSubmissionError("Je tip kon niet worden verstuurd. Probeer het later opnieuw.");
       setSaving(false);
-      return;
     }
-
-  resetForm();
-setShowForm(false);
-
-
-    await loadData();
-    setSubmissionNotice(promotionType === "none"
-      ? `Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.`
-      : `Dank je voor je tip over “${payload.title}”. De beheerder controleert eerst het evenement en neemt contact op over de gekozen betaalde promotie. De advertentie wordt pas na goedkeuring en betaling geplaatst.`);
-    setSaving(false);
   }
 
   async function previewEventSource(endpoint: string, sourceName: string) {
@@ -1485,6 +1496,7 @@ setShowForm(false);
             <label htmlFor="visitor-event-photo" style={labelStyle}>Foto van het evenement uploaden (optioneel)</label>
             <input
               id="visitor-event-photo"
+              ref={visitorPhotoInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={(event) => {
@@ -1507,7 +1519,7 @@ setShowForm(false);
               }}
             />
             <p className="visitor-photo-help">Klik op ‘Bestand kiezen’ om een foto vanaf je telefoon of computer toe te voegen. JPG, PNG of WebP, maximaal 5 MB. De foto verschijnt na controle door de beheerder.</p>
-            {visitorPhotoPreview && <div className="visitor-photo-preview"><img src={visitorPhotoPreview} alt="Voorbeeld van de gekozen evenementfoto" /><button type="button" onClick={() => setVisitorPhoto(null)}>Foto verwijderen</button></div>}
+            {visitorPhotoPreview && <div className="visitor-photo-preview"><img src={visitorPhotoPreview} alt="Voorbeeld van de gekozen evenementfoto" /><button type="button" onClick={() => { setVisitorPhoto(null); if (visitorPhotoInputRef.current) visitorPhotoInputRef.current.value = ""; }}>Foto verwijderen</button></div>}
           </div>
 
           <fieldset className="promotion-fieldset">
@@ -1624,26 +1636,36 @@ setShowForm(false);
           </div>
 
           <div>
-            <label style={labelStyle}>Plaats *</label>
+            <label htmlFor="visitor-event-city" style={labelStyle}>Plaats *</label>
             <select
+              id="visitor-event-city"
               style={inputStyle}
               required
               value={cityChoice}
-              onChange={(e) => { setCityChoice(e.target.value); if (e.target.value !== "__other__") setCustomCity(""); }}
+              onChange={(e) => {
+                setCityChoice(e.target.value);
+                setCustomCity("");
+              }}
             >
-              <option value="">Kies een plaats</option>
-              {areaOptions.map((area) => <option key={area.id} value={area.name}>{area.name}</option>)}
+              <option value="" disabled>Kies een plaats</option>
+              {VISITOR_EVENT_CITY_GROUPS.map((group) => (
+                <optgroup label={group.label} key={group.label}>
+                  {group.cities.map((city) => <option value={city} key={city}>{city}</option>)}
+                </optgroup>
+              ))}
               <option value="__other__">Andere plaats…</option>
             </select>
-            {cityChoice === "__other__" && <input
-              style={{ ...inputStyle, marginTop: 10 }}
-              required
-              maxLength={120}
-              value={customCity}
-              onChange={(e) => setCustomCity(e.target.value)}
-              placeholder="Vul de plaats in"
-              aria-label="Andere plaats"
-            />}
+            {cityChoice === "__other__" && (
+              <input
+                style={{ ...inputStyle, marginTop: 8 }}
+                aria-label="Andere plaatsnaam"
+                required
+                maxLength={120}
+                value={customCity}
+                onChange={(e) => setCustomCity(e.target.value)}
+                placeholder="Vul de plaatsnaam in"
+              />
+            )}
           </div>
 
           <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
