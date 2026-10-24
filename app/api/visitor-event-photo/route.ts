@@ -33,6 +33,12 @@ async function ensureBucket(client: NonNullable<ReturnType<typeof serviceClient>
   const { data, error } = await client.storage.getBucket(BUCKET);
   if (!error && data?.public) return null;
   if (!error && data && !data.public) return "De foto-opslag is nog niet goed ingesteld.";
+  if (error) {
+    console.error("[visitor-event-photo] bucket lookup failed", {
+      message: error.message,
+      statusCode: error.statusCode,
+    });
+  }
 
   const { error: createError } = await client.storage.createBucket(BUCKET, {
     public: true,
@@ -40,11 +46,22 @@ async function ensureBucket(client: NonNullable<ReturnType<typeof serviceClient>
     allowedMimeTypes: Object.keys(PHOTO_EXTENSIONS),
   });
   if (createError && !/already exists|duplicate|resource exists/i.test(createError.message)) {
+    console.error("[visitor-event-photo] bucket creation failed", {
+      message: createError.message,
+      statusCode: createError.statusCode,
+    });
     return "De foto-opslag kon niet worden klaargezet. Probeer het later opnieuw.";
   }
 
   const bucket = await client.storage.getBucket(BUCKET);
-  if (bucket.error || !bucket.data?.public) return "De foto-opslag kon niet worden klaargezet. Probeer het later opnieuw.";
+  if (bucket.error || !bucket.data?.public) {
+    console.error("[visitor-event-photo] bucket verification failed", {
+      message: bucket.error?.message,
+      statusCode: bucket.error?.statusCode,
+      public: bucket.data?.public,
+    });
+    return "De foto-opslag kon niet worden klaargezet. Probeer het later opnieuw.";
+  }
   return null;
 }
 
@@ -85,6 +102,10 @@ export async function POST(request: NextRequest) {
     upsert: false,
   });
   if (uploadError) {
+    console.error("[visitor-event-photo] upload failed", {
+      message: uploadError.message,
+      statusCode: uploadError.statusCode,
+    });
     return NextResponse.json({ error: "De foto kon niet worden opgeslagen. Probeer het later opnieuw." }, { status: 503 });
   }
 
