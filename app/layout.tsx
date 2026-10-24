@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Activiteiten dichtbij — DATABASE 47",
-  description: "Ontdek activiteiten en evenementen rond Duras, Monteton, Eymet en omgeving.",
+  title: "Ontdek Lot-et-Garonne | Agenda, gemeenten en uitstapjes",
+  description: "Ontdek evenementen, gemeenten en lokale uitstapjes in Lot-et-Garonne. Zoek activiteiten in Duras en omgeving.",
 };
 
 export default function RootLayout({

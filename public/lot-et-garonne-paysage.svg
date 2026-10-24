@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 650" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="900" y1="0" x2="900" y2="650" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#83BBDD"/><stop offset=".48" stop-color="#D5E8DC"/><stop offset="1" stop-color="#F1D6A0"/>
+    </linearGradient>
+    <linearGradient id="river" x1="700" y1="300" x2="700" y2="650" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#73B8C1"/><stop offset=".52" stop-color="#3F969B"/><stop offset="1" stop-color="#216D78"/>
+    </linearGradient>
+    <linearGradient id="sunset" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#F5D789"/><stop offset="1" stop-color="#E8A66C"/>
+    </linearGradient>
+    <linearGradient id="field" x1="900" y1="185" x2="900" y2="465" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#79985B"/><stop offset="1" stop-color="#466D48"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#F5E3BE"/><stop offset="1" stop-color="#B99568"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1800v650H0z"/>
+  <circle cx="1350" cy="154" r="72" fill="#F9D887" opacity=".96"/>
+  <circle cx="1350" cy="154" r="112" fill="#F9D887" opacity=".22" filter="url(#soft)"/>
+  <g fill="#fff" opacity=".43">
+    <path d="M166 114c14-39 74-44 97-7 29-12 68 6 68 38H135c0-19 13-31 31-31Zm1064-43c14-29 53-35 74-8 21-9 48 5 48 29h-146c0-12 10-21 24-21Z"/>
+  </g>
+  <path fill="#A7C39A" d="M0 302c142-73 258-80 416-29 147 48 239 11 366-43 140-59 260-71 404-9 142 61 219 50 365-10 95-39 171-48 249-8v172H0V302Z"/>
+  <path fill="#789968" d="M0 332c126-37 258-35 374 3 128 42 224 43 372-7 139-48 257-60 407-9 168 57 269 60 406 18 100-31 169-39 241-17v190H0V332Z"/>
+  <path fill="#55764E" d="M0 389c116-43 243-40 359 6 124 49 253 42 390-5 150-51 257-44 397 4 123 42 244 54 372 16 106-32 190-38 282-6v193H0V389Z"/>
+  <path fill="url(#field)" d="M0 457c156-76 300-70 434-12 142 61 261 59 393 8 138-53 258-63 385-15 139 52 269 78 416 32 77-24 128-29 172-20v200H0V457Z"/>
+  <path fill="#A2C2B2" d="M0 522c171-40 281-28 423 34 129 57 260 56 407-11 151-68 264-61 393-18 195 65 360 54 577-19v142H0V522Z"/>
+  <path fill="url(#river)" d="M0 459c180-13 329 8 449 45 148 45 233 28 340-17 116-49 223-68 347-29 111 35 194 80 308 89 117 10 231-24 356-103v209H0V459Z"/>
+  <path stroke="#B8E0D5" stroke-opacity=".56" stroke-width="5" d="M0 510c188-27 328-2 460 36 120 35 206 31 326-18 125-51 222-64 341-25 132 44 216 89 333 91 123 2 223-35 340-105"/>
+  <path stroke="#D4ECE0" stroke-opacity=".35" stroke-width="3" d="M80 585c176-13 282 14 394 40m826-6c156 26 299 7 447-67"/>
+  <!-- old stone bridge -->
+  <path fill="url(#stone)" d="M430 364c126-18 250-17 376 0l31 24v32c-132-23-273-26-438-4l31-52Z"/>
+  <path fill="#927654" d="M428 388c137-22 270-20 409 1v22c-142-24-280-24-415-2l6-21Z"/>
+  <path fill="#4F817A" d="M479 405c2-20 18-34 37-34s35 14 37 34h-74Zm107-2c2-23 20-40 43-40s41 17 43 40h-86Zm121 2c1-20 17-35 37-35s36 15 37 35h-74Z"/>
+  <path stroke="#F5E8C8" stroke-opacity=".7" stroke-width="5" d="m449 382 352 3"/>
+  <g fill="#E7D2AA" opacity=".7">
+    <path d="m474 377 7 1-4 28h-7l4-29Zm42-3 7 1-2 34h-7l2-35Zm41 1 7 1-1 34h-7l1-35Zm48-7 7 1 2 39h-7l-2-40Zm49 0 7-1 5 40h-7l-5-39Zm52 3 7-1 5 40h-7l-5-39Zm49 5 7 1 4 34h-7l-4-35Z"/>
+  </g>
+  <!-- village and church on the right bank -->
+  <g>
+    <path fill="#657955" d="M1235 350h565v145h-565z"/>
+    <path fill="#E4D0AC" d="M1262 317h107v100h-107zM1378 290h125v123h-125zM1518 311h99v108h-99zM1627 285h104v131h-104zM1739 330h61v91h-61z"/>
+    <path fill="#A96E55" d="m1250 319 65-56 69 56h-134Zm119-27 72-67 80 67h-152Zm138 20 61-57 69 57h-130Zm109-29 61-70 69 70h-130Zm109 44 51-43 59 43h-110Z"/>
+    <path fill="#6D4D3C" d="M1302 371h25v46h-25zM1411 353h27v60h-27zM1550 371h25v48h-25zM1660 350h27v65h-27zM1755 376h22v45h-22z"/>
+    <path fill="#F2D69A" d="M1341 340h12v18h-12zM1390 319h12v19h-12zM1470 318h12v20h-12zM1537 346h12v18h-12zM1602 333h12v19h-12zM1696 326h12v19h-12zM1721 326h12v19h-12z"/>
+    <path fill="#E8D8B9" d="M1430 260h17v-73l9-20 9 20v73h-35Z"/>
+    <path fill="#9C7653" d="m1427 189 20-33 21 33h-41Z"/>
+    <path stroke="#F5E8CE" stroke-width="4" d="M1439 215h17m-17 13h17"/>
+  </g>
+  <!-- tree lines -->
+  <g fill="#2E6548">
+    <circle cx="120" cy="361" r="46"/><circle cx="166" cy="345" r="54"/><circle cx="215" cy="366" r="48"/><circle cx="318" cy="351" r="42"/><circle cx="363" cy="367" r="46"/>
+    <circle cx="1020" cy="349" r="38"/><circle cx="1061" cy="332" r="49"/><circle cx="1105" cy="355" r="43"/><circle cx="1166" cy="340" r="47"/>
+    <circle cx="151" cy="470" r="56"/><circle cx="224" cy="457" r="45"/><circle cx="289" cy="478" r="56"/>
+    <circle cx="1182" cy="467" r="43"/><circle cx="1225" cy="450" r="55"/><circle cx="1273" cy="473" r="44"/>
+  </g>
+  <g fill="#478056" opacity=".86">
+    <circle cx="89" cy="343" r="25"/><circle cx="166" cy="322" r="30"/><circle cx="239" cy="347" r="24"/><circle cx="340" cy="338" r="23"/>
+    <circle cx="1037" cy="326" r="21"/><circle cx="1075" cy="308" r="28"/><circle cx="1121" cy="335" r="23"/><circle cx="1171" cy="319" r="28"/>
+    <circle cx="135" cy="452" r="27"/><circle cx="223" cy="433" r="25"/><circle cx="290" cy="452" r="28"/><circle cx="1214" cy="425" r="25"/>
+  </g>
+  <!-- sunlit leaves framing the scene -->
+  <g fill="#294D2D" opacity=".94">
+    <path d="M0 0h302c-59 31-85 72-91 124-43-47-92-66-151-63 49 36 71 80 73 131C79 145 37 127 0 130V0Z"/>
+    <path d="M0 130c82 25 127 70 139 146-49-35-96-46-139-41V130Zm152-130c47 64 61 129 40 194-21-48-54-81-99-99 35 0 65 10 91 30C177 75 166 34 152 0Z"/>
+  </g>
+  <g fill="#86A84A" opacity=".9">
+    <path d="M0 27c48 9 91 33 124 74C83 87 42 84 0 94V27Zm0 118c46 2 83 18 115 51-39-10-77-7-115 9v-60Zm121-145c38 40 56 83 54 131-19-37-48-64-83-82 31 8 58 22 80 43-13-37-30-68-51-92Z"/>
+    <path d="M214 0c-7 36-3 75 12 115-2-38 7-70 29-99L214 0Zm-37 59c-2 42 9 78 35 111-13-36-14-69-5-103l-30-8Z"/>
+  </g>
+  <!-- foreground vineyard rows -->
+  <g stroke="#D8C17D" stroke-opacity=".63" stroke-width="4">
+    <path d="M0 617c137-38 245-47 379-29M0 641c149-37 253-40 387-20M1410 607c131-35 253-45 390-32m-410 59c141-35 271-38 410-20"/>
+  </g>
+</svg>

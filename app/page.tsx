@@ -1016,110 +1016,216 @@ setShowForm(false);
     });
   }
 
+  function formatCardDate(value?: string | null) {
+    if (!value) return { day: "—", month: "" };
+    const date = new Date(value);
+    return {
+      day: date.toLocaleDateString("nl-NL", { day: "numeric" }),
+      month: date.toLocaleDateString("nl-NL", { month: "short" }).replace(".", ""),
+    };
+  }
+
+  function browseTheme(keywords: RegExp) {
+    const matchingCategory = categories.find((category) => keywords.test(`${category.name ?? ""} ${category.slug ?? ""}`));
+    setCategoryFilter(matchingCategory?.id ?? "all");
+    setEventSearch("");
+    document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  const featuredEvents = visibleNearbyEvents.slice(0, 3);
+
   return (
-    <main
-      style={{
-        maxWidth: 1000,
-        margin: "0 auto",
-        padding: 24,
-        fontFamily: "Arial, sans-serif",
-        color: "#172033",
-      }}
-    >
+    <main className="visitor-site">
       <header className="site-header">
-        <p style={{ marginBottom: 6, color: "#56716b", fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", fontSize: 12 }}>Dichtbij Duras · Lot-et-Garonne</p>
-        <h1 style={{ margin: "0 0 8px", fontSize: 38 }}>Uit in de buurt</h1>
-        <p style={{ marginTop: 0, color: "#475569", fontSize: 18 }}>Lokale activiteiten, overzichtelijk dichtbij.</p>
+        <div className="site-nav">
+          <a className="brand-lockup" href="#top" aria-label="Lot-et-Garonne, naar de startpagina">
+            <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
+            <span className="brand-name"><strong>LOT-ET-GARONNE</strong></span>
+          </a>
+          <nav className="primary-nav" aria-label="Hoofdnavigatie">
+            <a href="#agenda">Agenda</a>
+            <a href="#ontdekken">Ontdekken</a>
+            <a href="#gemeenten">Gemeenten</a>
+            <a href="#praktische-info">Praktische info</a>
+            <a href="#gezondheid">Gezondheid</a>
+          </nav>
+          <a className="region-note" href="#gemeenten"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
+        </div>
         <button className="admin-access-button" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerder</button>
+        <div className="hero-grid" id="top">
+          <div className="hero-art" aria-hidden="true"><img src="/lot-et-garonne-paysage.svg" alt="" /></div>
+          <div className="hero-shade" aria-hidden="true" />
+          <div className="hero-copy">
+            <p className="hero-kicker"><span aria-hidden="true" /> Leven, beleven en ontdekken in het zuidwesten</p>
+            <h1>Ontdek Lot-et-Garonne</h1>
+            <p className="hero-intro">Evenementen, plekken en informatie voor elke dag.</p>
+          </div>
+          <form className="hero-search" role="search" onSubmit={(event) => { event.preventDefault(); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>
+            <label className="hero-search-query"><span aria-hidden="true">⌕</span><span className="visually-hidden">Wat zoek je?</span><input value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Wat zoek je?" /></label>
+            <label className="hero-search-select"><span aria-hidden="true">⌖</span><span className="visually-hidden">Gemeente</span><select value={selectedAreaId} onChange={(event) => selectArea(event.target.value)} aria-label="Kies een gemeente">
+              {localAreas.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
+            </select></label>
+            <label className="hero-search-select"><span aria-hidden="true">▦</span><span className="visually-hidden">Categorie</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Kies een categorie">
+              <option value="all">Alle categorieën</option>
+              {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
+            </select></label>
+            <button className="hero-search-submit" type="submit" aria-label="Zoek activiteiten"><span aria-hidden="true">⌕</span></button>
+          </form>
+          <a className="hero-agenda-link" href="#agenda">Bekijk wat er binnenkort te doen is <span aria-hidden="true">↓</span></a>
+        </div>
       </header>
 
-      <hr />
+      <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
+        <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeenten</strong><small>Ontdek de plaatsen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-health" href="#gezondheid"><span className="discovery-icon" aria-hidden="true">♡</span><span><strong>Zorg & gezondheid</strong><small>Actief eropuit</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+      </section>
 
-      <section className="search-panel" aria-labelledby="nearby-heading" style={{ margin: "28px 0 42px", padding: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 14 }}>
-        <h2 id="nearby-heading" style={{ marginTop: 0, fontSize: 30 }}>Wat is er te doen bij jou in de buurt?</h2>
-        <p style={{ color: "#475569", lineHeight: 1.6, maxWidth: 720 }}>
-          Kies een plaats en hoe ver je wilt zoeken. Je kunt ook je huidige locatie gebruiken; die wordt alleen voor deze zoekopdracht gebruikt.
-        </p>
-        <p style={{ color: "#334155", lineHeight: 1.6, maxWidth: 760 }}>
-          Een vertrouwd overzicht van wat er binnenkort te doen is rond Duras, Eymet, Monségur en de omliggende dorpen. Kies zelf hoe ver je wilt reizen.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", alignItems: "end", gap: 14, maxWidth: 780 }}>
-          <label style={labelStyle}>
-            Zoek rond
-            <select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
-              {localAreas.map((area) => (
-                <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>
-                  {area.name} ({area.postcode})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={labelStyle}>
+      <section className="featured-section" aria-labelledby="featured-heading">
+        <div className="content-heading"><div><p className="section-kicker">Ideeën voor binnenkort</p><h2 id="featured-heading">Binnenkort in de buurt</h2></div><a className="text-arrow-link" href="#agenda">Naar de agenda <span aria-hidden="true">→</span></a></div>
+        {featuredEvents.length > 0 ? <div className="featured-events-grid">
+          {featuredEvents.map((event) => {
+            const date = formatCardDate(event.start_at);
+            return <article className="featured-event-card" key={`featured-${event.id}`}>
+              <a className="featured-event-image" href={safeHttpUrl(event.source_url) ?? "#agenda"} target={safeHttpUrl(event.source_url) ? "_blank" : undefined} rel={safeHttpUrl(event.source_url) ? "noreferrer" : undefined} aria-label={`Meer over ${event.title}`}>
+                {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
+              </a>
+              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div><h3>{event.title}</h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
+            </article>;
+          })}
+        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}
+      </section>
+
+      <section id="agenda" className="search-panel" aria-labelledby="nearby-heading" style={{ margin: "28px 0 42px", padding: 24, background: "white", border: "1px solid #d8dee8", borderRadius: 14 }}>
+        <div className="search-heading">
+          <div>
+            <p className="section-kicker">Agenda voor Duras en omgeving</p>
+            <h2 id="nearby-heading">Vind jouw volgende uitje</h2>
+            <p>Alleen gecontroleerde activiteiten staan hier. Verfijn de agenda op reisafstand, gratis activiteiten of je eigen locatie.</p>
+          </div>
+          <div className="search-count" aria-hidden="true"><strong>{nearbyLoading ? "…" : nearbyEvents.length}</strong><span>activiteiten<br />in de buurt</span></div>
+        </div>
+        <div className="search-controls search-controls-primary">
+          <label className="field-label" style={labelStyle}>
             Zoek binnen
             <select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
               {[10, 25, 50].map((radius) => <option key={radius} value={radius}>{radius} kilometer</option>)}
             </select>
           </label>
-          <button type="button" onClick={useCurrentLocation} style={{ padding: 12, border: "1px solid #cbd5e1", borderRadius: 8, background: "#f8fafc", cursor: "pointer", fontSize: 15 }}>
-            Gebruik mijn locatie
+          <button className="location-button" type="button" onClick={useCurrentLocation}>
+            <span aria-hidden="true">⌖</span> Gebruik mijn locatie
           </button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14, marginTop: 18, maxWidth: 780 }}>
-          <label style={labelStyle}>
+        <div className="search-controls search-controls-secondary">
+          <label className="field-label" style={labelStyle}>
             Zoek op activiteit of plaats
             <input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt, concert, Eymet" />
           </label>
-          <label style={labelStyle}>
+          <label className="field-label" style={labelStyle}>
             Soort activiteit
             <select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
               <option value="all">Alle soorten</option>
               {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
             </select>
           </label>
-          <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
+          <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
             <input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />
             Alleen gratis activiteiten
           </label>
         </div>
-        <p role="status" aria-live="polite" style={{ color: "#475569", margin: "18px 0 12px" }}>
-          {nearbyLoading ? "Evenementen in de buurt zoeken…" : `${nearbyEvents.length} gecontroleerde ${nearbyEvents.length === 1 ? "activiteit" : "activiteiten"} binnen ${radiusKm} km van ${searchLabel}; ${visibleNearbyEvents.length} getoond met je huidige filters.`}
-        </p>
-        {visitorLocation && <p style={{ color: "#64748b", marginTop: -4, fontSize: 14 }}>Zoeken rond je huidige locatie.</p>}
+        <div className="results-summary" role="status" aria-live="polite">
+          <span className="results-indicator" aria-hidden="true" />
+          <strong>{nearbyLoading ? "We zoeken iets leuks voor je…" : `${visibleNearbyEvents.length} ${visibleNearbyEvents.length === 1 ? "activiteit" : "activiteiten"} gevonden`}</strong>
+          {!nearbyLoading && <span>binnen {radiusKm} km van {searchLabel}{categoryFilter !== "all" || eventSearch || freeOnly ? " met je huidige filters" : ""}</span>}
+        </div>
+        {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt.</p>}
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
-        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p>Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
-        {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p>Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
-        {locationlessCount > 0 && <p style={{ color: "#64748b", fontSize: 14 }}>{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
-        <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results">Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
+        {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results">Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
+        {locationlessCount > 0 && <p className="location-note">{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
+        <div className="event-grid" aria-label="Aankomende activiteiten">
           {visibleNearbyEvents.map((event) => (
-            <article className="activity-card" key={event.id} style={{ display: "grid", gridTemplateColumns: event.image_url ? "minmax(120px, 220px) minmax(0, 1fr)" : "1fr", gap: 18, padding: 18, border: "1px solid #d8dee8", borderRadius: 12 }}>
-              {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ width: "100%", maxHeight: 190, height: "100%", minHeight: 120, objectFit: "cover", borderRadius: 8 }} />}
-              <div>
-                <h3 style={{ margin: "0 0 8px", fontSize: 21 }}>{event.title}</h3>
-                {event.category_id && <p style={{ margin: "0 0 8px", color: "#56716b", fontWeight: 700, fontSize: 14 }}>{categories.find((category) => category.id === event.category_id)?.name ?? "Activiteit"}</p>}
-                <p style={{ margin: "6px 0", color: "#475569" }}>{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
-                <p style={{ margin: "6px 0", color: "#475569" }}>{event.distance_is_approximate ? "Ongeveer " : ""}{event.distance_km} km · {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
-                {(event.short_description || event.description) && <p style={{ lineHeight: 1.55 }}>{event.short_description || event.description}</p>}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
-                  {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website</a>}
-                  {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
-                  {safeHttpUrl(event.source_url) && <a href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie</a>}
+            <article className="activity-card" key={event.id}>
+              <div className="activity-media">
+                {safeHttpUrl(event.image_url)
+                  ? <img className="activity-image" src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" />
+                  : <div className="activity-image-placeholder"><span aria-hidden="true">47</span><small>Ontdek dichtbij</small></div>}
+                <span className="distance-pill">{event.distance_is_approximate ? "ca. " : ""}{event.distance_km} km</span>
+              </div>
+              <div className="activity-card-content">
+                <div className="activity-tags">
+                  {event.category_id && <span className="category-pill">{categories.find((category) => category.id === event.category_id)?.name ?? "Activiteit"}</span>}
+                  {event.is_free && <span className="free-pill">Gratis</span>}
                 </div>
-                {event.source_url && <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 13 }}>Bron: {sourceLabel(event.source_url)}</p>}
+                <h3>{event.title}</h3>
+                <p className="activity-date">{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
+                <p className="activity-place"><span aria-hidden="true">⌖</span> {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
+                {(event.short_description || event.description) && <p className="activity-description">{event.short_description || event.description}</p>}
+                <div className="activity-links">
+                  {safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
+                  {safeHttpUrl(event.website_url) && <a className="activity-link" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
+                  {safeHttpUrl(event.source_url) && <a className="activity-link" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie <span aria-hidden="true">↗</span></a>}
+                </div>
+                {event.source_url && <p className="activity-source">Bron: {sourceLabel(event.source_url)}</p>}
               </div>
             </article>
           ))}
         </div>
-        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid #e2e8f0" }}>
-          <strong>Ken je een activiteit die hier ontbreekt?</strong>
-          <p style={{ margin: "6px 0 12px", color: "#475569" }}>Tip ons. Een beheerder controleert de gegevens voordat de activiteit zichtbaar wordt.</p>
-          <button type="button" onClick={() => { setShowForm((current) => !current); setError(""); setMessage(""); }} style={{ padding: "11px 16px", border: 0, borderRadius: 8, background: "#173f5f", color: "white", cursor: "pointer", fontSize: 15 }}>
-            {showForm ? "Tipformulier sluiten" : "Een activiteit doorgeven"}
+        <div className="tip-invitation" id="tip-activiteit">
+          <div><p className="section-kicker">Ken jij de streek?</p><strong>Staat jouw favoriete activiteit er nog niet bij?</strong><p>Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien.</p></div>
+          <button className="button button-dark" type="button" onClick={() => { setShowForm((current) => !current); setError(""); setMessage(""); }}>
+            {showForm ? "Tipformulier sluiten" : "Een activiteit doorgeven"}<span aria-hidden="true">→</span>
           </button>
         </div>
       </section>
 
+      <section className="area-explorer" id="gemeenten" aria-labelledby="area-heading">
+        <div className="area-explorer-copy">
+          <p className="section-kicker">Plaatsen om naar uit te kijken</p>
+          <h2 id="area-heading">Ontdek de gemeenten.</h2>
+          <p>Van Duras en Eymet tot Marmande en Sainte-Foy-la-Grande. Kies een plaats en bekijk wat er in de omgeving op de agenda staat.</p>
+        </div>
+        <div className="area-pills" aria-label="Kies een plaats in de buurt">
+          {localAreas.filter((area) => area.latitude != null && area.longitude != null).map((area) => (
+            <button className={selectedAreaId === area.id && !visitorLocation ? "area-pill area-pill-active" : "area-pill"} type="button" key={area.id} onClick={() => { selectArea(area.id); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>
+              <span>{area.name}</span><small>{area.postcode}</small>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="visitor-guides" aria-label="Ontdek meer over de streek">
+        <article className="guide-card guide-health" id="gezondheid">
+          <span className="guide-icon" aria-hidden="true">♡</span>
+          <p className="section-kicker">Zorg & gezondheid</p>
+          <h2>Goed voor jezelf zorgen begint ook buiten.</h2>
+          <p>Even wandelen, samen op pad of iets nieuws proberen? Bekijk activiteiten in en rond de gemeenten die nu in de agenda staan.</p>
+          <a href="#agenda">Bekijk activiteiten <span aria-hidden="true">→</span></a>
+        </article>
+        <article className="guide-card guide-practical" id="praktische-info">
+          <span className="guide-icon" aria-hidden="true">✳</span>
+          <p className="section-kicker">Praktische info</p>
+          <h2>Maak je uitstap makkelijk.</h2>
+          <p>Kies je gemeente, stel in hoe ver je wilt reizen en ontdek ook gratis activiteiten. Je kunt zoeken vanaf je huidige locatie.</p>
+          <div className="guide-actions">
+            <button type="button" onClick={() => { setRadiusKm(50); setFreeOnly(false); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>Zoek binnen 50 km <span aria-hidden="true">→</span></button>
+            <button type="button" onClick={() => { setFreeOnly(true); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>Toon gratis uitjes <span aria-hidden="true">→</span></button>
+          </div>
+        </article>
+        <article className="guide-card guide-nature">
+          <span className="guide-icon" aria-hidden="true">⌖</span>
+          <p className="section-kicker">Natuur & cultuur</p>
+          <h2>Laat je verrassen door het lokale leven.</h2>
+          <p>Dorpsfeesten, markten, muziek en uitstapjes: de agenda groeit mee met tips en bronnen uit de streek.</p>
+          <button type="button" onClick={() => { setEventSearch(""); setCategoryFilter("all"); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>Ontdek wat er speelt <span aria-hidden="true">→</span></button>
+        </article>
+      </section>
+
       {showForm && (
         <form
+          id="activity-tip-form"
+          className="visitor-form"
           onSubmit={saveEvent}
           style={{
             display: "grid",
@@ -1339,6 +1445,15 @@ setShowForm(false);
 
       {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
+
+      <footer className="site-footer">
+        <a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
+          <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
+          <span className="brand-name"><strong>LOT-ET-GARONNE</strong><small>Leven, beleven en ontdekken</small></span>
+        </a>
+        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#praktische-info">Praktische info</a><a href="#tip-activiteit" onClick={() => setShowForm(true)}>Activiteit doorgeven</a></div>
+        <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
+      </footer>
 
       <details id="beheer" style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
