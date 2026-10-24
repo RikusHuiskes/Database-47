@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
-import type { LocalAreaTown } from "../lib/local-area";
+import { LOCAL_AREA_TOWNS, type LocalAreaTown } from "../lib/local-area";
 type Category = {
   id: string;
   name?: string;
@@ -52,6 +52,9 @@ type LocalAreaOption = LocalAreaTown & { latitude: number | null; longitude: num
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
 
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
+
+const MAX_VISITOR_PHOTO_BYTES = 5 * 1024 * 1024;
+const VISITOR_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type EventEditDraft = {
   category_id: string;
@@ -219,6 +222,8 @@ export default function Home() {
   const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
   const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [visitorPhoto, setVisitorPhoto] = useState<File | null>(null);
+  const [visitorPhotoPreview, setVisitorPhotoPreview] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -248,7 +253,7 @@ export default function Home() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const closeWithEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedVisitorEvent(null);
+      if (event.key === "Escape") closeVisitorEvent();
     };
     window.addEventListener("keydown", closeWithEscape);
     return () => {
@@ -265,7 +270,8 @@ export default function Home() {
   const [venueName, setVenueName] = useState("");
   const [address, setAddress] = useState("");
   const [postcode, setPostcode] = useState("");
-  const [city, setCity] = useState("");
+  const [cityChoice, setCityChoice] = useState("");
+  const [customCity, setCustomCity] = useState("");
   const [priceFrom, setPriceFrom] = useState("");
   const [priceTo, setPriceTo] = useState("");
   const [isFree, setIsFree] = useState(false);
@@ -281,6 +287,49 @@ export default function Home() {
     if (!url || !key) return null;
     return createClient(url, key);
   });
+
+  const areaOptions: LocalAreaOption[] = localAreas.length > 0 ? localAreas : LOCAL_AREA_TOWNS;
+
+  function openVisitorEvent(event: NearbyEvent) {
+    const route = `#activiteit/${encodeURIComponent(event.id)}`;
+    window.history.pushState({ visitorEventId: event.id }, "", route);
+    setSelectedVisitorEvent(event);
+  }
+
+  function closeVisitorEvent() {
+    if (window.location.hash.startsWith("#activiteit/")) window.history.back();
+    setSelectedVisitorEvent(null);
+    window.requestAnimationFrame(() => document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  useEffect(() => {
+    const followEventHistory = () => {
+      const eventRoute = window.location.hash.match(/^#activiteit\/(.+)$/);
+      if (eventRoute) {
+        const slug = decodeURIComponent(eventRoute[1]);
+        const event = nearbyEvents.find((candidate) => candidate.id === slug);
+        if (event) setSelectedVisitorEvent(event);
+        return;
+      }
+      if (selectedVisitorEvent) {
+        setSelectedVisitorEvent(null);
+        window.requestAnimationFrame(() => document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    };
+    followEventHistory();
+    window.addEventListener("popstate", followEventHistory);
+    return () => window.removeEventListener("popstate", followEventHistory);
+  }, [nearbyEvents, selectedVisitorEvent]);
+
+  useEffect(() => {
+    if (!visitorPhoto) {
+      setVisitorPhotoPreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(visitorPhoto);
+    setVisitorPhotoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [visitorPhoto]);
 
   useEffect(() => {
     let active = true;
@@ -778,7 +827,9 @@ export default function Home() {
     setVenueName("");
     setAddress("");
     setPostcode("");
-    setCity("");
+    setCityChoice("");
+    setCustomCity("");
+    setVisitorPhoto(null);
     setPriceFrom("");
     setPriceTo("");
     setIsFree(false);
@@ -807,6 +858,26 @@ export default function Home() {
 
     setSaving(true);
 
+    let uploadedImageUrl: string | null = null;
+    let uploadedPhotoPath: string | null = null;
+    if (visitorPhoto) {
+      try {
+        const photoForm = new FormData();
+        photoForm.set("photo", visitorPhoto);
+        const response = await fetch("/api/visitor-event-photo", { method: "POST", body: photoForm });
+        const result = await readApiJson<{ imageUrl?: string; path?: string; error?: string }>(response);
+        if (!response.ok || !result.imageUrl || !result.path) {
+          throw new Error(result.error ?? "De foto kon niet worden opgeslagen. Probeer een JPG-, PNG- of WebP-foto van maximaal 5 MB.");
+        }
+        uploadedImageUrl = result.imageUrl;
+        uploadedPhotoPath = result.path;
+      } catch (cause) {
+        setSubmissionError(cause instanceof Error ? cause.message : "De foto kon niet worden opgeslagen.");
+        setSaving(false);
+        return;
+      }
+    }
+
     const payload = {
       title: title.trim(),
       slug: makeSlug(title),
@@ -817,13 +888,14 @@ export default function Home() {
       venue_name: venueName.trim() || null,
       address: address.trim() || null,
       postcode: postcode.trim() || null,
-      city: city.trim() || null,
+      city: (cityChoice === "__other__" ? customCity : cityChoice).trim() || null,
       price_from: isFree || priceFrom === "" ? null : Number(priceFrom),
       price_to: isFree || priceTo === "" ? null : Number(priceTo),
       is_free: isFree,
       website_url: websiteUrl.trim() || null,
       booking_url: bookingUrl.trim() || null,
       source_url: sourceUrl.trim() || null,
+      image_url: uploadedImageUrl,
       status: "pending",
       verified: false,
     };
@@ -834,6 +906,13 @@ export default function Home() {
 });
 
     if (insertError) {
+      if (uploadedPhotoPath) {
+        await fetch("/api/visitor-event-photo", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: uploadedPhotoPath }),
+        }).catch(() => undefined);
+      }
       setSubmissionError("Je tip kon niet worden verstuurd. Probeer het later opnieuw.");
       setSaving(false);
       return;
@@ -1049,11 +1128,6 @@ setShowForm(false);
   }
 
   const featuredEvents = visibleNearbyEvents.slice(0, 3);
-  const closeVisitorEvent = () => {
-    setSelectedVisitorEvent(null);
-    window.requestAnimationFrame(() => document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  };
-
   return (
     <main className="visitor-site">
       <header className="site-header">
@@ -1082,7 +1156,7 @@ setShowForm(false);
           <form className="hero-search" role="search" onSubmit={(event) => { event.preventDefault(); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>
             <label className="hero-search-query"><span aria-hidden="true">⌕</span><span className="visually-hidden">Wat zoek je?</span><input value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Wat zoek je?" /></label>
             <label className="hero-search-select"><span aria-hidden="true">⌖</span><span className="visually-hidden">Gemeente</span><select value={selectedAreaId} onChange={(event) => selectArea(event.target.value)} aria-label="Kies een gemeente">
-              {localAreas.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
+              {areaOptions.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
             </select></label>
             <label className="hero-search-select"><span aria-hidden="true">▦</span><span className="visually-hidden">Categorie</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Kies een categorie">
               <option value="all">Alle categorieën</option>
@@ -1107,10 +1181,10 @@ setShowForm(false);
           {featuredEvents.map((event) => {
             const date = formatCardDate(event.start_at);
             return <article className="featured-event-card" key={`featured-${event.id}`}>
-              <button className="featured-event-image" type="button" onClick={() => setSelectedVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
+              <button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                 {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
               </button>
-              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div><h3><button className="featured-event-title" type="button" onClick={() => setSelectedVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
+              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
             </article>;
           })}
         </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}
@@ -1138,8 +1212,14 @@ setShowForm(false);
         </div>
         <div className="search-controls search-controls-secondary">
           <label className="field-label" style={labelStyle}>
-            Zoek op activiteit of plaats
-            <input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt, concert, Eymet" />
+            Zoek op activiteit
+            <input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt of concert" />
+          </label>
+          <label className="field-label" style={labelStyle}>
+            Plaats
+            <select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
+              {areaOptions.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
+            </select>
           </label>
           <label className="field-label" style={labelStyle}>
             Soort activiteit
@@ -1167,9 +1247,11 @@ setShowForm(false);
           {visibleNearbyEvents.map((event) => (
             <article className="activity-card" key={event.id}>
               <div className="activity-media">
-                {safeHttpUrl(event.image_url)
-                  ? <img className="activity-image" src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" />
-                  : <div className="activity-image-placeholder"><span aria-hidden="true">47</span><small>Ontdek dichtbij</small></div>}
+                <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
+                  {safeHttpUrl(event.image_url)
+                    ? <img className="activity-image" src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" />
+                    : <span className="activity-image-placeholder"><span aria-hidden="true">47</span><small>Ontdek dichtbij</small></span>}
+                </button>
                 <span className="distance-pill">{event.distance_is_approximate ? "ca. " : ""}{event.distance_km} km</span>
               </div>
               <div className="activity-card-content">
@@ -1177,12 +1259,12 @@ setShowForm(false);
                   {event.category_id && <span className="category-pill">{categories.find((category) => category.id === event.category_id)?.name ?? "Activiteit"}</span>}
                   {event.is_free && <span className="free-pill">Gratis</span>}
                 </div>
-                <h3>{event.title}</h3>
+                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3>
                 <p className="activity-date">{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
                 <p className="activity-place"><span aria-hidden="true">⌖</span> {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
                 {(event.short_description || event.description) && <p className="activity-description">{event.short_description || event.description}</p>}
                 <div className="activity-links">
-                  <button className="activity-link activity-link-detail" type="button" onClick={() => setSelectedVisitorEvent(event)}>Bekijk activiteit <span aria-hidden="true">→</span></button>
+                  <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event)}>Bekijk evenementdetails <span aria-hidden="true">→</span></button>
                   {safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(event.website_url) && <a className="activity-link" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(event.source_url) && <a className="activity-link" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie <span aria-hidden="true">↗</span></a>}
@@ -1360,14 +1442,54 @@ setShowForm(false);
 
           <div>
             <label style={labelStyle}>Plaats *</label>
-            <input
+            <select
               style={inputStyle}
               required
+              value={cityChoice}
+              onChange={(e) => { setCityChoice(e.target.value); if (e.target.value !== "__other__") setCustomCity(""); }}
+            >
+              <option value="">Kies een plaats</option>
+              {areaOptions.map((area) => <option key={area.id} value={area.name}>{area.name}</option>)}
+              <option value="__other__">Andere plaats…</option>
+            </select>
+            {cityChoice === "__other__" && <input
+              style={{ ...inputStyle, marginTop: 10 }}
+              required
               maxLength={120}
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Bijvoorbeeld: Duras"
+              value={customCity}
+              onChange={(e) => setCustomCity(e.target.value)}
+              placeholder="Vul de plaats in"
+              aria-label="Andere plaats"
+            />}
+          </div>
+
+          <div className="visitor-photo-field">
+            <label htmlFor="visitor-event-photo" style={labelStyle}>Foto van het evenement (optioneel)</label>
+            <input
+              id="visitor-event-photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (!file) { setVisitorPhoto(null); return; }
+                if (!VISITOR_PHOTO_TYPES.has(file.type)) {
+                  setVisitorPhoto(null);
+                  event.target.value = "";
+                  setSubmissionError("Kies een foto in JPG-, PNG- of WebP-formaat.");
+                  return;
+                }
+                if (file.size > MAX_VISITOR_PHOTO_BYTES) {
+                  setVisitorPhoto(null);
+                  event.target.value = "";
+                  setSubmissionError("De foto mag maximaal 5 MB groot zijn.");
+                  return;
+                }
+                setSubmissionError("");
+                setVisitorPhoto(file);
+              }}
             />
+            <p className="visitor-photo-help">JPG, PNG of WebP, maximaal 5 MB. De foto wordt pas bij het evenement getoond nadat de beheerder de inzending heeft gecontroleerd.</p>
+            {visitorPhotoPreview && <div className="visitor-photo-preview"><img src={visitorPhotoPreview} alt="Voorbeeld van de gekozen evenementfoto" /><button type="button" onClick={() => setVisitorPhoto(null)}>Foto verwijderen</button></div>}
           </div>
 
           <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
