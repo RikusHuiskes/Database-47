@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
@@ -201,6 +202,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [freeOnly, setFreeOnly] = useState(false);
   const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
+  const [selectedVisitorEvent, setSelectedVisitorEvent] = useState<NearbyEvent | null>(null);
   const [nearbyLoading, setNearbyLoading] = useState(true);
   const [nearbyError, setNearbyError] = useState("");
   const [locationlessCount, setLocationlessCount] = useState(0);
@@ -240,6 +242,20 @@ export default function Home() {
   const [socialPostImageUrl, setSocialPostImageUrl] = useState("");
   const [socialPostCategoryId, setSocialPostCategoryId] = useState("");
   const [socialPostError, setSocialPostError] = useState("");
+
+  useEffect(() => {
+    if (!selectedVisitorEvent) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedVisitorEvent(null);
+    };
+    window.addEventListener("keydown", closeWithEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeWithEscape);
+    };
+  }, [selectedVisitorEvent]);
 
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -1033,6 +1049,10 @@ setShowForm(false);
   }
 
   const featuredEvents = visibleNearbyEvents.slice(0, 3);
+  const closeVisitorEvent = () => {
+    setSelectedVisitorEvent(null);
+    window.requestAnimationFrame(() => document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   return (
     <main className="visitor-site">
@@ -1051,9 +1071,8 @@ setShowForm(false);
           </nav>
           <a className="region-note" href="#gemeenten"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
         </div>
-        <button className="admin-access-button" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerder</button>
         <div className="hero-grid" id="top">
-          <div className="hero-art" aria-hidden="true"><img src="/lot-et-garonne-paysage.svg" alt="" /></div>
+          <div className="hero-art" aria-hidden="true"><img src="/lot-et-garonne-hero.png" alt="" /></div>
           <div className="hero-shade" aria-hidden="true" />
           <div className="hero-copy">
             <p className="hero-kicker"><span aria-hidden="true" /> Leven, beleven en ontdekken in het zuidwesten</p>
@@ -1088,10 +1107,10 @@ setShowForm(false);
           {featuredEvents.map((event) => {
             const date = formatCardDate(event.start_at);
             return <article className="featured-event-card" key={`featured-${event.id}`}>
-              <a className="featured-event-image" href={safeHttpUrl(event.source_url) ?? "#agenda"} target={safeHttpUrl(event.source_url) ? "_blank" : undefined} rel={safeHttpUrl(event.source_url) ? "noreferrer" : undefined} aria-label={`Meer over ${event.title}`}>
+              <button className="featured-event-image" type="button" onClick={() => setSelectedVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                 {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
-              </a>
-              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div><h3>{event.title}</h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
+              </button>
+              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div><h3><button className="featured-event-title" type="button" onClick={() => setSelectedVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
             </article>;
           })}
         </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}
@@ -1163,10 +1182,12 @@ setShowForm(false);
                 <p className="activity-place"><span aria-hidden="true">⌖</span> {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
                 {(event.short_description || event.description) && <p className="activity-description">{event.short_description || event.description}</p>}
                 <div className="activity-links">
+                  <button className="activity-link activity-link-detail" type="button" onClick={() => setSelectedVisitorEvent(event)}>Bekijk activiteit <span aria-hidden="true">→</span></button>
                   {safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(event.website_url) && <a className="activity-link" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(event.source_url) && <a className="activity-link" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie <span aria-hidden="true">↗</span></a>}
                 </div>
+                <p className="external-link-note">Externe pagina’s openen in een nieuw tabblad; deze agenda blijft open.</p>
                 {event.source_url && <p className="activity-source">Bron: {sourceLabel(event.source_url)}</p>}
               </div>
             </article>
@@ -1451,7 +1472,7 @@ setShowForm(false);
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
           <span className="brand-name"><strong>LOT-ET-GARONNE</strong><small>Leven, beleven en ontdekken</small></span>
         </a>
-        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#praktische-info">Praktische info</a><a href="#tip-activiteit" onClick={() => setShowForm(true)}>Activiteit doorgeven</a></div>
+        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#praktische-info">Praktische info</a><a href="#tip-activiteit" onClick={() => setShowForm(true)}>Activiteit doorgeven</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
       </footer>
 
@@ -2107,6 +2128,34 @@ setShowForm(false);
       })()}
       </>}
       </details>
+      {selectedVisitorEvent && typeof document !== "undefined" && createPortal(
+        <div className="event-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeVisitorEvent(); }}>
+          <section className="event-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="visitor-event-title" tabIndex={-1}>
+            <div className="event-detail-topbar">
+              <button className="event-detail-back" type="button" autoFocus onClick={closeVisitorEvent}><span aria-hidden="true">←</span> Terug naar de agenda</button>
+              <button className="event-detail-close" type="button" aria-label="Sluiten" onClick={closeVisitorEvent}>×</button>
+            </div>
+            {safeHttpUrl(selectedVisitorEvent.image_url) && <img className="event-detail-image" src={safeHttpUrl(selectedVisitorEvent.image_url)!} alt="" />}
+            <div className="event-detail-content">
+              <p className="event-detail-kicker">{categories.find((category) => category.id === selectedVisitorEvent.category_id)?.name ?? "Activiteit in de streek"}</p>
+              <h2 id="visitor-event-title">{selectedVisitorEvent.title}</h2>
+              <p className="event-detail-date">{formatDate(selectedVisitorEvent.start_at)}{selectedVisitorEvent.end_at ? ` – ${formatDate(selectedVisitorEvent.end_at)}` : ""}</p>
+              <p className="event-detail-place">{[selectedVisitorEvent.venue_name, selectedVisitorEvent.address, selectedVisitorEvent.postcode, selectedVisitorEvent.city].filter(Boolean).join(", ") || selectedVisitorEvent.city || "Lot-et-Garonne"}</p>
+              {(selectedVisitorEvent.short_description || selectedVisitorEvent.description) && <p className="event-detail-description">{selectedVisitorEvent.description || selectedVisitorEvent.short_description}</p>}
+              {selectedVisitorEvent.is_free ? <p className="event-detail-price">Gratis</p> : selectedVisitorEvent.price_from != null ? <p className="event-detail-price">Vanaf €{Number(selectedVisitorEvent.price_from).toFixed(2)}{selectedVisitorEvent.price_to != null ? ` tot €${Number(selectedVisitorEvent.price_to).toFixed(2)}` : ""}</p> : null}
+              <div className="event-detail-links">
+                {safeHttpUrl(selectedVisitorEvent.booking_url) && <a className="event-detail-primary" href={safeHttpUrl(selectedVisitorEvent.booking_url)!} target="_blank" rel="noopener noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
+                {safeHttpUrl(selectedVisitorEvent.website_url) && <a href={safeHttpUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer">Website organisator <span aria-hidden="true">↗</span></a>}
+                {safeHttpUrl(selectedVisitorEvent.source_url) && <a href={safeHttpUrl(selectedVisitorEvent.source_url)!} target="_blank" rel="noopener noreferrer">Oorspronkelijke informatie <span aria-hidden="true">↗</span></a>}
+              </div>
+              <p className="event-detail-note">Externe pagina’s openen in een nieuw tabblad. Je kunt hierna direct terug naar de agenda.</p>
+              {selectedVisitorEvent.source_url && <p className="activity-source">Bron: {sourceLabel(selectedVisitorEvent.source_url)}</p>}
+              <button className="event-detail-back event-detail-back-bottom" type="button" onClick={closeVisitorEvent}><span aria-hidden="true">←</span> Terug naar de agenda</button>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
     </main>
   );
 }
