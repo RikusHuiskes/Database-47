@@ -46,6 +46,9 @@ type EventRow = {
   latitude?: number | null;
   longitude?: number | null;
   source_url?: string | null;
+  promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
+  promotion_status?: "none" | "requested" | "active" | "ended" | null;
+  advertiser_email?: string | null;
 };
 
 type LocalAreaOption = LocalAreaTown & { latitude: number | null; longitude: number | null };
@@ -204,8 +207,11 @@ export default function Home() {
   const [eventSearch, setEventSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [freeOnly, setFreeOnly] = useState(false);
+  const [visibleEventCount, setVisibleEventCount] = useState(18);
   const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
-  const [selectedVisitorEvent, setSelectedVisitorEvent] = useState<NearbyEvent | null>(null);
+  const [homepagePromotions, setHomepagePromotions] = useState<EventRow[]>([]);
+  const [categoryPromotions, setCategoryPromotions] = useState<EventRow[]>([]);
+  const [selectedVisitorEvent, setSelectedVisitorEvent] = useState<EventRow | null>(null);
   const [nearbyLoading, setNearbyLoading] = useState(true);
   const [nearbyError, setNearbyError] = useState("");
   const [locationlessCount, setLocationlessCount] = useState(0);
@@ -220,6 +226,8 @@ export default function Home() {
   const [editError, setEditError] = useState("");
   const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
+  const [adminEventVisibleCount, setAdminEventVisibleCount] = useState(12);
+  const [adminContentMounted, setAdminContentMounted] = useState(false);
   const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState("");
@@ -281,6 +289,8 @@ export default function Home() {
   const [bookingUrl, setBookingUrl] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [promotionType, setPromotionType] = useState<"none" | "homepage" | "category" | "highlight">("none");
+  const [advertiserEmail, setAdvertiserEmail] = useState("");
 
   const [supabase] = useState(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -292,7 +302,7 @@ export default function Home() {
 
   const areaOptions: LocalAreaOption[] = localAreas.length > 0 ? localAreas : LOCAL_AREA_TOWNS;
 
-  function openVisitorEvent(event: NearbyEvent) {
+  function openVisitorEvent(event: EventRow) {
     const route = `#activiteit/${encodeURIComponent(event.id)}`;
     window.history.pushState({ visitorEventId: event.id }, "", route);
     setSelectedVisitorEvent(event);
@@ -309,7 +319,7 @@ export default function Home() {
       const eventRoute = window.location.hash.match(/^#activiteit\/(.+)$/);
       if (eventRoute) {
         const slug = decodeURIComponent(eventRoute[1]);
-        const event = nearbyEvents.find((candidate) => candidate.id === slug);
+        const event = [...nearbyEvents, ...homepagePromotions, ...categoryPromotions].find((candidate) => candidate.id === slug);
         if (event) setSelectedVisitorEvent(event);
         return;
       }
@@ -321,7 +331,7 @@ export default function Home() {
     followEventHistory();
     window.addEventListener("popstate", followEventHistory);
     return () => window.removeEventListener("popstate", followEventHistory);
-  }, [nearbyEvents, selectedVisitorEvent]);
+  }, [nearbyEvents, homepagePromotions, categoryPromotions, selectedVisitorEvent]);
 
   useEffect(() => {
     if (!visitorPhoto) {
@@ -369,7 +379,23 @@ export default function Home() {
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
     const matchesCategory = categoryFilter === "all" || event.category_id === categoryFilter;
     return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
+  }).sort((left, right) => {
+    const isCategoryPromotion = (event: NearbyEvent) => categoryFilter !== "all"
+      && event.category_id === categoryFilter
+      && event.promotion_type === "category"
+      && event.promotion_status === "active";
+    return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
   });
+  const categoryPromotionEvents = categoryFilter === "all" ? [] : categoryPromotions.filter((event) =>
+    event.category_id === categoryFilter && event.promotion_type === "category" && event.promotion_status === "active"
+  );
+  const categoryPromotionIds = new Set(categoryPromotionEvents.map((event) => event.id));
+  const standardNearbyEvents = visibleNearbyEvents.filter((event) => !categoryPromotionIds.has(event.id));
+  const displayedNearbyEvents = standardNearbyEvents.slice(0, visibleEventCount);
+
+  useEffect(() => {
+    setVisibleEventCount(18);
+  }, [selectedAreaId, visitorLocation, radiusKm, eventSearch, categoryFilter, freeOnly, nearbyEvents]);
 
   useEffect(() => {
     if (searchLatitude == null || searchLongitude == null) {
@@ -390,13 +416,15 @@ export default function Home() {
     });
     void fetch(`/api/nearby-events?${params}`)
       .then(async (response) => {
-        const result = await readApiJson<{ events?: NearbyEvent[]; error?: string; locationless_count?: number }>(response);
+        const result = await readApiJson<{ events?: NearbyEvent[]; homepage_promotions?: EventRow[]; category_promotions?: EventRow[]; error?: string; locationless_count?: number }>(response);
         if (!response.ok) throw new Error(result.error ?? "Evenementen konden niet worden geladen.");
         return result;
       })
       .then((result) => {
         if (!active) return;
         setNearbyEvents(result.events ?? []);
+        setHomepagePromotions(result.homepage_promotions ?? []);
+        setCategoryPromotions(result.category_promotions ?? []);
         setLocationlessCount(Number(result.locationless_count ?? 0));
       })
       .catch((cause) => {
@@ -653,6 +681,38 @@ export default function Home() {
     setUpdatingEventId(null);
   }
 
+  async function setPromotionStatus(event: EventRow, status: "active" | "ended") {
+    if (!supabase || !isAdmin || !event.promotion_type || event.promotion_type === "none") return;
+    if (status === "active" && (event.status !== "approved" || event.verified !== true)) {
+      setError(`“${event.title}” moet eerst worden goedgekeurd voordat de promotie kan starten.`);
+      return;
+    }
+    setError("");
+    setMessage("");
+    setUpdatingEventId(event.id);
+    const { data, error: updateError } = await supabase
+      .from("events")
+      .update({ promotion_status: status })
+      .eq("id", event.id)
+      .select("id")
+      .maybeSingle();
+    if (updateError) {
+      setError(`De promotie van “${event.title}” kon niet worden aangepast: ${updateError.message}`);
+      setUpdatingEventId(null);
+      return;
+    }
+    if (!data) {
+      setError(`De promotie van “${event.title}” is niet gewijzigd. Controleer de beheerdersrechten.`);
+      setUpdatingEventId(null);
+      return;
+    }
+    await loadData();
+    setMessage(status === "active"
+      ? `De betaalde promotie van “${event.title}” is geactiveerd.`
+      : `De promotie van “${event.title}” is gestopt.`);
+    setUpdatingEventId(null);
+  }
+
   async function deleteEvent(event: EventRow) {
     if (!supabase || !isAdmin) {
       setError("Log in als beheerder om een evenement te verwijderen.");
@@ -879,6 +939,8 @@ export default function Home() {
     setBookingUrl("");
     setSourceUrl("");
     setCategoryId("");
+    setPromotionType("none");
+    setAdvertiserEmail("");
   }
 
   async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
@@ -895,6 +957,10 @@ export default function Home() {
 
     if (!title.trim() || !startAt) {
       setSubmissionError("Vul minimaal de titel en startdatum in.");
+      return;
+    }
+    if (promotionType !== "none" && !advertiserEmail.trim()) {
+      setSubmissionError("Vul je e-mailadres in voor de betaalde promotieaanvraag.");
       return;
     }
 
@@ -938,6 +1004,9 @@ export default function Home() {
       booking_url: bookingUrl.trim() || null,
       source_url: sourceUrl.trim() || null,
       image_url: uploadedImageUrl,
+      promotion_type: promotionType,
+      promotion_status: promotionType === "none" ? "none" : "requested",
+      advertiser_email: promotionType === "none" ? null : advertiserEmail.trim(),
       status: "pending",
       verified: false,
     };
@@ -965,7 +1034,9 @@ setShowForm(false);
 
 
     await loadData();
-    setSubmissionNotice(`Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.`);
+    setSubmissionNotice(promotionType === "none"
+      ? `Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.`
+      : `Dank je voor je tip over “${payload.title}”. De beheerder controleert eerst het evenement en neemt contact op over de gekozen betaalde promotie. De advertentie wordt pas na goedkeuring en betaling geplaatst.`);
     setSaving(false);
   }
 
@@ -1169,7 +1240,8 @@ setShowForm(false);
     document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const featuredEvents = visibleNearbyEvents.slice(0, 3);
+  const homepagePromotionEvents = homepagePromotions.slice(0, 3);
+  const featuredEvents = visibleNearbyEvents.filter((event) => !(event.promotion_type === "homepage" && event.promotion_status === "active")).slice(0, 3);
   return (
     <main className="visitor-site">
       <header className="site-header">
@@ -1217,16 +1289,28 @@ setShowForm(false);
         <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
       </section>
 
+      <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
+        <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
+        {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
+          {homepagePromotionEvents.map((event) => <article className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
+            <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
+              {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
+            </button>
+            <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
+          </article>)}
+        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
+      </section>
+
       <section className="featured-section" aria-labelledby="featured-heading">
         <div className="content-heading"><div><p className="section-kicker">Ideeën voor binnenkort</p><h2 id="featured-heading">Binnenkort in de buurt</h2></div><a className="text-arrow-link" href="#agenda">Naar de agenda <span aria-hidden="true">→</span></a></div>
         {featuredEvents.length > 0 ? <div className="featured-events-grid">
           {featuredEvents.map((event) => {
             const date = formatCardDate(event.start_at);
-            return <article className="featured-event-card" key={`featured-${event.id}`}>
+            return <article className={`featured-event-card${event.promotion_type === "homepage" && event.promotion_status === "active" ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
               <button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                 {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
               </button>
-              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
+              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div>{event.promotion_type === "homepage" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}<h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
             </article>;
           })}
         </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}
@@ -1280,14 +1364,21 @@ setShowForm(false);
           <strong>{nearbyLoading ? "We zoeken iets leuks voor je…" : `${visibleNearbyEvents.length} ${visibleNearbyEvents.length === 1 ? "activiteit" : "activiteiten"} gevonden`}</strong>
           {!nearbyLoading && <span>binnen {radiusKm} km van {searchLabel}{categoryFilter !== "all" || eventSearch || freeOnly ? " met je huidige filters" : ""}</span>}
         </div>
-        {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt.</p>}
+        {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
         {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results">Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
         {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results">Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
         {locationlessCount > 0 && <p className="location-note">{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
+        {categoryFilter !== "all" && <section className="category-promotion-slot" aria-labelledby="category-promotion-heading">
+          <div className="category-promotion-heading"><div><p className="section-kicker">Lokale partner</p><h3 id="category-promotion-heading">Uitgelicht in {categories.find((category) => category.id === categoryFilter)?.name ?? "deze categorie"}</h3></div><span aria-hidden="true">✦</span></div>
+          {categoryPromotionEvents.length > 0 ? <div className="category-promotion-grid">{categoryPromotionEvents.map((event) => <article className="category-promotion-card" key={`category-promotion-${event.id}`}>
+            {safeHttpUrl(event.image_url) && <button className="category-promotion-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}><img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></button>}
+            <div><span className="sponsored-label">Categoriepartner</span><h4><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h4><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p><button className="category-promotion-link" type="button" onClick={() => openVisitorEvent(event)}>Bekijk evenement <span aria-hidden="true">→</span></button></div>
+          </article>)}</div> : <div className="category-promotion-empty"><p>Hier is plek voor een uitgelicht evenement uit deze categorie.</p><button type="button" onClick={() => { setShowForm(true); setPromotionType("category"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Vraag categoriepromotie aan <span aria-hidden="true">→</span></button></div>}
+        </section>}
         <div className="event-grid" aria-label="Aankomende activiteiten">
-          {visibleNearbyEvents.map((event) => (
-            <article className="activity-card" key={event.id}>
+          {displayedNearbyEvents.map((event) => (
+            <article className={`activity-card${event.promotion_type === "highlight" && event.promotion_status === "active" ? " activity-card-highlighted" : ""}`} key={event.id}>
               <div className="activity-media">
                 <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                   {safeHttpUrl(event.image_url)
@@ -1300,6 +1391,8 @@ setShowForm(false);
                 <div className="activity-tags">
                   {event.category_id && <span className="category-pill">{categories.find((category) => category.id === event.category_id)?.name ?? "Activiteit"}</span>}
                   {event.is_free && <span className="free-pill">Gratis</span>}
+                  {event.promotion_type === "highlight" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}
+                  {categoryFilter !== "all" && event.category_id === categoryFilter && event.promotion_type === "category" && event.promotion_status === "active" && <span className="sponsored-label">Categoriepartner</span>}
                 </div>
                 <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3>
                 <p className="activity-date">{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
@@ -1317,6 +1410,7 @@ setShowForm(false);
             </article>
           ))}
         </div>
+        {displayedNearbyEvents.length < standardNearbyEvents.length && <button className="show-more-events" type="button" onClick={() => setVisibleEventCount((count) => Math.min(count + 18, standardNearbyEvents.length))}>Toon meer activiteiten ({standardNearbyEvents.length - displayedNearbyEvents.length} resterend)</button>}
         <div className="tip-invitation" id="tip-activiteit">
           <div><p className="section-kicker">Ken jij de streek?</p><strong>Staat jouw favoriete activiteit er nog niet bij?</strong><p>Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien.</p></div>
           <button className="button button-dark" type="button" onClick={() => { setShowForm((current) => !current); setError(""); setMessage(""); }}>
@@ -1387,6 +1481,52 @@ setShowForm(false);
             Je tip komt eerst bij de beheerder ter controle. Een link naar de organisator of informatiebron helpt ons de gegevens te verifiëren.
           </p>
 
+          <div className="visitor-photo-field visitor-photo-field-prominent">
+            <label htmlFor="visitor-event-photo" style={labelStyle}>Foto van het evenement uploaden (optioneel)</label>
+            <input
+              id="visitor-event-photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                if (!file) { setVisitorPhoto(null); return; }
+                if (!VISITOR_PHOTO_TYPES.has(file.type)) {
+                  setVisitorPhoto(null);
+                  event.target.value = "";
+                  setSubmissionError("Kies een foto in JPG-, PNG- of WebP-formaat.");
+                  return;
+                }
+                if (file.size > MAX_VISITOR_PHOTO_BYTES) {
+                  setVisitorPhoto(null);
+                  event.target.value = "";
+                  setSubmissionError("De foto mag maximaal 5 MB groot zijn.");
+                  return;
+                }
+                setSubmissionError("");
+                setVisitorPhoto(file);
+              }}
+            />
+            <p className="visitor-photo-help">Klik op ‘Bestand kiezen’ om een foto vanaf je telefoon of computer toe te voegen. JPG, PNG of WebP, maximaal 5 MB. De foto verschijnt na controle door de beheerder.</p>
+            {visitorPhotoPreview && <div className="visitor-photo-preview"><img src={visitorPhotoPreview} alt="Voorbeeld van de gekozen evenementfoto" /><button type="button" onClick={() => setVisitorPhoto(null)}>Foto verwijderen</button></div>}
+          </div>
+
+          <fieldset className="promotion-fieldset">
+            <legend>Extra bereik voor je evenement (optioneel)</legend>
+            <p>Kies een betaalde promotieplek. De beheerder controleert eerst je evenement. Daarna nemen we contact op over prijs en betaling; de advertentie wordt pas geplaatst na goedkeuring en betaling.</p>
+            <div className="promotion-options">
+              {([
+                ["none", "Gratis vermelding (standaard)", "Je evenement komt na goedkeuring gewoon in de agenda, zonder advertentiekosten."],
+                ["homepage", "Op de homepage", "Extra zichtbaarheid bij ‘Binnenkort in de buurt’."],
+                ["category", "Bovenaan de categorie", "Uitgelicht wanneer bezoekers jouw categorie kiezen."],
+                ["highlight", "Omkaderd in resultaten", "Een opvallend kader in de lijst met activiteiten."],
+              ] as const).map(([value, heading, copy]) => <label className={`promotion-option${promotionType === value ? " promotion-option-selected" : ""}`} key={value}>
+                <input type="radio" name="promotion-type" value={value} checked={promotionType === value} onChange={() => setPromotionType(value)} />
+                <span><strong>{heading}</strong><small>{copy}</small></span>
+              </label>)}
+            </div>
+            {promotionType !== "none" && <label className="promotion-email-label">E-mailadres voor de advertentieaanvraag *<input type="email" autoComplete="email" required value={advertiserEmail} onChange={(event) => setAdvertiserEmail(event.target.value)} placeholder="naam@bedrijf.fr" /></label>}
+          </fieldset>
+
           <div>
             <label style={labelStyle}>Titel *</label>
             <input
@@ -1400,9 +1540,10 @@ setShowForm(false);
           </div>
 
           <div>
-            <label style={labelStyle}>Categorie</label>
+            <label style={labelStyle}>Categorie{promotionType === "category" ? " * (verplicht voor categoriepromotie)" : ""}</label>
             <select
               style={inputStyle}
+              required={promotionType === "category"}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
@@ -1503,35 +1644,6 @@ setShowForm(false);
               placeholder="Vul de plaats in"
               aria-label="Andere plaats"
             />}
-          </div>
-
-          <div className="visitor-photo-field">
-            <label htmlFor="visitor-event-photo" style={labelStyle}>Foto van het evenement (optioneel)</label>
-            <input
-              id="visitor-event-photo"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                if (!file) { setVisitorPhoto(null); return; }
-                if (!VISITOR_PHOTO_TYPES.has(file.type)) {
-                  setVisitorPhoto(null);
-                  event.target.value = "";
-                  setSubmissionError("Kies een foto in JPG-, PNG- of WebP-formaat.");
-                  return;
-                }
-                if (file.size > MAX_VISITOR_PHOTO_BYTES) {
-                  setVisitorPhoto(null);
-                  event.target.value = "";
-                  setSubmissionError("De foto mag maximaal 5 MB groot zijn.");
-                  return;
-                }
-                setSubmissionError("");
-                setVisitorPhoto(file);
-              }}
-            />
-            <p className="visitor-photo-help">JPG, PNG of WebP, maximaal 5 MB. De foto wordt pas bij het evenement getoond nadat de beheerder de inzending heeft gecontroleerd.</p>
-            {visitorPhotoPreview && <div className="visitor-photo-preview"><img src={visitorPhotoPreview} alt="Voorbeeld van de gekozen evenementfoto" /><button type="button" onClick={() => setVisitorPhoto(null)}>Foto verwijderen</button></div>}
           </div>
 
           <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -1640,8 +1752,9 @@ setShowForm(false);
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
       </footer>
 
-      <details id="beheer" style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
+      <details id="beheer" onToggle={(event) => { if (event.currentTarget.open) setAdminContentMounted(true); }} style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
+      {adminContentMounted && <>
       <h2>Beheerdersdashboard</h2>
 
       {authLoading ? (
@@ -1950,7 +2063,7 @@ setShowForm(false);
             <button
               type="button"
               aria-pressed={adminEventFilter === "pending"}
-              onClick={() => setAdminEventFilter("pending")}
+              onClick={() => { setAdminEventFilter("pending"); setAdminEventVisibleCount(12); }}
               style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: adminEventFilter === "pending" ? "#173f5f" : "white", color: adminEventFilter === "pending" ? "white" : "#172033", cursor: "pointer", fontWeight: 700 }}
             >
               Wacht op controle ({pendingEvents.length})
@@ -1958,7 +2071,7 @@ setShowForm(false);
             <button
               type="button"
               aria-pressed={adminEventFilter === "all"}
-              onClick={() => setAdminEventFilter("all")}
+              onClick={() => { setAdminEventFilter("all"); setAdminEventVisibleCount(12); }}
               style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: adminEventFilter === "all" ? "#173f5f" : "white", color: adminEventFilter === "all" ? "white" : "#172033", cursor: "pointer", fontWeight: 700 }}
             >
               Alle evenementen ({events.length})
@@ -1976,7 +2089,7 @@ setShowForm(false);
         <p>Er zijn nog geen evenementen opgeslagen.</p>
       )}
 
-      {adminVisibleEvents.map((event) => (
+      {adminVisibleEvents.slice(0, adminEventVisibleCount).map((event) => (
         <article
           key={event.id}
           style={{
@@ -2017,6 +2130,13 @@ setShowForm(false);
                 ? "Afgewezen"
               : event.status ?? "Onbekend"}
           </p>
+          {event.promotion_type && event.promotion_type !== "none" && <div className="admin-promotion-request">
+            <p><strong>Promotieaanvraag:</strong> {event.promotion_type === "homepage" ? "Homepage" : event.promotion_type === "category" ? "Categorie" : "Omkaderde vermelding"} · {event.promotion_status === "active" ? "actief" : event.promotion_status === "ended" ? "beëindigd" : "wacht op betaling/controle"}</p>
+            {event.advertiser_email && <p>Contact adverteerder: <a href={`mailto:${event.advertiser_email}`}>{event.advertiser_email}</a></p>}
+            {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && event.status === "approved" && event.verified === true && <button type="button" disabled={updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "active")}>Activeer na betaalbevestiging</button>}
+            {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && (event.status !== "approved" || event.verified !== true) && <p>Keur het evenement eerst goed en bevestig de betaling voordat je de promotie activeert.</p>}
+            {isAdmin && event.promotion_status === "active" && <button type="button" disabled={updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "ended")}>Promotie stoppen</button>}
+          </div>}
 
           {isAdmin && editingEventId !== event.id && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -2320,8 +2440,10 @@ setShowForm(false);
         </article>
 
       ))}
+          {adminVisibleEvents.length > adminEventVisibleCount && <button className="show-more-events" type="button" onClick={() => setAdminEventVisibleCount((count) => Math.min(count + 12, adminVisibleEvents.length))}>Toon meer evenementen ({adminVisibleEvents.length - adminEventVisibleCount} resterend)</button>}
         </>;
       })()}
+      </>}
       </>}
       </details>
       {selectedVisitorEvent && typeof document !== "undefined" && createPortal(

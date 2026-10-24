@@ -27,6 +27,8 @@ type EventRecord = {
   verified?: boolean | null;
   latitude?: number | string | null;
   longitude?: number | string | null;
+  promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
+  promotion_status?: "none" | "requested" | "active" | "ended" | null;
 };
 
 type CommuneFeature = {
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude")
+      .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status")
       .eq("status", "approved")
       .eq("verified", true)
       .order("start_at", { ascending: true })
@@ -132,6 +134,12 @@ export async function GET(request: NextRequest) {
 
   const upcoming = rows.map((event) => ({ ...event, category_id: categoryByEvent.get(event.id) ?? null }))
     .filter((event) => isUpcoming(event, now));
+  const homepage_promotions = upcoming
+    .filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active")
+    .slice(0, 3);
+  const category_promotions = upcoming
+    .filter((event) => event.promotion_type === "category" && event.promotion_status === "active")
+    .slice(0, 30);
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
   const results = await Promise.all(upcoming.map(async (event) => {
@@ -167,5 +175,5 @@ export async function GET(request: NextRequest) {
 
   const events = results.filter((event): event is NonNullable<typeof event> => event !== null)
     .sort((a, b) => a.distance_km - b.distance_km || a.start_at.localeCompare(b.start_at));
-  return NextResponse.json({ events, radius_km: radiusKm, locationless_count: locationlessCount });
+  return NextResponse.json({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount });
 }
