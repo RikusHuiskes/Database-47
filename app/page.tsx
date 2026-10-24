@@ -221,6 +221,8 @@ export default function Home() {
   const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
   const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
+  const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [visitorPhoto, setVisitorPhoto] = useState<File | null>(null);
   const [visitorPhotoPreview, setVisitorPhotoPreview] = useState("");
@@ -330,6 +332,16 @@ export default function Home() {
     setVisitorPhotoPreview(previewUrl);
     return () => URL.revokeObjectURL(previewUrl);
   }, [visitorPhoto]);
+
+  useEffect(() => {
+    if (!editPhotoFile) {
+      setEditPhotoPreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(editPhotoFile);
+    setEditPhotoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [editPhotoFile]);
 
   useEffect(() => {
     let active = true;
@@ -682,6 +694,7 @@ export default function Home() {
     setEditError("");
     setSavedEventId(null);
     setEditingEventId(event.id);
+    setEditPhotoFile(null);
     setEditDraft({
       category_id: event.category_id ?? "",
       title: event.title ?? "",
@@ -753,7 +766,21 @@ export default function Home() {
 
     setUpdatingEventId(event.id);
     let eventSaved = false;
+    let uploadedPhotoPath: string | null = null;
     try {
+      let uploadedImageUrl: string | null = null;
+      if (editPhotoFile) {
+        const photoForm = new FormData();
+        photoForm.set("photo", editPhotoFile);
+        const response = await fetch("/api/visitor-event-photo", { method: "POST", body: photoForm });
+        const result = await readApiJson<{ imageUrl?: string; path?: string; error?: string }>(response);
+        if (!response.ok || !result.imageUrl || !result.path) {
+          throw new Error(result.error ?? "De foto kon niet worden opgeslagen. Kies een JPG-, PNG- of WebP-foto van maximaal 5 MB.");
+        }
+        uploadedImageUrl = result.imageUrl;
+        uploadedPhotoPath = result.path;
+      }
+
       // Keep the importer’s stable, source-specific slug when editing an event.
       // Rebuilding it from the title can collide with another imported occurrence.
       const payload = {
@@ -772,6 +799,7 @@ export default function Home() {
         website_url: editDraft.website_url.trim() || null,
         booking_url: editDraft.booking_url.trim() || null,
         source_url: editDraft.source_url.trim() || null,
+        ...(uploadedImageUrl ? { image_url: uploadedImageUrl } : {}),
       };
       const { data, error: updateError } = await supabase
         .from("events")
@@ -801,8 +829,11 @@ export default function Home() {
 
       setEditingEventId(null);
       setEditDraft(null);
+      setEditPhotoFile(null);
       setSavedEventId(event.id);
-      setMessage(`“${payload.title}” is opgeslagen. Het bewerkingsvenster is gesloten.`);
+      setMessage(uploadedImageUrl
+        ? `De wijzigingen en de evenementfoto bij “${payload.title}” zijn opgeslagen. Het bewerkingsvenster is gesloten.`
+        : `“${payload.title}” is opgeslagen. Het bewerkingsvenster is gesloten.`);
       try {
         await loadData();
       } catch {
@@ -811,8 +842,19 @@ export default function Home() {
     } catch (cause) {
       setEditError(eventSaved
         ? "De wijziging is opgeslagen, maar er ging iets mis bij het bijwerken van de pagina. Klik op Vernieuwen."
-        : `Opslaan is niet gelukt door een verbindingsprobleem: ${cause instanceof Error ? cause.message : "probeer het opnieuw."}`);
+        : `Opslaan is niet gelukt: ${cause instanceof Error ? cause.message : "controleer de verbinding en probeer opnieuw."}`);
     } finally {
+      if (!eventSaved && uploadedPhotoPath) {
+        try {
+          await fetch("/api/visitor-event-photo", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: uploadedPhotoPath }),
+          });
+        } catch {
+          // Keep the original save error visible; an orphaned upload can be cleaned up later.
+        }
+      }
       // Keep the editor usable after network failures or unexpected Supabase errors.
       setUpdatingEventId(null);
     }
@@ -2072,6 +2114,37 @@ setShowForm(false);
               </label>
 
               <label style={labelStyle}>
+                Foto van het evenement
+                {safeHttpUrl(event.image_url) && !editPhotoPreview && (
+                  <img src={safeHttpUrl(event.image_url)!} alt={`Huidige foto bij ${event.title}`} loading="lazy" style={{ display: "block", width: "min(100%, 360px)", maxHeight: 240, objectFit: "cover", borderRadius: 8, margin: "8px 0" }} />
+                )}
+                <input
+                  style={inputStyle}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    if (file && file.size > MAX_VISITOR_PHOTO_BYTES) {
+                      setEditPhotoFile(null);
+                      setEditError("De foto moet kleiner zijn dan 5 MB.");
+                      e.target.value = "";
+                      return;
+                    }
+                    if (file && !VISITOR_PHOTO_TYPES.has(file.type)) {
+                      setEditPhotoFile(null);
+                      setEditError("Kies een JPG-, PNG- of WebP-foto.");
+                      e.target.value = "";
+                      return;
+                    }
+                    setEditError("");
+                    setEditPhotoFile(file);
+                  }}
+                />
+                <span style={{ display: "block", marginTop: 6, color: "#64748b", fontWeight: 400 }}>Kies een JPG-, PNG- of WebP-foto van maximaal 5 MB. Een nieuwe foto vervangt de huidige foto.</span>
+                {editPhotoPreview && <img src={editPhotoPreview} alt="Voorbeeld van de nieuwe evenementfoto" style={{ display: "block", width: "min(100%, 360px)", maxHeight: 240, objectFit: "cover", borderRadius: 8, marginTop: 10 }} />}
+              </label>
+
+              <label style={labelStyle}>
                 Begindatum en -tijd *
                 <input
                   style={inputStyle}
@@ -2227,6 +2300,7 @@ setShowForm(false);
                   onClick={() => {
                     setEditingEventId(null);
                     setEditDraft(null);
+                    setEditPhotoFile(null);
                     setEditError("");
                     setError("");
                   }}
