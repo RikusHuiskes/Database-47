@@ -24,6 +24,7 @@ export const LOCAL_AREA_TOWNS: LocalAreaTown[] = [
   { id: "tonneins", name: "Tonneins", postcode: "47400", latitude: 44.3925, longitude: 0.3129 },
   { id: "casteljaloux", name: "Casteljaloux", postcode: "47700", latitude: 44.3149, longitude: 0.0895 },
   { id: "fumel", name: "Fumel", postcode: "47500", latitude: 44.4986, longitude: 0.9657 },
+  { id: "beaumont-du-perigord", name: "Beaumont-du-Périgord", postcode: "24440", latitude: 44.7387, longitude: 0.7552, code_insee: "24028" },
 ];
 
 // Town suggestions for submitting an event. The form still allows a custom place.

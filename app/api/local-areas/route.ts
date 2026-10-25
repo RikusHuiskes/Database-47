@@ -47,7 +47,11 @@ export async function GET() {
   const communes = departmentFeatures.flat();
   const requestedNames = new Set<string>(VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities));
   const areas: ResolvedArea[] = VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities.map((name) => {
-    const matches = communes.filter((commune) => normalizePlaceName(commune.properties?.nom ?? "") === normalizePlaceName(name));
+    // Beaumont-du-Périgord is now a commune déléguée of Beaumontois en Périgord.
+    const communeName = normalizePlaceName(name) === normalizePlaceName("Beaumont-du-Périgord")
+      ? "Beaumontois en Périgord"
+      : name;
+    const matches = communes.filter((commune) => normalizePlaceName(commune.properties?.nom ?? "") === normalizePlaceName(communeName));
     const feature = matches
       .map((candidate) => {
         const coordinates = candidate.geometry?.coordinates;
