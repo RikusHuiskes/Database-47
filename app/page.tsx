@@ -1335,59 +1335,59 @@ export default function Home() {
             <h1>Ontdek Lot-et-Garonne</h1>
             <p className="hero-intro">Evenementen, plekken en informatie voor elke dag.</p>
           </div>
-          <section id="agenda" className="search-panel hero-agenda-panel" aria-labelledby="nearby-heading">
-            <div className="search-heading">
-              <div>
-                <p className="section-kicker">Agenda voor Duras en omgeving</p>
-                <h2 id="nearby-heading">Vind jouw volgende uitje</h2>
-                <p>Zoek eenvoudig op afstand, plaats, activiteit en categorie.</p>
-              </div>
-              <div className="search-count" aria-live="polite"><strong>{nearbyLoading ? "…" : nearbyEvents.length}</strong><span>activiteiten<br />in de buurt</span></div>
-            </div>
-            <div className="search-controls search-controls-primary">
-              <label className="field-label" style={labelStyle}>
-                Zoek binnen
-                <select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
-                  {[10, 25, 50].map((radius) => <option key={radius} value={radius}>{radius} kilometer</option>)}
-                </select>
-              </label>
-              <button className="location-button" type="button" onClick={useCurrentLocation}>
-                <span aria-hidden="true">⌖</span> Gebruik mijn locatie
-              </button>
-            </div>
-            <div className="search-controls search-controls-secondary">
-              <label className="field-label" style={labelStyle}>
-                Zoek op activiteit
-                <input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt of concert" />
-              </label>
-              <label className="field-label" style={labelStyle}>
-                Plaats
-                <select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
-                  {renderAreaOptions()}
-                </select>
-              </label>
-              <label className="field-label" style={labelStyle}>
-                Soort activiteit
-                <select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-                  <option value="all">Alle soorten</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
-                </select>
-              </label>
-              <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
-                <input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />
-                Alleen gratis activiteiten
-              </label>
-            </div>
-            <div className="results-summary" role="status" aria-live="polite">
-              <span className="results-indicator" aria-hidden="true" />
-              <strong>{nearbyLoading ? "We zoeken iets leuks voor je…" : `${visibleNearbyEvents.length} ${visibleNearbyEvents.length === 1 ? "activiteit" : "activiteiten"} gevonden`}</strong>
-              {!nearbyLoading && <span>binnen {radiusKm} km van {searchLabel}{categoryFilter !== "all" || eventSearch || freeOnly ? " met je huidige filters" : ""}</span>}
-            </div>
-            {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
-          </section>
-          <a className="hero-agenda-link" href="#agenda-resultaten">Bekijk de activiteiten <span aria-hidden="true">↓</span></a>
         </div>
       </header>
+
+      <section id="agenda" className="search-panel agenda-search-panel" aria-labelledby="nearby-heading">
+        <div className="search-heading">
+          <div>
+            <p className="section-kicker">Agenda voor Duras en omgeving</p>
+            <h2 id="nearby-heading">Vind jouw volgende uitje</h2>
+            <p>Zoek eenvoudig op afstand, plaats, activiteit en categorie.</p>
+          </div>
+          <div className="search-count" aria-live="polite"><strong>{nearbyLoading ? "…" : nearbyEvents.length}</strong><span>activiteiten<br />in de buurt</span></div>
+        </div>
+        <div className="search-controls search-controls-primary">
+          <label className="field-label" style={labelStyle}>
+            Zoek binnen
+            <select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
+              {[10, 25, 50].map((radius) => <option key={radius} value={radius}>{radius} kilometer</option>)}
+            </select>
+          </label>
+          <button className="location-button" type="button" onClick={useCurrentLocation}>
+            <span aria-hidden="true">⌖</span> Gebruik mijn locatie
+          </button>
+        </div>
+        <div className="search-controls search-controls-secondary">
+          <label className="field-label" style={labelStyle}>
+            Zoek op activiteit
+            <input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt of concert" />
+          </label>
+          <label className="field-label" style={labelStyle}>
+            Plaats
+            <select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
+              {renderAreaOptions()}
+            </select>
+          </label>
+          <label className="field-label" style={labelStyle}>
+            Soort activiteit
+            <select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+              <option value="all">Alle soorten</option>
+              {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
+            </select>
+          </label>
+          <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
+            <input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />
+            Alleen gratis activiteiten
+          </label>
+        </div>
+        <div className="results-summary" role="status" aria-live="polite">
+          <span className="results-indicator" aria-hidden="true" />
+          <strong>{nearbyLoading ? "We zoeken iets leuks voor je…" : `${visibleNearbyEvents.length} ${visibleNearbyEvents.length === 1 ? "activiteit" : "activiteiten"} gevonden`}</strong>
+          {!nearbyLoading && <span>binnen {radiusKm} km van {searchLabel}{categoryFilter !== "all" || eventSearch || freeOnly ? " met je huidige filters" : ""}</span>}
+        </div>
+        {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
+      </section>
 
       <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
         <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
