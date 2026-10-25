@@ -11,7 +11,7 @@ type OfficialDirectoryRow = {
   adresse_courriel?: unknown;
   site_internet?: unknown;
   adresse?: unknown;
-  annuaire?: string;
+  annuaire?: unknown;
   information_complementaire?: string;
   affectation_personne?: unknown;
 };
@@ -36,7 +36,19 @@ const serviceTypes = new Set([
   "dentist",
 ]);
 
+function parseSerialized(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) return value;
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    return value;
+  }
+}
+
 function valueText(value: unknown): string | undefined {
+  value = parseSerialized(value);
   if (typeof value === "string") return value.trim() || undefined;
   if (Array.isArray(value)) {
     const parts = value.map((part) => {
@@ -56,6 +68,7 @@ function valueText(value: unknown): string | undefined {
 }
 
 function directoryAddress(value: unknown): string | undefined {
+  value = parseSerialized(value);
   if (!Array.isArray(value)) return valueText(value);
   const address = value.find((item) => item && typeof item === "object") as JsonRecord | undefined;
   if (!address) return undefined;
@@ -65,6 +78,7 @@ function directoryAddress(value: unknown): string | undefined {
 }
 
 function directoryUrl(value: unknown): string | undefined {
+  value = parseSerialized(value);
   if (typeof value === "string") return value;
   if (Array.isArray(value)) {
     const first = value.find((item) => item && typeof item === "object") as JsonRecord | undefined;
@@ -73,7 +87,35 @@ function directoryUrl(value: unknown): string | undefined {
   return undefined;
 }
 
+function directoryOpeningHours(value: unknown): string | undefined {
+  value = parseSerialized(value);
+  if (!Array.isArray(value)) return valueText(value);
+  const dutchDays: Record<string, string> = {
+    lundi: "maandag", mardi: "dinsdag", mercredi: "woensdag", jeudi: "donderdag",
+    vendredi: "vrijdag", samedi: "zaterdag", dimanche: "zondag",
+  };
+  const displayTime = (part: unknown) => typeof part === "string" ? part.slice(0, 5) : "";
+  const lines = value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const row = entry as JsonRecord;
+    const start = typeof row.nom_jour_debut === "string" ? row.nom_jour_debut : "";
+    const end = typeof row.nom_jour_fin === "string" ? row.nom_jour_fin : start;
+    const dayName = (day: string) => dutchDays[day.toLocaleLowerCase("fr-FR")] ?? day;
+    const days = start && end && start !== end ? `${dayName(start)}–${dayName(end)}` : dayName(start || end);
+    const periods = [1, 2].flatMap((period) => {
+      const from = displayTime(row[`valeur_heure_debut_${period}`]);
+      const until = displayTime(row[`valeur_heure_fin_${period}`]);
+      return from && until ? [`${from}–${until}`] : [];
+    });
+    const comment = typeof row.commentaire === "string" ? row.commentaire.trim() : "";
+    const details = periods.length ? periods.join(", ") : comment;
+    return details ? [`${days}: ${details}`] : [];
+  });
+  return lines.length ? lines.join(" · ") : undefined;
+}
+
 function parseMayor(value: unknown): string | undefined {
+  value = parseSerialized(value);
   if (!Array.isArray(value)) return undefined;
   const assignment = value.find((item) => {
     if (!item || typeof item !== "object") return false;
@@ -126,6 +168,7 @@ export async function GET(request: NextRequest) {
   }
 
   const officialDirectoryPromise = codeInsee && /^\d{5}$/.test(codeInsee)
+    && service === "mairie"
     ? (async () => {
       const url = new URL("https://api-lannuaire.service-public.gouv.fr/api/explore/v2.1/catalog/datasets/api-lannuaire-administration/records");
       url.searchParams.set("where", `code_insee_commune LIKE "${codeInsee}"`);
@@ -153,19 +196,23 @@ export async function GET(request: NextRequest) {
     tourism: ['["tourism"="information"]["information"~"^(office|tourist_information)$"]'],
     dentist: ['["amenity"="dentist"]', '["healthcare"="dentist"]'],
   };
-  const query = `[out:json][timeout:25];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`;
+  const query = `[out:json][timeout:6];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`;
   const osmUrl = new URL("https://overpass-api.de/api/interpreter");
   osmUrl.searchParams.set("data", query);
-
-  const [officialResult, osmResult] = await Promise.allSettled([
-    officialDirectoryPromise,
-    fetch(osmUrl, {
+  const osmLookupPromise = service === "mairie"
+    ? Promise.resolve({ elements: [] as OsmElement[] })
+    : fetch(osmUrl, {
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(7000),
       headers: { Accept: "application/json", "User-Agent": "Database47MunicipalGuide/1.0" },
     }).then(async (response) => {
       if (!response.ok) throw new Error("De kaartgegevens zijn tijdelijk niet bereikbaar.");
       return response.json() as Promise<{ elements?: OsmElement[] }>;
-    }),
+    });
+
+  const [officialResult, osmResult] = await Promise.allSettled([
+    officialDirectoryPromise,
+    osmLookupPromise,
   ]);
 
   const officialRow = officialResult.status === "fulfilled" ? officialResult.value : null;
@@ -177,10 +224,10 @@ export async function GET(request: NextRequest) {
     phone: valueText(officialRow.telephone),
     email: valueText(officialRow.adresse_courriel),
     website: directoryUrl(officialRow.site_internet),
-    openingHours: valueText(officialRow.plage_ouverture),
+    openingHours: directoryOpeningHours(officialRow.plage_ouverture),
     mayor: parseMayor(officialRow.affectation_personne),
     extra: officialRow.information_complementaire,
-    sourceUrl: officialRow.annuaire,
+    sourceUrl: directoryUrl(officialRow.annuaire) ?? "https://lannuaire.service-public.gouv.fr/",
     sourceName: "Annuaire officiel Service-Public",
   } : null;
 
@@ -206,17 +253,19 @@ export async function GET(request: NextRequest) {
       sourceUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,
       sourceName: "OpenStreetMap",
     }];
-  }).sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE));
+  }).sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE))
+    .slice(0, service === "hospital" ? 5 : 16);
 
-  if (officialResult.status === "rejected" && osmResult.status === "rejected") {
+  if ((service === "mairie" && officialResult.status === "rejected")
+    || (service !== "mairie" && osmResult.status === "rejected")) {
     return NextResponse.json({ error: "De gemeentelijke informatie is tijdelijk niet bereikbaar. Probeer het later opnieuw." }, { status: 503 });
   }
 
   return NextResponse.json({
     city,
     updatedAt: new Date().toISOString(),
-    officialDirectoryAvailable: Boolean(codeInsee) && officialResult.status === "fulfilled",
-    mapDataAvailable: osmResult.status === "fulfilled",
+    officialDirectoryAvailable: service === "mairie" && Boolean(codeInsee) && officialResult.status === "fulfilled",
+    mapDataAvailable: service !== "mairie" && osmResult.status === "fulfilled",
     mairie: officialService,
     services,
   });
