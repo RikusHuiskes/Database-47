@@ -576,7 +576,7 @@ body { font-family: Arial, Helvetica, sans-serif; }
   margin-right: auto;
   margin-left: auto;
 }
-.discovery-section { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 18px; margin-bottom: 24px; }
+.discovery-section { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 18px; margin-bottom: 24px; }
 .discovery-tile { position: relative; display: flex; min-height: 138px; align-items: flex-end; gap: 12px; padding: 17px; overflow: hidden; border-radius: 12px; color: white !important; text-decoration: none; box-shadow: 0 8px 20px #203b3510; isolation: isolate; transition: transform 180ms ease, box-shadow 180ms ease; }
 .discovery-tile::before, .discovery-tile::after { position: absolute; z-index: -1; content: ""; }
 .discovery-tile::before { inset: 0; background: linear-gradient(180deg, #17282011 0%, #122921b8 100%); transition: opacity 180ms ease; }
@@ -584,7 +584,6 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .discovery-tile:hover { transform: translateY(-3px); box-shadow: 0 14px 28px #203b3520; }
 .discovery-agenda { background: linear-gradient(145deg, #bd663e, #8d432f 65%, #513c34); }
 .discovery-towns { background: linear-gradient(145deg, #6d9ba0, #42767b 58%, #315259); }
-.discovery-health { background: linear-gradient(145deg, #668d7a, #446d5e 58%, #2d5148); }
 .discovery-nature { background: linear-gradient(145deg, #a4a45a, #668052 58%, #385b42); }
 .discovery-icon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border: 1px solid #ffffff48; border-radius: 50%; background: #fff2; color: white; font-size: 24px; }
 .discovery-tile > span:nth-child(2) { display: grid; gap: 3px; margin-bottom: 2px; }
@@ -707,7 +706,6 @@ body { font-family: Arial, Helvetica, sans-serif; }
   .primary-nav a { font-size: 12px; }
   .region-note span:last-child { display: none; }
   .discovery-section, .featured-section, .search-panel, .area-explorer, .visitor-guides, .visitor-form, #beheer { width: min(calc(100% - 36px), 940px); }
-  .discovery-section { grid-template-columns: repeat(2, 1fr); }
   .discovery-tile { min-height: 112px; }
   .visitor-guides { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guide-nature { grid-column: 1 / -1; }
@@ -740,6 +738,7 @@ body { font-family: Arial, Helvetica, sans-serif; }
   .hero-search input, .hero-search select { font-size: 12px; }
   .hero-agenda-link { font-size: 11px; }
   .discovery-section, .featured-section, .search-panel, .area-explorer, .visitor-guides, .visitor-form, #beheer { width: min(calc(100% - 24px), 560px); }
+  .discovery-section { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .discovery-section { gap: 9px; margin-top: 12px; }
   .discovery-tile { min-height: 101px; gap: 7px; padding: 10px; border-radius: 11px; }
   .discovery-icon { width: 33px; height: 33px; font-size: 18px; }

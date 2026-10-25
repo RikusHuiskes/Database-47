@@ -1610,7 +1610,6 @@ export default function Home() {
       <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
         <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
         <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeentegids</strong><small>Lokale diensten & adressen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-health" href="#gezondheid"><span className="discovery-icon" aria-hidden="true">♡</span><span><strong>Zorg & gezondheid</strong><small>Actief eropuit</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
         <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
       </section>
 
