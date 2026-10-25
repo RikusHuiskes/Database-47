@@ -132,7 +132,7 @@ function parseMayor(value: unknown): string | undefined {
   return [person.prenom, person.nom].filter((part) => typeof part === "string" && part.trim()).join(" ") || undefined;
 }
 
-async function resolveInseeCode(city: string, suppliedCode: string): Promise<string | undefined> {
+async function resolveInseeCode(city: string, suppliedCode: string, latitude: number, longitude: number): Promise<string | undefined> {
   if (/^\d{5}$/.test(suppliedCode)) return suppliedCode;
 
   const aliases = normalizePlaceName(city) === normalizePlaceName("Beaumont-du-Périgord")
@@ -142,18 +142,31 @@ async function resolveInseeCode(city: string, suppliedCode: string): Promise<str
     try {
       const url = new URL("https://geo.api.gouv.fr/communes");
       url.searchParams.set("nom", name);
-      url.searchParams.set("fields", "nom,code,departement");
-      url.searchParams.set("format", "json");
+      url.searchParams.set("fields", "nom,code,codeDepartement");
+      url.searchParams.set("format", "geojson");
+      url.searchParams.set("geometry", "centre");
       const response = await fetch(url, {
         next: { revalidate: 86400 },
         signal: AbortSignal.timeout(2500),
         headers: { Accept: "application/json" },
       });
       if (!response.ok) continue;
-      const communes = await response.json() as Array<{ nom?: string; code?: string; departement?: { code?: string } }>;
-      const exactMatch = communes.find((commune) => normalizePlaceName(commune.nom ?? "") === normalizePlaceName(name));
-      const regionalMatch = exactMatch ?? communes.find((commune) => ["24", "33", "47"].includes(commune.departement?.code ?? ""));
-      if (/^\d{5}$/.test(regionalMatch?.code ?? "")) return regionalMatch!.code;
+      const result = await response.json() as { features?: Array<{
+        geometry?: { coordinates?: unknown };
+        properties?: { nom?: string; code?: string; codeDepartement?: string };
+      }> };
+      const exactMatches = (result.features ?? []).filter((feature) => normalizePlaceName(feature.properties?.nom ?? "") === normalizePlaceName(name));
+      exactMatches.sort((left, right) => {
+        const coords = (feature: typeof left) => feature.geometry?.coordinates;
+        const distance = (feature: typeof left) => {
+          const value = coords(feature);
+          if (!Array.isArray(value) || typeof value[0] !== "number" || typeof value[1] !== "number") return Number.MAX_VALUE;
+          return distanceInKm(latitude, longitude, value[1], value[0]);
+        };
+        return distance(left) - distance(right);
+      });
+      const chosen = exactMatches[0] ?? (result.features ?? []).find((feature) => ["24", "33", "47"].includes(feature.properties?.codeDepartement ?? ""));
+      if (/^\d{5}$/.test(chosen?.properties?.code ?? "")) return chosen!.properties!.code;
     } catch {
       // If the official geography service is temporarily unavailable, the
       // other source lookups can still provide a useful result.
@@ -263,7 +276,7 @@ export async function GET(request: NextRequest) {
   }
 
   const codeInsee = service === "mairie"
-    ? await resolveInseeCode(city, suppliedCodeInsee)
+    ? await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude)
     : suppliedCodeInsee;
 
   const officialDirectoryPromise = service === "mairie"
