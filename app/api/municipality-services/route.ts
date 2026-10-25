@@ -59,6 +59,34 @@ type PublicLibraryRow = {
   amplitude_horaire?: string | number;
 };
 
+type SireneEstablishment = {
+  siret?: string;
+  activite_principale?: string;
+  etat_administratif?: string;
+  commune?: string;
+  libelle_commune?: string;
+  adresse?: string;
+  numero_voie?: string;
+  type_voie?: string;
+  libelle_voie?: string;
+  code_postal?: string;
+  latitude?: string | number;
+  longitude?: string | number;
+  nom_commercial?: string;
+  liste_enseignes?: string[] | null;
+};
+
+type SireneCompany = {
+  nom_complet?: string;
+  matching_etablissements?: SireneEstablishment[];
+  siege?: SireneEstablishment;
+};
+
+type SireneSearchResponse = {
+  results?: SireneCompany[];
+  total_pages?: number;
+};
+
 const serviceTypes = new Set([
   "all",
   "mairie",
@@ -417,6 +445,99 @@ const BPE_EQUIPMENT_TYPES: Partial<Record<string, string>> = {
   library: "F307",
 };
 
+const SIRENE_ACTIVITY_TYPES: Partial<Record<string, string>> = {
+  doctor: "86.21Z",
+  hospital: "86.10Z",
+  dentist: "86.23Z",
+  pharmacy: "47.73Z",
+};
+
+function sireneAddress(establishment: SireneEstablishment): string | undefined {
+  if (establishment.adresse?.trim()) return establishment.adresse.trim();
+  return [
+    [establishment.numero_voie, establishment.type_voie, establishment.libelle_voie].filter(Boolean).join(" "),
+    establishment.code_postal,
+    establishment.libelle_commune,
+  ].filter(Boolean).join(", ") || undefined;
+}
+
+async function fetchSireneHealthServices(
+  city: string,
+  codeInsee: string | undefined,
+  service: string,
+): Promise<Array<{
+  id: string;
+  type: string;
+  name: string;
+  address?: string;
+  municipality: string;
+  inSelectedMunicipality: boolean;
+  distanceKm?: number;
+  sourceUrl: string;
+  sourceName: string;
+}>> {
+  const activityCode = SIRENE_ACTIVITY_TYPES[service];
+  if (!codeInsee || !activityCode) return [];
+
+  const fetchPage = async (page: number) => {
+    const url = new URL("https://recherche-entreprises.api.gouv.fr/search");
+    url.searchParams.set("q", city);
+    url.searchParams.set("code_commune", codeInsee);
+    url.searchParams.set("activite_principale", activityCode);
+    url.searchParams.set("etat_administratif", "A");
+    url.searchParams.set("limite_matching_etablissements", "100");
+    url.searchParams.set("per_page", "25");
+    url.searchParams.set("page", String(page));
+    const response = await fetch(url, {
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(7000),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error("Het officiële bedrijvenregister is tijdelijk niet bereikbaar.");
+    return response.json() as Promise<SireneSearchResponse>;
+  };
+
+  try {
+    const firstPage = await fetchPage(1);
+    const totalPages = Math.max(1, firstPage.total_pages ?? 1);
+    const remainingPages = await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => fetchPage(index + 2)));
+    const companies = [firstPage, ...remainingPages].flatMap((page) => page.results ?? []);
+    const uniqueEstablishments = new Map<string, { company: SireneCompany; establishment: SireneEstablishment }>();
+
+    for (const company of companies) {
+      const establishments = company.matching_etablissements?.length
+        ? company.matching_etablissements
+        : company.siege ? [company.siege] : [];
+      for (const establishment of establishments) {
+        if (establishment.etat_administratif !== "A"
+          || establishment.commune !== codeInsee
+          || establishment.activite_principale !== activityCode
+          || !establishment.siret) continue;
+        uniqueEstablishments.set(establishment.siret, { company, establishment });
+      }
+    }
+
+    return [...uniqueEstablishments.values()].map(({ company, establishment }) => {
+      const venueName = establishment.nom_commercial?.trim()
+        || establishment.liste_enseignes?.find((name) => name.trim())?.trim()
+        || company.nom_complet?.trim()
+        || `Zorgverlener in ${establishment.libelle_commune ?? city}`;
+      return {
+        id: `sirene-${establishment.siret}`,
+        type: service,
+        name: venueName,
+        address: sireneAddress(establishment),
+        municipality: establishment.libelle_commune ?? city,
+        inSelectedMunicipality: true,
+        sourceUrl: `https://annuaire-entreprises.data.gouv.fr/etablissement/${establishment.siret}`,
+        sourceName: "Annuaire des entreprises — données Sirene",
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 function inseeCommunePage(codeInsee: string): string {
   return `https://www.insee.fr/fr/statistiques/9022155?geo=COM-${encodeURIComponent(codeInsee)}`;
 }
@@ -544,6 +665,10 @@ export async function GET(request: NextRequest) {
   const officialCountsPromise = service === "all"
     ? Promise.all(Object.keys(BPE_EQUIPMENT_TYPES).map((type) => fetchOfficialEquipmentCount(codeInsee, type)))
     : fetchOfficialEquipmentCount(codeInsee, service).then((count) => count ? [count] : []);
+  const requestedHealthTypes = (service === "all"
+    ? Object.keys(SIRENE_ACTIVITY_TYPES)
+    : [service]).filter((type) => SIRENE_ACTIVITY_TYPES[type]);
+  const sireneServicesPromise = Promise.all(requestedHealthTypes.map((type) => fetchSireneHealthServices(city, codeInsee, type)));
   const officialLibrariesPromise = service === "library" || service === "all"
     ? fetchOfficialLibraries(codeInsee)
     : Promise.resolve([] as PublicLibraryRow[]);
@@ -624,12 +749,13 @@ export async function GET(request: NextRequest) {
     return { elements: [...uniqueElements.values()] };
   });
 
-  const [officialResult, osmResult, boundaryResult, officialCountsResult, officialLibrariesResult] = await Promise.allSettled([
+  const [officialResult, osmResult, boundaryResult, officialCountsResult, officialLibrariesResult, sireneServicesResult] = await Promise.allSettled([
     officialDirectoryPromise,
     osmLookupPromise,
     communeBoundaryPromise,
     officialCountsPromise,
     officialLibrariesPromise,
+    sireneServicesPromise,
   ]);
   const communeBoundary = boundaryResult.status === "fulfilled" ? boundaryResult.value : null;
   const officialEquipmentCounts = officialCountsResult.status === "fulfilled"
@@ -640,6 +766,9 @@ export async function GET(request: NextRequest) {
     : officialEquipmentCounts[0] ?? null;
   const officialLibraryServices = officialLibrariesResult.status === "fulfilled"
     ? officialLibrariesResult.value.map((row, index) => mapOfficialLibrary(row, city, index))
+    : [];
+  const sireneServices = sireneServicesResult.status === "fulfilled"
+    ? sireneServicesResult.value.flat()
     : [];
 
   const officialRow = officialResult.status === "fulfilled" ? officialResult.value : null;
@@ -725,6 +854,7 @@ export async function GET(request: NextRequest) {
   const curatedServices = [
     ...(service === "all" && officialService ? [officialService] : []),
     ...curatedHealthServices,
+    ...sireneServices,
     ...curatedLocalServices,
     ...nonDuplicateOfficialLibraries,
   ];
@@ -791,7 +921,7 @@ export async function GET(request: NextRequest) {
       return (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE);
     });
   const services = (service === "all" ? requestedServiceTypes : [service]).flatMap((type) =>
-    mergedServices.filter((entry) => entry.type === type).slice(0, type === "hospital" ? 5 : type === "mairie" ? 1 : 16),
+    mergedServices.filter((entry) => entry.type === type),
   );
 
   const mairieFromMap = service === "mairie"
@@ -821,10 +951,11 @@ export async function GET(request: NextRequest) {
     officialEquipmentCount,
     officialEquipmentCounts,
     mapDataAvailable: osmResult.status === "fulfilled",
-    curatedDataAvailable: curatedServices.length > 0 || officialEquipmentCounts.length > 0,
+    curatedDataAvailable: curatedServices.length > 0,
     sources: [
       ...new Map(requestedServiceTypes.flatMap((type) => municipalReferenceSources(type, city, codeInsee, latitude, longitude)).map((source) => [source.url, source])).values(),
       ...officialEquipmentCounts.map((count) => ({ name: count.sourceName, url: count.sourceUrl })),
+      ...(sireneServices.length ? [{ name: "Annuaire des entreprises — données Sirene", url: "https://recherche-entreprises.api.gouv.fr/" }] : []),
     ],
     mairie,
     services,
