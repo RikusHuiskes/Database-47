@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
@@ -202,7 +202,9 @@ function sourceLabel(value?: string | null): string {
 export default function Home() {
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
   const [selectedAreaId, setSelectedAreaId] = useState("duras");
+  const deferredSelectedAreaId = useDeferredValue(selectedAreaId);
   const [visitorLocation, setVisitorLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const deferredVisitorLocation = useDeferredValue(visitorLocation);
   const [radiusKm, setRadiusKm] = useState(25);
   const [eventSearch, setEventSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -301,28 +303,39 @@ export default function Home() {
     return createClient(url, key);
   });
 
-  const requestedCityNames = new Set<string>(VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities));
-  const areaOptions: LocalAreaOption[] = [
+  const requestedCityNames = useMemo(
+    () => new Set<string>(VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities)),
+    []
+  );
+  const areaOptions = useMemo<LocalAreaOption[]>(() => [
     ...VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities.map((name) => {
-      const resolved = localAreas.find((area) => normalizePlaceName(area.name) === normalizePlaceName(name));
+      const normalizedName = normalizePlaceName(name);
+      const resolved = localAreas.find((area) => normalizePlaceName(area.name) === normalizedName);
       if (resolved) return resolved;
-      const fallback = LOCAL_AREA_TOWNS.find((area) => normalizePlaceName(area.name) === normalizePlaceName(name));
+      const fallback = LOCAL_AREA_TOWNS.find((area) => normalizePlaceName(area.name) === normalizedName);
       return fallback
         ? { ...fallback, distance_group: group.label }
-        : { id: normalizePlaceName(name).replace(/\s+/g, "-"), name, postcode: "", latitude: null, longitude: null, distance_group: group.label };
+        : { id: normalizedName.replace(/\s+/g, "-"), name, postcode: "", latitude: null, longitude: null, distance_group: group.label };
     })),
     ...(localAreas.length > 0
       ? localAreas.filter((area) => !requestedCityNames.has(area.name))
       : LOCAL_AREA_TOWNS.filter((area) => !requestedCityNames.has(area.name))),
-  ];
-  const otherAreaOptions = areaOptions.filter((area) => !requestedCityNames.has(area.name));
+  ], [localAreas, requestedCityNames]);
+  const areaOptionsByName = useMemo(
+    () => new Map(areaOptions.map((area) => [normalizePlaceName(area.name), area])),
+    [areaOptions]
+  );
+  const otherAreaOptions = useMemo(
+    () => areaOptions.filter((area) => !requestedCityNames.has(area.name)),
+    [areaOptions, requestedCityNames]
+  );
 
   function renderAreaOptions() {
     return <>
       {VISITOR_EVENT_CITY_GROUPS.map((group) => (
         <optgroup label={group.label} key={group.label}>
           {group.cities.map((name) => {
-            const area = areaOptions.find((option) => option.name === name);
+            const area = areaOptionsByName.get(normalizePlaceName(name));
             return <option key={area?.id ?? name} value={area?.id ?? ""} disabled={!area || area.latitude == null || area.longitude == null}>{name}</option>;
           })}
         </optgroup>
@@ -403,28 +416,37 @@ export default function Home() {
   }, []);
 
   const selectedArea = areaOptions.find((area) => area.id === selectedAreaId);
-  const searchLatitude = visitorLocation?.latitude ?? selectedArea?.latitude ?? null;
-  const searchLongitude = visitorLocation?.longitude ?? selectedArea?.longitude ?? null;
-  const searchLabel = visitorLocation ? "jouw locatie" : selectedArea?.name ?? "Duras";
-  const visibleNearbyEvents = nearbyEvents.filter((event) => {
+  const searchArea = areaOptions.find((area) => area.id === deferredSelectedAreaId);
+  const searchLatitude = deferredVisitorLocation?.latitude ?? searchArea?.latitude ?? null;
+  const searchLongitude = deferredVisitorLocation?.longitude ?? searchArea?.longitude ?? null;
+  const searchLabel = deferredVisitorLocation ? "jouw locatie" : searchArea?.name ?? "Duras";
+  const visibleNearbyEvents = useMemo(() => {
     const query = eventSearch.trim().toLocaleLowerCase("nl-NL");
+    return nearbyEvents.filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
     const matchesCategory = categoryFilter === "all" || event.category_id === categoryFilter;
     return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
-  }).sort((left, right) => {
+    }).sort((left, right) => {
     const isCategoryPromotion = (event: NearbyEvent) => categoryFilter !== "all"
       && event.category_id === categoryFilter
       && event.promotion_type === "category"
       && event.promotion_status === "active";
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
-  });
-  const categoryPromotionEvents = categoryFilter === "all" ? [] : categoryPromotions.filter((event) =>
+    });
+  }, [nearbyEvents, eventSearch, categoryFilter, freeOnly]);
+  const categoryPromotionEvents = useMemo(() => categoryFilter === "all" ? [] : categoryPromotions.filter((event) =>
     event.category_id === categoryFilter && event.promotion_type === "category" && event.promotion_status === "active"
+  ), [categoryFilter, categoryPromotions]);
+  const categoryPromotionIds = useMemo(() => new Set(categoryPromotionEvents.map((event) => event.id)), [categoryPromotionEvents]);
+  const standardNearbyEvents = useMemo(
+    () => visibleNearbyEvents.filter((event) => !categoryPromotionIds.has(event.id)),
+    [visibleNearbyEvents, categoryPromotionIds]
   );
-  const categoryPromotionIds = new Set(categoryPromotionEvents.map((event) => event.id));
-  const standardNearbyEvents = visibleNearbyEvents.filter((event) => !categoryPromotionIds.has(event.id));
-  const displayedNearbyEvents = standardNearbyEvents.slice(0, visibleEventCount);
+  const displayedNearbyEvents = useMemo(
+    () => standardNearbyEvents.slice(0, visibleEventCount),
+    [standardNearbyEvents, visibleEventCount]
+  );
 
   useEffect(() => {
     setVisibleEventCount(18);
@@ -1284,7 +1306,10 @@ export default function Home() {
   }
 
   const homepagePromotionEvents = homepagePromotions.slice(0, 3);
-  const featuredEvents = visibleNearbyEvents.filter((event) => !(event.promotion_type === "homepage" && event.promotion_status === "active")).slice(0, 3);
+  const featuredEvents = useMemo(
+    () => visibleNearbyEvents.filter((event) => !(event.promotion_type === "homepage" && event.promotion_status === "active")).slice(0, 3),
+    [visibleNearbyEvents]
+  );
   return (
     <main className="visitor-site">
       <header className="site-header">
