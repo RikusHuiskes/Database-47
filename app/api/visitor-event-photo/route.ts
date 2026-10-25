@@ -15,12 +15,9 @@ function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
-  // Supabase's newer `sb_secret_...` keys are API keys, not JWTs. The
-  // Storage API gateway accepts them in `apikey` and mints its own short-lived
-  // service-role token. The JS client also defaults to `Authorization: Bearer
-  // <key>`, which makes Storage reject these keys as an invalid compact JWS.
-  // This server-only client is used for Storage operations, so omit that
-  // default Authorization header and keep the secret in the apikey header.
+  // Modern `sb_secret_...` keys are API keys, not JWTs. They must be sent via
+  // `apikey` only. Legacy `service_role` keys are JWTs and still need the
+  // client's default `Authorization: Bearer <key>` header.
   const fetchWithApiKeyOnly: typeof fetch = async (input, init: RequestInit = {}) => {
     const headers = new Headers(init.headers);
     headers.delete("authorization");
@@ -29,7 +26,7 @@ function serviceClient() {
 
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: fetchWithApiKeyOnly },
+    ...(key.startsWith("sb_secret_") ? { global: { fetch: fetchWithApiKeyOnly } } : {}),
   });
 }
 
