@@ -15,18 +15,8 @@ function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
-  // Modern `sb_secret_...` keys are API keys, not JWTs. They must be sent via
-  // `apikey` only. Legacy `service_role` keys are JWTs and still need the
-  // client's default `Authorization: Bearer <key>` header.
-  const fetchWithApiKeyOnly: typeof fetch = async (input, init: RequestInit = {}) => {
-    const headers = new Headers(init.headers);
-    headers.delete("authorization");
-    return fetch(input, { ...init, headers });
-  };
-
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
-    ...(key.startsWith("sb_secret_") ? { global: { fetch: fetchWithApiKeyOnly } } : {}),
   });
 }
 

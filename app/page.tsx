@@ -1477,9 +1477,9 @@ export default function Home() {
     <main className="visitor-site">
       <header className="site-header">
         <div className="site-nav">
-          <a className="brand-lockup" href="#top" aria-label="Lot-et-Garonne, naar de startpagina">
+          <a className="brand-lockup" href="#top" aria-label="Côte de Duras, naar de startpagina">
             <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
-            <span className="brand-name"><strong>LOT-ET-GARONNE</strong></span>
+            <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
           </a>
           <nav className="primary-nav" aria-label="Hoofdnavigatie">
             <a href="#agenda">Agenda</a>
@@ -1495,8 +1495,8 @@ export default function Home() {
           <div className="hero-shade" aria-hidden="true" />
           <div className="hero-copy">
             <p className="hero-kicker"><span aria-hidden="true" /> Leven, beleven en ontdekken in het zuidwesten</p>
-            <h1>Ontdek Lot-et-Garonne</h1>
-            <p className="hero-intro">Evenementen, plekken en informatie voor elke dag.</p>
+            <h1>Côte de Duras</h1>
+            <p className="hero-intro">Evenementen en informatie voor elke dag binnen een straal van 50 kilometer</p>
           </div>
         </div>
       </header>
@@ -1644,7 +1644,7 @@ export default function Home() {
 
       <section className="area-explorer municipality-info-panel" id="gemeenten" aria-labelledby="area-heading">
         <div className="area-explorer-copy municipality-info-copy">
-          <p className="section-kicker">Gemeentegids Lot-et-Garonne</p>
+          <p className="section-kicker">Gemeentegids Côte de Duras en omgeving</p>
           <h2 id="area-heading">Praktische informatie per gemeente.</h2>
           <p>Kies een plaats en dienst voor contactgegevens, adressen en waar beschikbaar openingstijden. De lijst gebruikt de officiële Franse overheidsdirectory en actuele kaartgegevens.</p>
         </div>
@@ -2076,7 +2076,7 @@ export default function Home() {
       <footer className="site-footer">
         <a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
-          <span className="brand-name"><strong>LOT-ET-GARONNE</strong><small>Leven, beleven en ontdekken</small></span>
+          <span className="brand-name"><strong>CÔTE DE DURAS</strong><small>Evenementen en informatie binnen 50 kilometer</small></span>
         </a>
         <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#praktische-info">Praktische info</a><a href="#tip-activiteit" onClick={() => setShowForm(true)}>Activiteit doorgeven</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
