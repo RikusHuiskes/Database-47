@@ -4,6 +4,7 @@ export type LocalAreaTown = {
   postcode: string;
   latitude: number;
   longitude: number;
+  code_insee?: string;
 };
 
 // The initial visitor area is deliberately centered on the towns named by the owner.

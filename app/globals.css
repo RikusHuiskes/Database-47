@@ -820,3 +820,55 @@ body { font-family: Arial, Helvetica, sans-serif; }
   .agenda-results-panel { width: min(calc(100% - 24px), 560px); margin: 18px auto 40px; padding: 18px 14px; border-radius: 16px; }
   .agenda-search-panel { width: min(calc(100% - 24px), 560px); margin: 18px auto 30px !important; padding: 18px 14px !important; }
 }
+
+.area-explorer.municipality-info-panel {
+  display: grid;
+  grid-template-columns: minmax(230px, .72fr) minmax(0, 1.28fr);
+  align-items: start;
+  gap: 30px;
+  scroll-margin-top: 18px;
+}
+.municipality-info-copy h2 { max-width: 480px; }
+.municipality-directory { min-width: 0; }
+.municipality-service-controls { display: grid; grid-template-columns: minmax(170px, .9fr) minmax(220px, 1.2fr) auto; align-items: end; gap: 12px; }
+.municipality-service-controls .field-label { margin: 0; color: #284b43; font-size: 12px; font-weight: 800; }
+.municipality-select { display: block; width: 100%; min-width: 0; min-height: 48px; margin-top: 7px; padding: 0 12px; border: 1px solid #d9ded1; border-radius: 11px; background: #fffefa; color: #29463e; font: inherit; font-size: 13px; }
+.municipality-search-button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 12px; padding: 0 16px; border: 0; border-radius: 11px; background: #214d43; color: #fff; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.municipality-search-button:hover { background: #173d36; }
+.municipality-search-button:disabled { cursor: wait; opacity: .65; }
+.municipality-data-note { margin: 12px 0 0; color: #748078; font-size: 11px; line-height: 1.55; }
+.municipality-feedback { margin: 15px 0 0; padding: 12px 14px; border-radius: 11px; background: #f5f4ec; color: #52685d; font-size: 12px; line-height: 1.55; }
+.municipality-feedback-error { background: #fff0f1; color: #a11c3c; }
+.municipality-results { margin-top: 17px; }
+.municipality-results, .emergency-number-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.municipality-service-card { min-width: 0; padding: 15px; border: 1px solid #dfe3d8; border-radius: 14px; background: #fffefa; }
+.municipality-service-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.municipality-service-card-heading .section-kicker { margin: 0 0 5px; color: #a36d3c; font-size: 9px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+.municipality-service-card h3 { margin: 0; color: #1b4039; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.25; }
+.municipality-service-card > p { margin: 7px 0 0; color: #596a61; font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+.municipality-service-card a, .municipality-empty-result a, .municipality-source-note a { color: #245a4e; font-weight: 750; text-underline-offset: 2px; }
+.nearest-service-badge { flex: 0 0 auto; padding: 5px 8px; border-radius: 999px; background: #e9f0e5; color: #365e49; font-size: 9px; font-weight: 850; text-transform: uppercase; }
+.municipality-service-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 12px; font-size: 11px; }
+.municipality-missing-detail { color: #8b6942 !important; }
+.municipality-empty-result { grid-column: 1 / -1; padding: 17px; border: 1px dashed #d0d8cb; border-radius: 14px; background: #f8f8f1; color: #4e6258; font-size: 13px; line-height: 1.55; }
+.municipality-empty-result p { margin: 5px 0 8px; color: #6b7a70; font-size: 12px; }
+.municipality-source-note { grid-column: 1 / -1; margin: 3px 0 0; color: #788279; font-size: 10px; line-height: 1.5; }
+.emergency-number-grid { margin-top: 17px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.emergency-number-card { display: grid; min-height: 116px; align-content: start; gap: 6px; padding: 14px; border: 1px solid #e4e1d4; border-radius: 13px; background: #fffefa; }
+.emergency-number-card > a { color: #b95f3c; font-family: Georgia, "Times New Roman", serif; font-size: 28px; font-weight: 700; text-decoration: none; }
+.emergency-number-card strong { color: #27483f; font-size: 12px; }
+.emergency-number-card > span { color: #748078; font-size: 10px; line-height: 1.45; }
+
+@media (max-width: 980px) {
+  .area-explorer.municipality-info-panel { grid-template-columns: 1fr; gap: 19px; }
+  .municipality-service-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .municipality-search-button { grid-column: 1 / -1; }
+}
+
+@media (max-width: 680px) {
+  .area-explorer.municipality-info-panel { gap: 15px; }
+  .municipality-service-controls, .municipality-results, .emergency-number-grid { grid-template-columns: 1fr; }
+  .municipality-search-button { grid-column: auto; }
+  .municipality-service-card { padding: 13px; }
+  .emergency-number-card { min-height: 0; }
+}

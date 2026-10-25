@@ -16,6 +16,7 @@ type ResolvedArea = {
   postcode: string;
   latitude: number | null;
   longitude: number | null;
+  code_insee?: string;
   distance_group: string;
 };
 
@@ -65,6 +66,7 @@ export async function GET() {
       postcode: feature?.candidate.properties?.codesPostaux?.[0] ?? fallback?.postcode ?? "",
       latitude: feature?.latitude ?? fallback?.latitude ?? null,
       longitude: feature?.longitude ?? fallback?.longitude ?? null,
+      code_insee: feature?.candidate.properties?.code ?? fallback?.code_insee,
       distance_group: group.label,
     };
   }));

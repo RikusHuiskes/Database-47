@@ -53,6 +53,52 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
+type MunicipalityServiceType = "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist";
+type MunicipalityServiceEntry = {
+  id: string;
+  type: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  openingHours?: string;
+  serviceTimes?: string;
+  mayor?: string;
+  extra?: string;
+  distanceKm?: number;
+  sourceUrl?: string;
+  sourceName?: string;
+};
+type MunicipalityServiceResponse = {
+  city: string;
+  updatedAt: string;
+  officialDirectoryAvailable: boolean;
+  mapDataAvailable: boolean;
+  mairie: MunicipalityServiceEntry | null;
+  services: MunicipalityServiceEntry[];
+  error?: string;
+};
+
+const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }[] = [
+  { id: "mairie", label: "Gemeentehuis & burgemeester" },
+  { id: "doctor", label: "Huisarts / medisch centrum" },
+  { id: "hospital", label: "Dichtstbijzijnde ziekenhuis" },
+  { id: "library", label: "Bibliotheek" },
+  { id: "pharmacy", label: "Apotheek" },
+  { id: "church", label: "Kerk & mis- of diensttijden" },
+  { id: "tourism", label: "Office de tourisme" },
+  { id: "dentist", label: "Tandarts" },
+  { id: "emergency", label: "Noodnummers" },
+];
+
+const frenchEmergencyNumbers = [
+  { number: "112", name: "Europees noodnummer", note: "Medische nood, politie of brandweer" },
+  { number: "15", name: "SAMU", note: "Medische spoed" },
+  { number: "17", name: "Politie / gendarmerie", note: "Directe politiehulp" },
+  { number: "18", name: "Brandweer", note: "Brand, ongeval of persoon in gevaar" },
+  { number: "114", name: "Urgence 114", note: "App, internet of sms voor doven en slechthorenden" },
+];
 
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
@@ -201,6 +247,12 @@ function sourceLabel(value?: string | null): string {
 
 export default function Home() {
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
+  const [municipalityAreaId, setMunicipalityAreaId] = useState("duras");
+  const [municipalityServiceType, setMunicipalityServiceType] = useState<MunicipalityServiceType>("mairie");
+  const [municipalityServiceInfo, setMunicipalityServiceInfo] = useState<MunicipalityServiceResponse | null>(null);
+  const [municipalitySearchComplete, setMunicipalitySearchComplete] = useState(false);
+  const [municipalityServicesLoading, setMunicipalityServicesLoading] = useState(false);
+  const [municipalityServicesError, setMunicipalityServicesError] = useState("");
   const [selectedAreaId, setSelectedAreaId] = useState("duras");
   const deferredSelectedAreaId = useDeferredValue(selectedAreaId);
   const [visitorLocation, setVisitorLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -507,6 +559,38 @@ export default function Home() {
   function selectArea(areaId: string) {
     setVisitorLocation(null);
     setSelectedAreaId(areaId);
+  }
+
+  async function findMunicipalityServices(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const area = areaOptions.find((candidate) => candidate.id === municipalityAreaId);
+    setMunicipalityServicesError("");
+    setMunicipalityServiceInfo(null);
+    setMunicipalitySearchComplete(true);
+    if (municipalityServiceType === "emergency") return;
+    if (!area || area.latitude == null || area.longitude == null) {
+      setMunicipalityServicesError("De gekozen plaats heeft nog geen kaartcoördinaten.");
+      return;
+    }
+
+    setMunicipalityServicesLoading(true);
+    try {
+      const params = new URLSearchParams({
+        city: area.name,
+        lat: String(area.latitude),
+        lon: String(area.longitude),
+        service: municipalityServiceType,
+      });
+      if (area.code_insee) params.set("codeInsee", area.code_insee);
+      const response = await fetch(`/api/municipality-services?${params.toString()}`, { cache: "no-store" });
+      const result = await readApiJson<MunicipalityServiceResponse>(response);
+      if (!response.ok) throw new Error(result.error ?? "De gegevens konden niet worden opgehaald.");
+      setMunicipalityServiceInfo(result);
+    } catch (cause) {
+      setMunicipalityServicesError(cause instanceof Error ? cause.message : "De gemeentelijke informatie kon niet worden opgehaald.");
+    } finally {
+      setMunicipalityServicesLoading(false);
+    }
   }
 
   async function loadData() {
@@ -1310,6 +1394,17 @@ export default function Home() {
     () => visibleNearbyEvents.filter((event) => !(event.promotion_type === "homepage" && event.promotion_status === "active")).slice(0, 3),
     [visibleNearbyEvents]
   );
+  const municipalityServiceLabel = municipalityServiceOptions.find((option) => option.id === municipalityServiceType)?.label ?? "Dienst";
+  const municipalityName = areaOptions.find((area) => area.id === municipalityAreaId)?.name ?? "Duras";
+  const municipalityServiceEntries: MunicipalityServiceEntry[] = !municipalityServiceInfo
+    ? []
+    : municipalityServiceType === "mairie"
+      ? municipalityServiceInfo.mairie
+        ? [municipalityServiceInfo.mairie]
+        : municipalityServiceInfo.services.filter((service) => service.type === "mairie").slice(0, 1)
+      : municipalityServiceInfo.services.filter((service) => service.type === municipalityServiceType)
+        .slice(0, municipalityServiceType === "hospital" ? 5 : 16);
+  const municipalityMapSearchUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`;
   return (
     <main className="visitor-site">
       <header className="site-header">
@@ -1446,7 +1541,7 @@ export default function Home() {
 
       <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
         <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeenten</strong><small>Ontdek de plaatsen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeentegids</strong><small>Lokale diensten & adressen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
         <a className="discovery-tile discovery-health" href="#gezondheid"><span className="discovery-icon" aria-hidden="true">♡</span><span><strong>Zorg & gezondheid</strong><small>Actief eropuit</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
         <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
       </section>
@@ -1480,18 +1575,82 @@ export default function Home() {
 
 
 
-      <section className="area-explorer" id="gemeenten" aria-labelledby="area-heading">
-        <div className="area-explorer-copy">
-          <p className="section-kicker">Plaatsen om naar uit te kijken</p>
-          <h2 id="area-heading">Ontdek de gemeenten.</h2>
-          <p>Van Duras en Eymet tot Marmande en Sainte-Foy-la-Grande. Kies een plaats en bekijk wat er in de omgeving op de agenda staat.</p>
+      <section className="area-explorer municipality-info-panel" id="gemeenten" aria-labelledby="area-heading">
+        <div className="area-explorer-copy municipality-info-copy">
+          <p className="section-kicker">Gemeentegids Lot-et-Garonne</p>
+          <h2 id="area-heading">Praktische informatie per gemeente.</h2>
+          <p>Kies een plaats en dienst voor contactgegevens, adressen en waar beschikbaar openingstijden. De lijst gebruikt de officiële Franse overheidsdirectory en actuele kaartgegevens.</p>
         </div>
-        <div className="area-pills" aria-label="Kies een plaats in de buurt">
-          {localAreas.filter((area) => area.latitude != null && area.longitude != null).map((area) => (
-            <button className={selectedAreaId === area.id && !visitorLocation ? "area-pill area-pill-active" : "area-pill"} type="button" key={area.id} onClick={() => { selectArea(area.id); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>
-              <span>{area.name}</span><small>{area.postcode}</small>
+        <div className="municipality-directory">
+          <form className="municipality-service-controls" onSubmit={findMunicipalityServices}>
+            <label className="field-label">
+              Gemeente of dorp
+              <select className="municipality-select" value={municipalityAreaId} onChange={(event) => {
+                setMunicipalityAreaId(event.target.value);
+                setMunicipalityServiceInfo(null);
+                setMunicipalitySearchComplete(false);
+                setMunicipalityServicesError("");
+              }}>
+                {renderAreaOptions()}
+              </select>
+            </label>
+            <label className="field-label">
+              Welke informatie zoek je?
+              <select className="municipality-select" value={municipalityServiceType} onChange={(event) => {
+                setMunicipalityServiceType(event.target.value as MunicipalityServiceType);
+                setMunicipalityServiceInfo(null);
+                setMunicipalitySearchComplete(false);
+                setMunicipalityServicesError("");
+              }}>
+                {municipalityServiceOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+            </label>
+            <button className="municipality-search-button" type="submit" disabled={municipalityServicesLoading}>
+              {municipalityServicesLoading ? "Informatie ophalen…" : "Toon informatie"}
+              <span aria-hidden="true">→</span>
             </button>
-          ))}
+          </form>
+          <p className="municipality-data-note">Adressen en telefoonnummers kunnen veranderen. Controleer openingstijden bij de aanbieder. Afstanden zijn hemelsbreed. Ontbrekende kaartgegevens betekenen niet altijd dat een dienst niet bestaat.</p>
+          {municipalityServicesError && <p className="municipality-feedback municipality-feedback-error" role="alert">{municipalityServicesError}</p>}
+          {municipalityServicesLoading && <p className="municipality-feedback" role="status">We zoeken {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} bij {municipalityName} en sorteren de dichtstbijzijnde resultaten eerst.</p>}
+          {municipalitySearchComplete && municipalityServiceType === "emergency" && (
+            <div className="emergency-number-grid" aria-label="Franse noodnummers">
+              {frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
+                <a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}>{item.number}</a>
+                <strong>{item.name}</strong>
+                <span>{item.note}</span>
+              </article>)}
+              <p className="municipality-source-note">Deze Franse noodnummers gelden ook in {municipalityName}. <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer">Officiële informatie van Service-Public</a>.</p>
+            </div>
+          )}
+          {municipalitySearchComplete && municipalityServiceType !== "emergency" && municipalityServiceInfo && (
+            <div className="municipality-results" aria-live="polite">
+              {municipalityServiceEntries.length > 0 ? municipalityServiceEntries.map((service, index) => <article className="municipality-service-card" key={service.id}>
+                <div className="municipality-service-card-heading">
+                  <div><p className="section-kicker">{municipalityServiceLabel}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
+                  {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}
+                </div>
+                {service.mayor && <p><strong>Burgemeester:</strong> {service.mayor}</p>}
+                {service.address && <p><strong>Adres:</strong> {service.address}</p>}
+                {service.phone && <p><strong>Telefoon:</strong> <a href={`tel:${service.phone.replace(/[^\d+]/g, "")}`}>{service.phone}</a></p>}
+                {service.email && <p><strong>E-mail:</strong> <a href={`mailto:${service.email}`}>{service.email}</a></p>}
+                {service.openingHours && <p><strong>Openingstijden:</strong> {service.openingHours}</p>}
+                {service.serviceTimes && <p><strong>Mis- of diensttijden:</strong> {service.serviceTimes}</p>}
+                {municipalityServiceType === "church" && !service.serviceTimes && <p className="municipality-missing-detail">Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie.</p>}
+                {service.extra && <p>{service.extra}</p>}
+                <div className="municipality-service-links">
+                  {safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
+                  {safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer">Bron: {service.sourceName ?? "gegevens bekijken"} <span aria-hidden="true">↗</span></a>}
+                </div>
+              </article>) : <div className="municipality-empty-result">
+                <strong>Geen {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} gevonden in de beschikbare gegevens rond {municipalityName}.</strong>
+                <p>Een lege kaartvermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
+                <a href={municipalityMapSearchUrl} target="_blank" rel="noreferrer">Zoek verder op OpenStreetMap <span aria-hidden="true">↗</span></a>
+              </div>}
+              <p className="municipality-source-note">Geraadpleegd op {new Date(municipalityServiceInfo.updatedAt).toLocaleDateString("nl-NL")}. {municipalityServiceInfo.officialDirectoryAvailable && <>Gemeentegegevens: <a href="https://lannuaire.service-public.gouv.fr/" target="_blank" rel="noreferrer">Annuaire officiel Service-Public</a>. </>}{municipalityServiceInfo.mapDataAvailable && <>Lokale diensten: © OpenStreetMap-bijdragers.</>}</p>
+              {!municipalityServiceInfo.mapDataAvailable && <p className="municipality-feedback municipality-feedback-error">De lokale kaartgegevens zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.</p>}
+            </div>
+          )}
         </div>
       </section>
 
