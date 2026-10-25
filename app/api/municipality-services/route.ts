@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { distanceInKm } from "../../../lib/local-area";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 20;
 
 type JsonRecord = Record<string, unknown>;
 type OfficialDirectoryRow = {
@@ -196,14 +197,14 @@ export async function GET(request: NextRequest) {
     tourism: ['["tourism"="information"]["information"~"^(office|tourist_information)$"]'],
     dentist: ['["amenity"="dentist"]', '["healthcare"="dentist"]'],
   };
-  const query = `[out:json][timeout:6];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`;
-  const osmUrl = new URL("https://overpass-api.de/api/interpreter");
+  const query = `[out:json][timeout:12];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`;
+  const osmUrl = new URL("https://overpass.private.coffee/api/interpreter");
   osmUrl.searchParams.set("data", query);
   const osmLookupPromise = service === "mairie"
     ? Promise.resolve({ elements: [] as OsmElement[] })
     : fetch(osmUrl, {
       next: { revalidate: 86400 },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(14000),
       headers: { Accept: "application/json", "User-Agent": "Database47MunicipalGuide/1.0" },
     }).then(async (response) => {
       if (!response.ok) throw new Error("De kaartgegevens zijn tijdelijk niet bereikbaar.");
