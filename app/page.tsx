@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
-import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, type LocalAreaTown } from "../lib/local-area";
+import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, type LocalAreaTown } from "../lib/local-area";
 type Category = {
   id: string;
   name?: string;
@@ -51,7 +51,7 @@ type EventRow = {
   advertiser_email?: string | null;
 };
 
-type LocalAreaOption = LocalAreaTown & { latitude: number | null; longitude: number | null };
+type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
 
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
@@ -301,7 +301,39 @@ export default function Home() {
     return createClient(url, key);
   });
 
-  const areaOptions: LocalAreaOption[] = localAreas.length > 0 ? localAreas : LOCAL_AREA_TOWNS;
+  const requestedCityNames = new Set<string>(VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities));
+  const areaOptions: LocalAreaOption[] = [
+    ...VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities.map((name) => {
+      const resolved = localAreas.find((area) => normalizePlaceName(area.name) === normalizePlaceName(name));
+      if (resolved) return resolved;
+      const fallback = LOCAL_AREA_TOWNS.find((area) => normalizePlaceName(area.name) === normalizePlaceName(name));
+      return fallback
+        ? { ...fallback, distance_group: group.label }
+        : { id: normalizePlaceName(name).replace(/\s+/g, "-"), name, postcode: "", latitude: null, longitude: null, distance_group: group.label };
+    })),
+    ...(localAreas.length > 0
+      ? localAreas.filter((area) => !requestedCityNames.has(area.name))
+      : LOCAL_AREA_TOWNS.filter((area) => !requestedCityNames.has(area.name))),
+  ];
+  const otherAreaOptions = areaOptions.filter((area) => !requestedCityNames.has(area.name));
+
+  function renderAreaOptions() {
+    return <>
+      {VISITOR_EVENT_CITY_GROUPS.map((group) => (
+        <optgroup label={group.label} key={group.label}>
+          {group.cities.map((name) => {
+            const area = areaOptions.find((option) => option.name === name);
+            return <option key={area?.id ?? name} value={area?.id ?? ""} disabled={!area || area.latitude == null || area.longitude == null}>{name}</option>;
+          })}
+        </optgroup>
+      ))}
+      {otherAreaOptions.length > 0 && (
+        <optgroup label="Overige plaatsen">
+          {otherAreaOptions.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
+        </optgroup>
+      )}
+    </>;
+  }
 
   function openVisitorEvent(event: EventRow) {
     const route = `#activiteit/${encodeURIComponent(event.id)}`;
@@ -370,7 +402,7 @@ export default function Home() {
     return () => { active = false; };
   }, []);
 
-  const selectedArea = localAreas.find((area) => area.id === selectedAreaId);
+  const selectedArea = areaOptions.find((area) => area.id === selectedAreaId);
   const searchLatitude = visitorLocation?.latitude ?? selectedArea?.latitude ?? null;
   const searchLongitude = visitorLocation?.longitude ?? selectedArea?.longitude ?? null;
   const searchLabel = visitorLocation ? "jouw locatie" : selectedArea?.name ?? "Duras";
@@ -1281,7 +1313,7 @@ export default function Home() {
           <form className="hero-search" role="search" onSubmit={(event) => { event.preventDefault(); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>
             <label className="hero-search-query"><span aria-hidden="true">⌕</span><span className="visually-hidden">Wat zoek je?</span><input value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Wat zoek je?" /></label>
             <label className="hero-search-select"><span aria-hidden="true">⌖</span><span className="visually-hidden">Gemeente</span><select value={selectedAreaId} onChange={(event) => selectArea(event.target.value)} aria-label="Kies een gemeente">
-              {areaOptions.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
+              {renderAreaOptions()}
             </select></label>
             <label className="hero-search-select"><span aria-hidden="true">▦</span><span className="visually-hidden">Categorie</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Kies een categorie">
               <option value="all">Alle categorieën</option>
@@ -1355,7 +1387,7 @@ export default function Home() {
           <label className="field-label" style={labelStyle}>
             Plaats
             <select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
-              {areaOptions.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
+              {renderAreaOptions()}
             </select>
           </label>
           <label className="field-label" style={labelStyle}>
