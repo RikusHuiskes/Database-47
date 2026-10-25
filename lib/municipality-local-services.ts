@@ -1,6 +1,6 @@
 export type CuratedLocalService = {
   id: string;
-  type: "library" | "pharmacy";
+  type: "library" | "pharmacy" | "dentist" | "church";
   municipality: string;
   name: string;
   address: string;
@@ -8,6 +8,8 @@ export type CuratedLocalService = {
   email?: string;
   website?: string;
   openingHours?: string;
+  serviceTimes?: string;
+  extra?: string;
   sourceUrl: string;
   sourceName: string;
   secondarySourceUrl?: string;
@@ -47,5 +49,54 @@ export const CURATED_LOCAL_SERVICES: CuratedLocalService[] = [
     sourceName: "Pharmacie du Château — officiële Giphar-pagina",
     secondarySourceUrl: "https://acceslibre.beta.gouv.fr/app/47-duras/a/pharmacie/erp/pharmacie-du-chateau-7/",
     secondarySourceName: "Acceslibre — Franse overheidsdirectory",
+  },
+  {
+    id: "dentist-sainte-foy-baptiste-anselmi",
+    type: "dentist",
+    municipality: "Sainte-Foy-la-Grande",
+    name: "Baptiste Anselmi — tandarts",
+    address: "35 boulevard Larégnère, 33220 Sainte-Foy-la-Grande",
+    phone: "05 57 46 03 18",
+    sourceUrl: "https://www.saintefoylagrande.fr/mon-quotidien/sante/",
+    sourceName: "Gemeente Sainte-Foy-la-Grande — gezondheidsdirectory",
+  },
+  {
+    id: "pharmacy-sainte-foy-halles",
+    type: "pharmacy",
+    municipality: "Sainte-Foy-la-Grande",
+    name: "Aprium Pharmacie des Halles",
+    address: "2 place Jean Jaurès, 33220 Sainte-Foy-la-Grande",
+    phone: "05 57 46 00 33",
+    sourceUrl: "https://www.saintefoylagrande.fr/mon-quotidien/sante/",
+    sourceName: "Gemeente Sainte-Foy-la-Grande — gezondheidsdirectory",
+  },
+  {
+    id: "dentist-duras-francois-lalauze",
+    type: "dentist",
+    municipality: "Duras",
+    name: "Dr François Lalauze — tandarts",
+    address: "Pôle de Santé, 4 avenue Aristide Briand, 47120 Duras",
+    phone: "05 53 83 70 54",
+    sourceUrl: "https://cc-paysdeduras.fr/fr/rb/1956320/maison-de-sante-de-duras",
+    sourceName: "Communauté de communes du Pays de Duras",
+    secondarySourceUrl: "https://annuairesante.ameli.fr/professionnels-de-sante/fiche-detaillee-lalauze-francois-BLUwkjI0NjS1",
+    secondarySourceName: "Annuaire Santé — Assurance Maladie",
+    extra: "De officiële lokale bron en de Assurance Maladie vermelden dit praktijkadres. Bel voor actuele bereikbaarheid en afspraken.",
+  },
+  {
+    id: "church-duras-sainte-marie-madeleine",
+    type: "church",
+    municipality: "Duras",
+    name: "Église Sainte Marie-Madeleine",
+    address: "Rue César Jauffret, 47120 Duras",
+    phone: "05 24 30 50 81",
+    email: "paroisse.saintmartin@diocese47.fr",
+    website: "https://diocese47.fr/Paroisse-Saint-Martin-du-Dropt/",
+    serviceTimes: "Volgende gepubliceerde mis in Duras: zondag 1 november 2026 om 10:30 (Allerheiligen). De zondagse mislocatie wisselt binnen de parochie.",
+    extra: "De parochie vermeldt daarnaast een mis op de eerste dinsdag van de maand om 16:00 in Bellevue en op de eerste woensdag om 16:00 in de MARPA in Duras. Controleer de parochiekalender voor wijzigingen en de actuele locatie.",
+    sourceUrl: "https://messes.info/horaires/44.6764:0.1837",
+    sourceName: "Messes.info — gepubliceerde vieringen en actuele agenda",
+    secondarySourceUrl: "https://paroissesaintmartindudropt47.over-blog.com/lieux-horaires-des-messes.html",
+    secondarySourceName: "Paroisse Saint Martin du Dropt — plaatsen en tijden",
   },
 ];

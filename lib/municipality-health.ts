@@ -1,6 +1,7 @@
 export type CuratedHealthService = {
   id: string;
   type: "doctor" | "hospital";
+  municipality: string;
   name: string;
   address: string;
   phone: string;
@@ -22,6 +23,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "doctor-duras-patricia-didier",
     type: "doctor",
+    municipality: "Duras",
     name: "Dr Patricia Didier — huisarts",
     address: "4 avenue Aristide Briand, 47120 Duras",
     phone: "05 53 89 03 27",
@@ -35,6 +37,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "doctor-duras-nathalie-avenia",
     type: "doctor",
+    municipality: "Duras",
     name: "Dr Nathalie Avenia — huisarts",
     address: "4 avenue Aristide Briand, 47120 Duras",
     phone: "05 53 64 94 19",
@@ -48,6 +51,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "doctor-levignac-caroline-haure-trochon",
     type: "doctor",
+    municipality: "Lévignac-de-Guyenne",
     name: "Dr Caroline Haure-Trochon — huisarts",
     address: "96 route de Seyches, lieu-dit Mauca, 47120 Lévignac-de-Guyenne",
     phone: "05 53 83 72 36",
@@ -61,6 +65,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "doctor-levignac-abdelmottaleb-el-ouahabi",
     type: "doctor",
+    municipality: "Lévignac-de-Guyenne",
     name: "Dr Abdelmottaleb El Ouahabi — huisarts",
     address: "96 route de Seyches, lieu-dit Mauca, 47120 Lévignac-de-Guyenne",
     phone: "05 53 83 72 36",
@@ -76,6 +81,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "doctor-miramont-alain-biamou",
     type: "doctor",
+    municipality: "Miramont-de-Guyenne",
     name: "Dr Alain Biamou — huisarts",
     address: "Rue Henri Caillavet, 47800 Miramont-de-Guyenne",
     phone: "05 53 79 36 60",
@@ -89,6 +95,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "doctor-miramont-michel-laplanche",
     type: "doctor",
+    municipality: "Miramont-de-Guyenne",
     name: "Dr Michel Laplanche — huisarts",
     address: "Rue Henri Caillavet, 47800 Miramont-de-Guyenne",
     phone: "05 53 93 89 58",
@@ -102,8 +109,37 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
     longitude: 0.3615,
   },
   {
+    id: "doctor-sainte-foy-canivet-dufraisse",
+    type: "doctor",
+    municipality: "Sainte-Foy-la-Grande",
+    name: "Dr Isabelle Canivet & Dr Jean-Yves Dufraisse — Centre de santé du Pays Foyen",
+    address: "Place Pierre Cassignard, 33220 Sainte-Foy-la-Grande",
+    phone: "05 54 19 00 50",
+    sourceUrl: "https://www.saintefoylagrande.fr/mon-quotidien/sante/",
+    sourceName: "Gemeente Sainte-Foy-la-Grande — gezondheidsdirectory",
+    secondarySourceUrl: "https://saintefoylagrande.fr/wp-content/uploads/2025/03/Annuaire-sante-2025-2026.pdf",
+    secondarySourceName: "Gemeentelijke gezondheidsdirectory 2025–2026",
+    extra: "De gemeente vermeldt deze huisartsen bij het Centre de santé du Pays Foyen. Bel voor actuele beschikbaarheid en afspraken.",
+    latitude: 44.8413,
+    longitude: 0.2151,
+  },
+  {
+    id: "doctor-sainte-foy-laure-scotto-di-vettimo",
+    type: "doctor",
+    municipality: "Sainte-Foy-la-Grande",
+    name: "Dr Laure Scotto di Vettimo — huisarts",
+    address: "53 rue des Frères Reclus, 33220 Sainte-Foy-la-Grande",
+    phone: "05 57 46 00 78",
+    sourceUrl: "https://saintefoylagrande.fr/wp-content/uploads/2025/03/Annuaire-sante-2025-2026.pdf",
+    sourceName: "Gemeentelijke gezondheidsdirectory 2025–2026",
+    extra: "De gemeentelijke directory noemt deze huisarts in Sainte-Foy-la-Grande. Bel voor actuele bereikbaarheid en afspraken.",
+    latitude: 44.8413,
+    longitude: 0.2151,
+  },
+  {
     id: "hospital-sainte-foy-la-grande",
     type: "hospital",
+    municipality: "Sainte-Foy-la-Grande",
     name: "Centre hospitalier de Sainte-Foy-la-Grande",
     address: "1 avenue Charrier, 33220 Sainte-Foy-la-Grande",
     phone: "05 57 41 96 96",
@@ -119,6 +155,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "hospital-marmande",
     type: "hospital",
+    municipality: "Marmande",
     name: "Centre hospitalier intercommunal Marmande-Tonneins — site Marmande",
     address: "76 rue du Dr Courret, 47207 Marmande",
     phone: "05 53 20 30 40",
@@ -134,6 +171,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "hospital-bergerac",
     type: "hospital",
+    municipality: "Bergerac",
     name: "Centre hospitalier Samuel Pozzi — Bergerac",
     address: "9 avenue du Professeur Albert Calmette, 24108 Bergerac",
     phone: "05 53 63 88 88",
@@ -149,6 +187,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "hospital-sud-gironde-langon",
     type: "hospital",
+    municipality: "Langon",
     name: "Centre hospitalier Sud-Gironde — site Langon",
     address: "1 rue Paul Langevin, 33210 Langon",
     phone: "05 56 76 57 57",
@@ -164,6 +203,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "hospital-libourne",
     type: "hospital",
+    municipality: "Libourne",
     name: "Centre hospitalier Robert Boulin — Libourne",
     address: "112 rue de la Marne, 33505 Libourne Cedex",
     phone: "05 57 55 34 34",
@@ -179,6 +219,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "hospital-villeneuve-sur-lot",
     type: "hospital",
+    municipality: "Villeneuve-sur-Lot",
     name: "Pôle de Santé du Villeneuvois — Villeneuve-sur-Lot",
     address: "Route de Fumel, lieu-dit Brignol-Romas, 47300 Villeneuve-sur-Lot",
     phone: "05 53 72 23 23",
@@ -194,6 +235,7 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
   {
     id: "hospital-agen",
     type: "hospital",
+    municipality: "Agen",
     name: "Centre hospitalier Agen-Nérac — site Agen",
     address: "Route de Villeneuve, 47923 Agen Cedex 9",
     phone: "05 53 69 73 98",

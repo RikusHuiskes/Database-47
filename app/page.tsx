@@ -57,6 +57,7 @@ type MunicipalityServiceType = "mairie" | "doctor" | "hospital" | "library" | "p
 type MunicipalityServiceEntry = {
   id: string;
   type: string;
+  municipality?: string;
   name: string;
   address?: string;
   phone?: string;
@@ -1620,9 +1621,9 @@ export default function Home() {
               <span aria-hidden="true">→</span>
             </button>
           </form>
-          <p className="municipality-data-note">Adressen en telefoonnummers kunnen veranderen. Controleer openingstijden bij de aanbieder. Afstanden zijn hemelsbreed. Ontbrekende kaartgegevens betekenen niet altijd dat een dienst niet bestaat.</p>
+          <p className="municipality-data-note">De gekozen gemeente wordt afzonderlijk doorzocht voor iedere dienst. Alleen ziekenhuizen worden in de ruimere omgeving gezocht. Adressen en telefoonnummers kunnen veranderen; controleer openingstijden bij de aanbieder. Ontbrekende kaartgegevens betekenen niet altijd dat een dienst niet bestaat.</p>
           {municipalityServicesError && <p className="municipality-feedback municipality-feedback-error" role="alert">{municipalityServicesError}</p>}
-          {municipalityServicesLoading && <p className="municipality-feedback" role="status">We zoeken {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} bij {municipalityName} en sorteren de dichtstbijzijnde resultaten eerst.</p>}
+          {municipalityServicesLoading && <p className="municipality-feedback" role="status">We zoeken {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} {municipalityServiceType === "hospital" ? `in de omgeving van ${municipalityName}` : `in de gemeente ${municipalityName}`}.</p>}
           {municipalitySearchComplete && municipalityServiceType === "emergency" && (
             <div className="emergency-number-grid" aria-label="Franse noodnummers">
               {frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
@@ -1637,7 +1638,7 @@ export default function Home() {
             <div className="municipality-results" aria-live="polite">
               {municipalityServiceEntries.length > 0 ? municipalityServiceEntries.map((service, index) => <article className="municipality-service-card" key={service.id}>
                 <div className="municipality-service-card-heading">
-                  <div><p className="section-kicker">{municipalityServiceLabel}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
+                  <div><p className="section-kicker">{municipalityServiceLabel}{service.municipality ? ` · ${service.municipality}` : ""}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
                   {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}
                 </div>
                 {municipalityServiceType === "mairie" && <p><strong>Burgemeester:</strong> {service.mayor ?? "Naam niet vermeld in de gemeentelijke contactgegevens."}</p>}
@@ -1658,8 +1659,8 @@ export default function Home() {
                   <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer">Kaart: Google Maps <span aria-hidden="true">↗</span></a>
                 </div>
               </article>) : <div className="municipality-empty-result">
-                <strong>Geen {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} gevonden in de beschikbare gegevens rond {municipalityName}.</strong>
-                <p>Een lege kaartvermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
+                <strong>Geen {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} gevonden {municipalityServiceType === "hospital" ? `in de omgeving van ${municipalityName}` : `in ${municipalityName}`} in de beschikbare gegevens.</strong>
+                <p>Een lege vermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
                 <div className="municipality-service-links">
                   <a href={municipalityMapSearchUrl} target="_blank" rel="noreferrer">Zoek op Google Maps <span aria-hidden="true">↗</span></a>
                   {municipalityServiceType === "library" && <a href={municipalityLibrarySearchUrl} target="_blank" rel="noreferrer">Zoek in het bibliotheekregister van de BnF <span aria-hidden="true">↗</span></a>}

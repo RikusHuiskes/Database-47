@@ -255,6 +255,10 @@ function osmAddress(tags: Record<string, string>): string | undefined {
   return [street, tags["addr:postcode"], tags["addr:city"]].filter(Boolean).join(", ") || undefined;
 }
 
+function overpassLiteral(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+}
+
 function osmDistance(lat: number, lon: number, element: OsmElement): number | undefined {
   const elementLat = element.lat ?? element.center?.lat;
   const elementLon = element.lon ?? element.center?.lon;
@@ -276,17 +280,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Kies een plaats en een geldige dienst." }, { status: 400 });
   }
 
-  const codeInsee = service === "mairie"
-    ? await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude)
-    : suppliedCodeInsee;
+  const codeInsee = /^\d{5}$/.test(suppliedCodeInsee)
+    ? suppliedCodeInsee
+    : service === "mairie"
+      ? await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude)
+      : undefined;
 
   const officialDirectoryPromise = service === "mairie"
     ? fetchOfficialMairie(codeInsee)
     : Promise.resolve(null);
 
-  // Hospitals can be farther away in this rural area; other local services use
-  // a tighter radius to keep the results relevant to the selected village.
-  const searchRadiusMeters = service === "hospital" ? 60000 : service === "mairie" ? 10000 : 25000;
+  // Search ordinary services inside the selected commune's OSM boundary.
+  // Hospitals are intentionally searched nearby because many communes have no hospital.
+  const searchRadiusMeters = 60000;
   const osmFilters: Record<string, string[]> = {
     mairie: ['["amenity"="townhall"]'],
     doctor: ['["amenity"~"^(doctors|clinic)$"]', '["healthcare"~"^(doctor|clinic)$"]'],
@@ -297,7 +303,12 @@ export async function GET(request: NextRequest) {
     tourism: ['["tourism"="information"]["information"~"^(office|tourist_information)$"]'],
     dentist: ['["amenity"="dentist"]', '["healthcare"="dentist"]'],
   };
-  const query = `[out:json][timeout:12];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`;
+  const communeSelector = codeInsee
+    ? `rel["boundary"="administrative"]["admin_level"="8"]["ref:INSEE"="${overpassLiteral(codeInsee)}"]; rel["boundary"="administrative"]["admin_level"="8"]["ref"="${overpassLiteral(codeInsee)}"];`
+    : `rel["boundary"="administrative"]["admin_level"="8"]["name"="${overpassLiteral(city)}"];`;
+  const query = service === "hospital"
+    ? `[out:json][timeout:12];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`
+    : `[out:json][timeout:12];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(${(osmFilters[service] ?? []).map((filter) => `nwr(area.selectedArea)${filter};`).join("")});out center tags;`;
   const osmLookupPromise = (async () => {
     let lastError: unknown;
     for (const endpoint of ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"]) {
@@ -343,11 +354,15 @@ export async function GET(request: NextRequest) {
 
   const curatedHealthServices = CURATED_HEALTH_SERVICES.flatMap((entry) => {
     if (entry.type !== service) return [];
+    // Curated health listings are tied to the municipality their source names.
+    // Do not show a Duras doctor as a doctor in Sainte-Foy, even when nearby.
+    if (entry.type === "doctor" && normalizePlaceName(entry.municipality) !== normalizePlaceName(city)) return [];
     const distanceKm = Math.round(distanceInKm(latitude, longitude, entry.latitude, entry.longitude) * 10) / 10;
     if (distanceKm > (service === "hospital" ? 60 : 25)) return [];
     return [{
       id: entry.id,
       type: entry.type,
+      municipality: entry.municipality,
       name: entry.name,
       address: entry.address,
       phone: entry.phone,
@@ -374,6 +389,8 @@ export async function GET(request: NextRequest) {
       email: entry.email,
       website: entry.website,
       openingHours: entry.openingHours,
+      serviceTimes: entry.serviceTimes,
+      extra: entry.extra,
       sourceUrl: entry.sourceUrl,
       sourceName: entry.sourceName,
       secondarySourceUrl: entry.secondarySourceUrl,
@@ -402,6 +419,7 @@ export async function GET(request: NextRequest) {
       phone: tags.phone ?? tags["contact:phone"],
       email: tags.email ?? tags["contact:email"],
       website: tags.website ?? tags["contact:website"],
+      municipality: tags["addr:city"] ?? (service === "hospital" ? undefined : city),
       openingHours: tags.opening_hours,
       serviceTimes: tags.service_times,
       distanceKm,
@@ -429,7 +447,7 @@ export async function GET(request: NextRequest) {
     .sort((left, right) => {
       const leftCurated = curatedServiceIds.has(left.id);
       const rightCurated = curatedServiceIds.has(right.id);
-      if (leftCurated !== rightCurated) return leftCurated ? -1 : 1;
+      if (service !== "hospital" && leftCurated !== rightCurated) return leftCurated ? -1 : 1;
       return (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE);
     })
     .slice(0, service === "hospital" ? 5 : 16);
