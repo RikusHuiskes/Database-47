@@ -65,6 +65,8 @@ type MunicipalityServiceEntry = {
   openingHours?: string;
   serviceTimes?: string;
   mayor?: string;
+  mayorSourceUrl?: string;
+  mayorSourceName?: string;
   extra?: string;
   distanceKm?: number;
   sourceUrl?: string;
@@ -82,6 +84,7 @@ type MunicipalityServiceResponse = {
   curatedDataAvailable: boolean;
   mairie: MunicipalityServiceEntry | null;
   services: MunicipalityServiceEntry[];
+  sources?: { name: string; url: string }[];
   error?: string;
 };
 
@@ -1636,7 +1639,7 @@ export default function Home() {
                   <div><p className="section-kicker">{municipalityServiceLabel}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
                   {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}
                 </div>
-                {service.mayor && <p><strong>Burgemeester:</strong> {service.mayor}</p>}
+                {municipalityServiceType === "mairie" && <p><strong>Burgemeester:</strong> {service.mayor ?? "Naam niet vermeld in de gemeentelijke contactgegevens."}</p>}
                 {service.address && <p><strong>Adres:</strong> {service.address}</p>}
                 {service.phone && <p><strong>Telefoon:</strong> <a href={`tel:${service.phone.replace(/[^\d+]/g, "")}`}>{service.phone}</a></p>}
                 {service.email && <p><strong>E-mail:</strong> <a href={`mailto:${service.email}`}>{service.email}</a></p>}
@@ -1648,6 +1651,7 @@ export default function Home() {
                   {safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer">Bron: {service.sourceName ?? "gegevens bekijken"} <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(service.secondarySourceUrl) && <a href={safeHttpUrl(service.secondarySourceUrl)!} target="_blank" rel="noreferrer">Extra bron: {service.secondarySourceName ?? "controleren"} <span aria-hidden="true">↗</span></a>}
+                  {municipalityServiceType === "mairie" && safeHttpUrl(service.mayorSourceUrl) && <a href={safeHttpUrl(service.mayorSourceUrl)!} target="_blank" rel="noreferrer">Bron burgemeester: {service.mayorSourceName ?? "Ministerie van Binnenlandse Zaken"} <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(service.appointmentUrl) && <a href={safeHttpUrl(service.appointmentUrl)!} target="_blank" rel="noreferrer">Afspraak via Maiia <span aria-hidden="true">↗</span></a>}
                   {municipalityServiceType === "doctor" && <a href={safeHttpUrl(service.doctolibUrl) ?? municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Doctolib <span aria-hidden="true">↗</span></a>}
                   <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer">Kaart: Google Maps <span aria-hidden="true">↗</span></a>
@@ -1661,7 +1665,11 @@ export default function Home() {
                   <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`} target="_blank" rel="noreferrer">OpenStreetMap <span aria-hidden="true">↗</span></a>
                 </div>
               </div>}
-              <p className="municipality-source-note">Geraadpleegd op {new Date(municipalityServiceInfo.updatedAt).toLocaleDateString("nl-NL")}. {municipalityServiceInfo.officialDirectoryAvailable && <>Gemeentegegevens: <a href="https://lannuaire.service-public.gouv.fr/" target="_blank" rel="noreferrer">Annuaire officiel Service-Public</a>. </>}{municipalityServiceEntries.some((service) => service.sourceName === "OpenStreetMap") && municipalityServiceInfo.mapDataAvailable && <>Aanvullende kaartgegevens: © OpenStreetMap-bijdragers. </>}</p>
+              <p className="municipality-source-note">
+                Geraadpleegd op {new Date(municipalityServiceInfo.updatedAt).toLocaleDateString("nl-NL")}.
+                {municipalityServiceType === "mairie" && municipalityServiceInfo.sources?.map((source) => <span key={source.url}> <a href={safeHttpUrl(source.url) ?? "#"} target="_blank" rel="noreferrer">{source.name} <span aria-hidden="true">↗</span></a>.</span>)}
+                {municipalityServiceType !== "mairie" && municipalityServiceEntries.some((service) => service.sourceName === "OpenStreetMap") && municipalityServiceInfo.mapDataAvailable && <> Aanvullende kaartgegevens: © OpenStreetMap-bijdragers.</>}
+              </p>
               {!municipalityServiceInfo.mapDataAvailable && !municipalityServiceInfo.curatedDataAvailable && <p className="municipality-feedback municipality-feedback-error">De kaartgegevens zijn tijdelijk niet bereikbaar. De links naar Google Maps en Doctolib blijven beschikbaar.</p>}
               {!municipalityServiceInfo.mapDataAvailable && municipalityServiceInfo.curatedDataAvailable && <p className="municipality-data-note">De officiële vermeldingen hierboven zijn beschikbaar. De aanvullende OpenStreetMap-resultaten zijn tijdelijk niet bereikbaar.</p>}
             </div>
