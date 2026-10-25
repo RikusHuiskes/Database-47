@@ -1484,7 +1484,7 @@ export default function Home() {
           <nav className="primary-nav" aria-label="Hoofdnavigatie">
             <a href="#agenda">Agenda</a>
             <a href="#ontdekken">Ontdekken</a>
-            <a href="#gemeenten">Gemeenten</a>
+            <a href="#gemeenten">Gemeente informatie</a>
             <a href="#praktische-info">Praktische info</a>
             <a href="#gezondheid">Gezondheid</a>
           </nav>
