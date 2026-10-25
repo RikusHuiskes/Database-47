@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { distanceInKm } from "../../../lib/local-area";
+import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
+import { CURATED_HEALTH_SERVICES } from "../../../lib/municipality-health";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
@@ -232,8 +233,30 @@ export async function GET(request: NextRequest) {
     sourceName: "Annuaire officiel Service-Public",
   } : null;
 
+  const curatedServices = CURATED_HEALTH_SERVICES.flatMap((entry) => {
+    if (entry.type !== service) return [];
+    const distanceKm = Math.round(distanceInKm(latitude, longitude, entry.latitude, entry.longitude) * 10) / 10;
+    if (distanceKm > (service === "hospital" ? 60 : 25)) return [];
+    return [{
+      id: entry.id,
+      type: entry.type,
+      name: entry.name,
+      address: entry.address,
+      phone: entry.phone,
+      website: entry.website,
+      distanceKm,
+      sourceUrl: entry.sourceUrl,
+      sourceName: entry.sourceName,
+      secondarySourceUrl: entry.secondarySourceUrl,
+      secondarySourceName: entry.secondarySourceName,
+      doctolibUrl: entry.doctolibUrl,
+      appointmentUrl: entry.appointmentUrl,
+      extra: entry.extra,
+    }];
+  });
+
   const osmElements = osmResult.status === "fulfilled" ? osmResult.value.elements ?? [] : [];
-  const services = osmElements.flatMap((element) => {
+  const osmServices = osmElements.flatMap((element) => {
     const tags = element.tags ?? {};
     const type = osmCategory(tags);
     if (!type) return [];
@@ -254,7 +277,22 @@ export async function GET(request: NextRequest) {
       sourceUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,
       sourceName: "OpenStreetMap",
     }];
-  }).sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE))
+  }).filter((candidate) => {
+    if (service !== "doctor" && service !== "hospital") return true;
+    const element = osmElements.find((item) => `osm-${item.type}-${item.id}` === candidate.id);
+    const candidateLat = element?.lat ?? element?.center?.lat;
+    const candidateLon = element?.lon ?? element?.center?.lon;
+    if (typeof candidateLat !== "number" || typeof candidateLon !== "number") return true;
+    return !curatedServices.some((curated) => {
+      if (normalizePlaceName(curated.name) === normalizePlaceName(candidate.name)) return true;
+      const curatedEntry = CURATED_HEALTH_SERVICES.find((item) => item.id === curated.id);
+      return curatedEntry != null && distanceInKm(candidateLat, candidateLon, curatedEntry.latitude, curatedEntry.longitude) < 0.4;
+    });
+  });
+  // Use the sourced health listings first; OpenStreetMap remains an additional
+  // nearby source, rather than the only place these services can be found.
+  const services = [...curatedServices, ...osmServices]
+    .sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE))
     .slice(0, service === "hospital" ? 5 : 16);
 
   if (service === "mairie" && officialResult.status === "rejected") {
@@ -268,6 +306,7 @@ export async function GET(request: NextRequest) {
     mapDataAvailable: service === "mairie"
       ? officialResult.status === "fulfilled"
       : osmResult.status === "fulfilled",
+    curatedDataAvailable: curatedServices.length > 0,
     mairie: officialService,
     services,
   });
