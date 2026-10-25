@@ -257,8 +257,7 @@ export async function GET(request: NextRequest) {
   }).sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE))
     .slice(0, service === "hospital" ? 5 : 16);
 
-  if ((service === "mairie" && officialResult.status === "rejected")
-    || (service !== "mairie" && osmResult.status === "rejected")) {
+  if (service === "mairie" && officialResult.status === "rejected") {
     return NextResponse.json({ error: "De gemeentelijke informatie is tijdelijk niet bereikbaar. Probeer het later opnieuw." }, { status: 503 });
   }
 
@@ -266,7 +265,9 @@ export async function GET(request: NextRequest) {
     city,
     updatedAt: new Date().toISOString(),
     officialDirectoryAvailable: service === "mairie" && Boolean(codeInsee) && officialResult.status === "fulfilled",
-    mapDataAvailable: service !== "mairie" && osmResult.status === "fulfilled",
+    mapDataAvailable: service === "mairie"
+      ? officialResult.status === "fulfilled"
+      : osmResult.status === "fulfilled",
     mairie: officialService,
     services,
   });
