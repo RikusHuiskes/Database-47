@@ -53,7 +53,7 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
-type MunicipalityServiceType = "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist";
+type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist";
 type MunicipalityServiceEntry = {
   id: string;
   type: string;
@@ -70,6 +70,7 @@ type MunicipalityServiceEntry = {
   mayorSourceName?: string;
   extra?: string;
   distanceKm?: number;
+  inSelectedMunicipality?: boolean;
   sourceUrl?: string;
   sourceName?: string;
   secondarySourceUrl?: string;
@@ -83,6 +84,21 @@ type MunicipalityServiceResponse = {
   officialDirectoryAvailable: boolean;
   mapDataAvailable: boolean;
   curatedDataAvailable: boolean;
+  officialEquipmentCount?: {
+    count: number;
+    year: number;
+    sourceUrl: string;
+    sourceName: string;
+    basis: string;
+  } | null;
+  officialEquipmentCounts?: {
+    service: string;
+    count: number;
+    year: number;
+    sourceUrl: string;
+    sourceName: string;
+    basis: string;
+  }[];
   mairie: MunicipalityServiceEntry | null;
   services: MunicipalityServiceEntry[];
   sources?: { name: string; url: string }[];
@@ -90,6 +106,7 @@ type MunicipalityServiceResponse = {
 };
 
 const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }[] = [
+  { id: "all", label: "Alle categorieën — complete gemeentegids" },
   { id: "mairie", label: "Gemeentehuis & burgemeester" },
   { id: "doctor", label: "Huisarts / medisch centrum" },
   { id: "hospital", label: "Dichtstbijzijnde ziekenhuis" },
@@ -257,7 +274,7 @@ function sourceLabel(value?: string | null): string {
 export default function Home() {
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
   const [municipalityAreaId, setMunicipalityAreaId] = useState("duras");
-  const [municipalityServiceType, setMunicipalityServiceType] = useState<MunicipalityServiceType>("mairie");
+  const [municipalityServiceType, setMunicipalityServiceType] = useState<MunicipalityServiceType>("all");
   const [municipalityServiceInfo, setMunicipalityServiceInfo] = useState<MunicipalityServiceResponse | null>(null);
   const [municipalitySearchComplete, setMunicipalitySearchComplete] = useState(false);
   const [municipalityServicesLoading, setMunicipalityServicesLoading] = useState(false);
@@ -1405,17 +1422,58 @@ export default function Home() {
   );
   const municipalityServiceLabel = municipalityServiceOptions.find((option) => option.id === municipalityServiceType)?.label ?? "Dienst";
   const municipalityName = areaOptions.find((area) => area.id === municipalityAreaId)?.name ?? "Duras";
+  const municipalityServiceRadiusKm: Record<MunicipalityServiceType, number> = {
+    all: 60,
+    mairie: 0,
+    doctor: 15,
+    hospital: 60,
+    library: 20,
+    pharmacy: 15,
+    church: 15,
+    tourism: 35,
+    emergency: 0,
+    dentist: 15,
+  };
   const municipalityServiceEntries: MunicipalityServiceEntry[] = !municipalityServiceInfo
     ? []
-    : municipalityServiceType === "mairie"
+    : municipalityServiceType === "all"
+      ? municipalityServiceInfo.services
+      : municipalityServiceType === "mairie"
       ? municipalityServiceInfo.mairie
         ? [municipalityServiceInfo.mairie]
         : municipalityServiceInfo.services.filter((service) => service.type === "mairie").slice(0, 1)
       : municipalityServiceInfo.services.filter((service) => service.type === municipalityServiceType)
         .slice(0, municipalityServiceType === "hospital" ? 5 : 16);
+  const municipalityServiceGroupTypes = municipalityServiceOptions.filter((option) => option.id !== "all" && option.id !== "emergency");
   const municipalityMapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`;
   const municipalityLibrarySearchUrl = `https://ccfr.bnf.fr/portailccfr/jsp/query_direct.jsp?query=rnbcd_menu_inst_pub&VILLE=${encodeURIComponent(municipalityName)}`;
   const municipalityDoctolibSearchUrl = `https://www.doctolib.fr/medecin-generaliste/${municipalityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+  const renderMunicipalityServiceCard = (service: MunicipalityServiceEntry, index: number, groupType: MunicipalityServiceType) => {
+    const groupLabel = municipalityServiceOptions.find((option) => option.id === groupType)?.label ?? municipalityServiceLabel;
+    return <article className="municipality-service-card" key={`${groupType}-${service.id}`}>
+      <div className="municipality-service-card-heading">
+        <div><p className="section-kicker">{groupLabel}{service.inSelectedMunicipality === false ? ` · omgeving ${municipalityName}` : service.municipality ? ` · ${service.municipality}` : ""}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
+        {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}
+      </div>
+      {(groupType === "mairie" || municipalityServiceType === "all" && service.type === "mairie") && <p><strong>Burgemeester:</strong> {service.mayor ?? "Naam niet vermeld in de gemeentelijke contactgegevens."}</p>}
+      {service.address && <p><strong>Adres:</strong> {service.address}</p>}
+      {service.phone && <p><strong>Telefoon:</strong> <a href={`tel:${service.phone.replace(/[^\d+]/g, "")}`}>{service.phone}</a></p>}
+      {service.email && <p><strong>E-mail:</strong> <a href={`mailto:${service.email}`}>{service.email}</a></p>}
+      {service.openingHours && <p><strong>Openingstijden:</strong> {service.openingHours}</p>}
+      {service.serviceTimes && <p><strong>Mis- of diensttijden:</strong> {service.serviceTimes}</p>}
+      {(groupType === "church" || municipalityServiceType === "all" && service.type === "church") && !service.serviceTimes && <p className="municipality-missing-detail">Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie.</p>}
+      {service.extra && <p>{service.extra}</p>}
+      <div className="municipality-service-links">
+        {safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
+        {safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer">Bron: {service.sourceName ?? "gegevens bekijken"} <span aria-hidden="true">↗</span></a>}
+        {safeHttpUrl(service.secondarySourceUrl) && <a href={safeHttpUrl(service.secondarySourceUrl)!} target="_blank" rel="noreferrer">Extra bron: {service.secondarySourceName ?? "controleren"} <span aria-hidden="true">↗</span></a>}
+        {(groupType === "mairie" || municipalityServiceType === "all" && service.type === "mairie") && safeHttpUrl(service.mayorSourceUrl) && <a href={safeHttpUrl(service.mayorSourceUrl)!} target="_blank" rel="noreferrer">Bron burgemeester: {service.mayorSourceName ?? "Ministerie van Binnenlandse Zaken"} <span aria-hidden="true">↗</span></a>}
+        {safeHttpUrl(service.appointmentUrl) && <a href={safeHttpUrl(service.appointmentUrl)!} target="_blank" rel="noreferrer">Afspraak via Maiia <span aria-hidden="true">↗</span></a>}
+        {(groupType === "doctor" || municipalityServiceType === "all" && service.type === "doctor") && <a href={safeHttpUrl(service.doctolibUrl) ?? municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Doctolib <span aria-hidden="true">↗</span></a>}
+        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer">Kaart: Google Maps <span aria-hidden="true">↗</span></a>
+      </div>
+    </article>;
+  };
   return (
     <main className="visitor-site">
       <header className="site-header">
@@ -1621,9 +1679,9 @@ export default function Home() {
               <span aria-hidden="true">→</span>
             </button>
           </form>
-          <p className="municipality-data-note">De gekozen gemeente wordt afzonderlijk doorzocht voor iedere dienst. Alleen ziekenhuizen worden in de ruimere omgeving gezocht. Adressen en telefoonnummers kunnen veranderen; controleer openingstijden bij de aanbieder. Ontbrekende kaartgegevens betekenen niet altijd dat een dienst niet bestaat.</p>
+          <p className="municipality-data-note">Kies ‘Alle categorieën’ om de diensten voor een gemeente tegelijk te bekijken. Officiële gemeentetellingen vullen de adressen aan. Resultaten buiten de gemeente tonen hun werkelijke plaats en afstand; ontbrekende adressen worden als ontbrekende broninformatie aangeduid.</p>
           {municipalityServicesError && <p className="municipality-feedback municipality-feedback-error" role="alert">{municipalityServicesError}</p>}
-          {municipalityServicesLoading && <p className="municipality-feedback" role="status">We zoeken {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} {municipalityServiceType === "hospital" ? `in de omgeving van ${municipalityName}` : `in de gemeente ${municipalityName}`}.</p>}
+          {municipalityServicesLoading && <p className="municipality-feedback" role="status">{municipalityServiceType === "all" ? `We verzamelen nu alle gemeentelijke diensten voor ${municipalityName}, inclusief voorzieningen in de directe omgeving.` : `We zoeken ${municipalityServiceLabel.toLocaleLowerCase("nl-NL")} ${municipalityServiceRadiusKm[municipalityServiceType] > 0 ? `in ${municipalityName} en tot ${municipalityServiceRadiusKm[municipalityServiceType]} km eromheen` : `in de gemeente ${municipalityName}`}.`}</p>}
           {municipalitySearchComplete && municipalityServiceType === "emergency" && (
             <div className="emergency-number-grid" aria-label="Franse noodnummers">
               {frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
@@ -1636,41 +1694,56 @@ export default function Home() {
           )}
           {municipalitySearchComplete && municipalityServiceType !== "emergency" && municipalityServiceInfo && (
             <div className="municipality-results" aria-live="polite">
-              {municipalityServiceEntries.length > 0 ? municipalityServiceEntries.map((service, index) => <article className="municipality-service-card" key={service.id}>
-                <div className="municipality-service-card-heading">
-                  <div><p className="section-kicker">{municipalityServiceLabel}{service.municipality ? ` · ${service.municipality}` : ""}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
-                  {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}
-                </div>
-                {municipalityServiceType === "mairie" && <p><strong>Burgemeester:</strong> {service.mayor ?? "Naam niet vermeld in de gemeentelijke contactgegevens."}</p>}
-                {service.address && <p><strong>Adres:</strong> {service.address}</p>}
-                {service.phone && <p><strong>Telefoon:</strong> <a href={`tel:${service.phone.replace(/[^\d+]/g, "")}`}>{service.phone}</a></p>}
-                {service.email && <p><strong>E-mail:</strong> <a href={`mailto:${service.email}`}>{service.email}</a></p>}
-                {service.openingHours && <p><strong>Openingstijden:</strong> {service.openingHours}</p>}
-                {service.serviceTimes && <p><strong>Mis- of diensttijden:</strong> {service.serviceTimes}</p>}
-                {municipalityServiceType === "church" && !service.serviceTimes && <p className="municipality-missing-detail">Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie.</p>}
-                {service.extra && <p>{service.extra}</p>}
-                <div className="municipality-service-links">
-                  {safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
-                  {safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer">Bron: {service.sourceName ?? "gegevens bekijken"} <span aria-hidden="true">↗</span></a>}
-                  {safeHttpUrl(service.secondarySourceUrl) && <a href={safeHttpUrl(service.secondarySourceUrl)!} target="_blank" rel="noreferrer">Extra bron: {service.secondarySourceName ?? "controleren"} <span aria-hidden="true">↗</span></a>}
-                  {municipalityServiceType === "mairie" && safeHttpUrl(service.mayorSourceUrl) && <a href={safeHttpUrl(service.mayorSourceUrl)!} target="_blank" rel="noreferrer">Bron burgemeester: {service.mayorSourceName ?? "Ministerie van Binnenlandse Zaken"} <span aria-hidden="true">↗</span></a>}
-                  {safeHttpUrl(service.appointmentUrl) && <a href={safeHttpUrl(service.appointmentUrl)!} target="_blank" rel="noreferrer">Afspraak via Maiia <span aria-hidden="true">↗</span></a>}
-                  {municipalityServiceType === "doctor" && <a href={safeHttpUrl(service.doctolibUrl) ?? municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Doctolib <span aria-hidden="true">↗</span></a>}
-                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer">Kaart: Google Maps <span aria-hidden="true">↗</span></a>
-                </div>
-              </article>) : <div className="municipality-empty-result">
-                <strong>Geen {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} gevonden {municipalityServiceType === "hospital" ? `in de omgeving van ${municipalityName}` : `in ${municipalityName}`} in de beschikbare gegevens.</strong>
-                <p>Een lege vermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
-                <div className="municipality-service-links">
-                  <a href={municipalityMapSearchUrl} target="_blank" rel="noreferrer">Zoek op Google Maps <span aria-hidden="true">↗</span></a>
-                  {municipalityServiceType === "library" && <a href={municipalityLibrarySearchUrl} target="_blank" rel="noreferrer">Zoek in het bibliotheekregister van de BnF <span aria-hidden="true">↗</span></a>}
-                  {municipalityServiceType === "doctor" && <a href={municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Zoek huisartsen op Doctolib <span aria-hidden="true">↗</span></a>}
-                  <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`} target="_blank" rel="noreferrer">OpenStreetMap <span aria-hidden="true">↗</span></a>
-                </div>
-              </div>}
+              {municipalityServiceType === "all" ? <>
+                {municipalityServiceGroupTypes.map((option) => {
+                  const groupEntries = municipalityServiceEntries.filter((service) => service.type === option.id);
+                  const equipmentCount = municipalityServiceInfo.officialEquipmentCounts?.find((item) => item.service === option.id);
+                  const radius = municipalityServiceRadiusKm[option.id];
+                  return <section className="municipality-service-group" key={option.id}>
+                    <div className="municipality-service-group-heading"><div><p className="section-kicker">Gemeentegids · {municipalityName}</p><h3>{option.label}</h3></div><span>{groupEntries.length} vermeldingen</span></div>
+                    {equipmentCount && <p className="municipality-data-note"><strong>INSEE {equipmentCount.year}:</strong> {equipmentCount.basis} Dit is een gemeentetelling; de lijst met adressen komt uit de bronnen hieronder.</p>}
+                    {groupEntries.length ? <div className="municipality-service-group-cards">{groupEntries.map((entry, index) => renderMunicipalityServiceCard(entry, index, option.id))}</div> : <div className="municipality-empty-result">
+                      <strong>Geen controleerbaar adres gevonden voor {option.label.toLocaleLowerCase("nl-NL")} {radius > 0 ? `in ${municipalityName} of binnen ${radius} km` : `in ${municipalityName}`}.</strong>
+                      {equipmentCount && <p>De INSEE-telling hierboven bevestigt voorzieningen in de gemeente, maar levert geen openbare adreslijst voor deze categorie.</p>}
+                      <p>We vullen alleen namen en contactgegevens in wanneer een bron ze bevestigt.</p>
+                      <div className="municipality-service-links">
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${option.label} ${municipalityName}`)}`} target="_blank" rel="noreferrer">Zoek op Google Maps <span aria-hidden="true">↗</span></a>
+                        {option.id === "library" && <a href={municipalityLibrarySearchUrl} target="_blank" rel="noreferrer">Bibliotheekregister van de BnF <span aria-hidden="true">↗</span></a>}
+                        {option.id === "doctor" && <a href={municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Huisartsen op Doctolib <span aria-hidden="true">↗</span></a>}
+                        <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${option.label} ${municipalityName}`)}`} target="_blank" rel="noreferrer">OpenStreetMap <span aria-hidden="true">↗</span></a>
+                      </div>
+                    </div>}
+                  </section>;
+                })}
+                <section className="municipality-service-group municipality-emergency-group">
+                  <div className="municipality-service-group-heading"><div><p className="section-kicker">Geldt in heel Frankrijk</p><h3>Noodnummers</h3></div></div>
+                  <div className="emergency-number-grid" aria-label={`Franse noodnummers voor ${municipalityName}`}>
+                    {frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
+                      <a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}>{item.number}</a>
+                      <strong>{item.name}</strong>
+                      <span>{item.note}</span>
+                    </article>)}
+                  </div>
+                  <p className="municipality-source-note"><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer">Officiële informatie van Service-Public</a>.</p>
+                </section>
+              </> : <>
+                {municipalityServiceInfo.officialEquipmentCount && <p className="municipality-data-note">
+                  <strong>Officiële gemeentetelling ({municipalityServiceInfo.officialEquipmentCount.year}):</strong> {municipalityServiceInfo.officialEquipmentCount.basis} Dit is een telling van voorzieningen, geen contactlijst. De concrete adressen hieronder komen uit de gekoppelde directories en kaartbronnen.
+                </p>}
+                {municipalityServiceEntries.length > 0 ? municipalityServiceEntries.map((entry, index) => renderMunicipalityServiceCard(entry, index, municipalityServiceType)) : <div className="municipality-empty-result">
+                  <strong>Geen {municipalityServiceLabel.toLocaleLowerCase("nl-NL")} gevonden {municipalityServiceRadiusKm[municipalityServiceType] > 0 ? `in ${municipalityName} of binnen ${municipalityServiceRadiusKm[municipalityServiceType]} km` : `in ${municipalityName}`} in de beschikbare gegevens.</strong>
+                  <p>Een lege vermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
+                  <div className="municipality-service-links">
+                    <a href={municipalityMapSearchUrl} target="_blank" rel="noreferrer">Zoek op Google Maps <span aria-hidden="true">↗</span></a>
+                    {municipalityServiceType === "library" && <a href={municipalityLibrarySearchUrl} target="_blank" rel="noreferrer">Zoek in het bibliotheekregister van de BnF <span aria-hidden="true">↗</span></a>}
+                    {municipalityServiceType === "doctor" && <a href={municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Zoek huisartsen op Doctolib <span aria-hidden="true">↗</span></a>}
+                    <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`} target="_blank" rel="noreferrer">OpenStreetMap <span aria-hidden="true">↗</span></a>
+                  </div>
+                </div>}
+              </>}
               <p className="municipality-source-note">
                 Geraadpleegd op {new Date(municipalityServiceInfo.updatedAt).toLocaleDateString("nl-NL")}.
-                {municipalityServiceType === "mairie" && municipalityServiceInfo.sources?.map((source) => <span key={source.url}> <a href={safeHttpUrl(source.url) ?? "#"} target="_blank" rel="noreferrer">{source.name} <span aria-hidden="true">↗</span></a>.</span>)}
+                {municipalityServiceInfo.sources?.length ? <> Controleer ook deze aanvullende bronnen:{municipalityServiceInfo.sources.map((source) => <span key={source.url}> <a href={safeHttpUrl(source.url) ?? "#"} target="_blank" rel="noreferrer">{source.name} <span aria-hidden="true">↗</span></a>.</span>)}</> : null}
                 {municipalityServiceType !== "mairie" && municipalityServiceEntries.some((service) => service.sourceName === "OpenStreetMap") && municipalityServiceInfo.mapDataAvailable && <> Aanvullende kaartgegevens: © OpenStreetMap-bijdragers.</>}
               </p>
               {!municipalityServiceInfo.mapDataAvailable && !municipalityServiceInfo.curatedDataAvailable && <p className="municipality-feedback municipality-feedback-error">De kaartgegevens zijn tijdelijk niet bereikbaar. De links naar Google Maps en Doctolib blijven beschikbaar.</p>}

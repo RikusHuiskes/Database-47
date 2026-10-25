@@ -841,6 +841,14 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .municipality-feedback-error { background: #fff0f1; color: #a11c3c; }
 .municipality-results { margin-top: 17px; }
 .municipality-results, .emergency-number-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.municipality-service-group { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; padding: 15px; border: 1px solid #e5e4d9; border-radius: 15px; background: rgba(255, 254, 250, .72); }
+.municipality-service-group-heading { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.municipality-service-group-heading .section-kicker { margin: 0 0 3px; }
+.municipality-service-group-heading h3 { margin: 0; color: #1b4039; font-family: Georgia, "Times New Roman", serif; font-size: 20px; }
+.municipality-service-group-heading > span { color: #718078; font-size: 11px; font-weight: 700; }
+.municipality-service-group-cards { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.municipality-service-group > .municipality-data-note, .municipality-service-group > .municipality-empty-result, .municipality-service-group > .municipality-source-note { grid-column: 1 / -1; }
+.municipality-emergency-group .emergency-number-grid { grid-column: 1 / -1; }
 .municipality-service-card { min-width: 0; padding: 15px; border: 1px solid #dfe3d8; border-radius: 14px; background: #fffefa; }
 .municipality-service-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
 .municipality-service-card-heading .section-kicker { margin: 0 0 5px; color: #a36d3c; font-size: 9px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
@@ -867,7 +875,7 @@ body { font-family: Arial, Helvetica, sans-serif; }
 
 @media (max-width: 680px) {
   .area-explorer.municipality-info-panel { gap: 15px; }
-  .municipality-service-controls, .municipality-results, .emergency-number-grid { grid-template-columns: 1fr; }
+  .municipality-service-controls, .municipality-results, .municipality-service-group, .municipality-service-group-cards, .emergency-number-grid { grid-template-columns: 1fr; }
   .municipality-search-button { grid-column: auto; }
   .municipality-service-card { padding: 13px; }
   .emergency-number-card { min-height: 0; }

@@ -32,7 +32,35 @@ type OsmElement = {
   tags?: Record<string, string>;
 };
 
+type GeoJsonBoundary = {
+  type?: "Polygon" | "MultiPolygon";
+  coordinates?: number[][][] | number[][][][];
+};
+
+type ReferenceSource = { name: string; url: string };
+type OfficialEquipmentCount = {
+  service: string;
+  count: number;
+  year: 2025;
+  sourceUrl: string;
+  sourceName: string;
+  basis: string;
+};
+
+type PublicLibraryRow = {
+  code_insee_commune?: string;
+  nom_de_l_etablissement?: string;
+  libelle_2?: string;
+  adresse?: string;
+  cp?: string;
+  ville?: string;
+  telephone?: string;
+  site_internet?: string;
+  amplitude_horaire?: string | number;
+};
+
 const serviceTypes = new Set([
+  "all",
   "mairie",
   "doctor",
   "hospital",
@@ -176,6 +204,122 @@ async function resolveInseeCode(city: string, suppliedCode: string, latitude: nu
   return undefined;
 }
 
+async function fetchCommuneBoundary(codeInsee: string | undefined): Promise<GeoJsonBoundary | null> {
+  if (!codeInsee) return null;
+  try {
+    const url = new URL(`https://geo.api.gouv.fr/communes/${encodeURIComponent(codeInsee)}`);
+    url.searchParams.set("fields", "nom,code");
+    url.searchParams.set("format", "geojson");
+    url.searchParams.set("geometry", "contour");
+    const response = await fetch(url, {
+      next: { revalidate: 604800 },
+      signal: AbortSignal.timeout(4000),
+      headers: { Accept: "application/geo+json, application/json" },
+    });
+    if (!response.ok) return null;
+    const feature = await response.json() as { geometry?: GeoJsonBoundary };
+    return feature.geometry ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function pointInRing(longitude: number, latitude: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i] ?? [];
+    const [xj, yj] = ring[j] ?? [];
+    if (typeof xi !== "number" || typeof yi !== "number" || typeof xj !== "number" || typeof yj !== "number") continue;
+    const crosses = ((yi > latitude) !== (yj > latitude))
+      && longitude < ((xj - xi) * (latitude - yi)) / ((yj - yi) || Number.EPSILON) + xi;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInCommune(longitude: number, latitude: number, geometry: GeoJsonBoundary | null): boolean | undefined {
+  if (!geometry?.coordinates) return undefined;
+  const polygons: number[][][][] = geometry.type === "Polygon"
+    ? [geometry.coordinates as number[][][]]
+    : geometry.type === "MultiPolygon"
+      ? geometry.coordinates as number[][][][]
+      : [];
+  if (!polygons.length) return undefined;
+  return polygons.some((polygon) => {
+    const [outerRing, ...holes] = polygon;
+    return Boolean(outerRing && pointInRing(longitude, latitude, outerRing)
+      && !holes.some((hole) => pointInRing(longitude, latitude, hole)));
+  });
+}
+
+function municipalReferenceSources(service: string, city: string, codeInsee: string | undefined, latitude: number, longitude: number): ReferenceSource[] {
+  const encodedCity = encodeURIComponent(city);
+  const department = codeInsee?.slice(0, 2);
+  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service} ${city}`)}`;
+  const osm = `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${service} ${city}`)}`;
+  const annuaireSante = "https://annuaire.sante.fr/";
+  const ameli = "https://annuairesante.ameli.fr/";
+
+  switch (service) {
+    case "mairie":
+      return [
+        { name: "Annuaire officiel Service-Public", url: "https://lannuaire.service-public.gouv.fr/" },
+        { name: "Répertoire national des élus", url: "https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1" },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "doctor":
+      return [
+        { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
+        { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Doctolib", url: `https://www.doctolib.fr/medecin-generaliste/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}` },
+        { name: "Maiia", url: "https://www.maiia.com/" },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "dentist":
+      return [
+        { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
+        { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Doctolib", url: `https://www.doctolib.fr/dentiste/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}` },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "hospital":
+      return [
+        { name: "FINESS+ — officiële zorginstellingen", url: "https://www.data.gouv.fr/datasets/finess-structures-1" },
+        { name: "Haute Autorité de Santé — kwaliteitsgegevens", url: "https://www.has-sante.fr/jcms/c_1725555/fr/qualite-des-hopitaux-et-des-cliniques" },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "library":
+      return [
+        { name: "Catalogue collectif de France — bibliotheekregister", url: `https://ccfr.bnf.fr/portailccfr/jsp/query_direct.jsp?query=rnbcd_menu_inst_pub&VILLE=${encodedCity}` },
+        { name: "Ministerie van Cultuur — bibliotheken", url: "https://culture.data.gouv.fr/datasets/adresses-des-bibliotheques-publiques-2" },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "pharmacy":
+      return [
+        { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
+        { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "church":
+      return [
+        { name: "Messes.info — vieringen op basis van locatie", url: `https://messes.info/horaires/${latitude.toFixed(4)}:${longitude.toFixed(4)}` },
+        ...(department === "47" ? [{ name: "Diocèse d’Agen", url: "https://diocese47.fr/" }] : []),
+        ...(department === "24" ? [{ name: "Diocèse de Périgueux et Sarlat — misuren", url: "https://diocese24.fr/horaires-de-messe/" }] : []),
+        ...(department === "33" ? [{ name: "Diocèse de Bordeaux", url: "https://bordeaux.catholique.fr/" }] : []),
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    case "tourism":
+      return [
+        ...(department === "47" ? [{ name: "Toerisme Lot-et-Garonne — offices", url: "https://www.tourisme-lotetgaronne.com/pratique/offices-tourisme/" }] : []),
+        ...(department === "24" ? [{ name: "Dordogne Périgord Tourisme — offices", url: "https://www.dordogne-perigord-tourisme.fr/cote-pratique/offices-tourisme-dordogne/" }] : []),
+        ...(department === "33" ? [{ name: "Gironde Tourisme — offices", url: "https://www.gironde-tourisme.com/pratique/offices-de-tourisme/" }] : []),
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    default:
+      return [{ name: "Kaartgegevens OpenStreetMap", url: osm }, { name: "Google Maps", url: maps }];
+  }
+}
+
 async function fetchOfficialRecords(where: string): Promise<OfficialDirectoryRow[]> {
   const url = new URL("https://api-lannuaire.service-public.gouv.fr/api/explore/v2.1/catalog/datasets/api-lannuaire-administration/records");
   url.searchParams.set("where", where);
@@ -266,6 +410,114 @@ function osmDistance(lat: number, lon: number, element: OsmElement): number | un
   return Math.round(distanceInKm(lat, lon, elementLat, elementLon) * 10) / 10;
 }
 
+const BPE_EQUIPMENT_TYPES: Partial<Record<string, string>> = {
+  doctor: "D265",
+  dentist: "D277",
+  pharmacy: "D307",
+  library: "F307",
+};
+
+function inseeCommunePage(codeInsee: string): string {
+  return `https://www.insee.fr/fr/statistiques/9022155?geo=COM-${encodeURIComponent(codeInsee)}`;
+}
+
+async function fetchOfficialEquipmentCount(
+  codeInsee: string | undefined,
+  service: string,
+): Promise<OfficialEquipmentCount | null> {
+  const equipmentType = BPE_EQUIPMENT_TYPES[service];
+  if (!codeInsee || !equipmentType) return null;
+
+  try {
+    const url = new URL("https://api.insee.fr/melodi/data/DS_BPE");
+    url.searchParams.set("GEO", `2026-COM-${codeInsee}`);
+    url.searchParams.set("TIME_PERIOD", "2025");
+    url.searchParams.set("FACILITY_TYPE", equipmentType);
+    url.searchParams.set("BPE_MEASURE", "FACILITIES");
+    url.searchParams.set("maxResult", "10");
+    const response = await fetch(url, {
+      next: { revalidate: 604800 },
+      signal: AbortSignal.timeout(5000),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+
+    const payload = await response.json() as {
+      observations?: Array<{
+        dimensions?: { GEO?: string; TIME_PERIOD?: string; FACILITY_TYPE?: string };
+        measures?: { OBS_VALUE_NIVEAU?: { value?: number | string } };
+      }>;
+    };
+    const observation = (payload.observations ?? []).find((item) =>
+      item.dimensions?.GEO === `2026-COM-${codeInsee}`
+      && item.dimensions?.TIME_PERIOD === "2025"
+      && item.dimensions?.FACILITY_TYPE === equipmentType,
+    );
+    const rawValue = observation?.measures?.OBS_VALUE_NIVEAU?.value;
+    if (rawValue == null) return null;
+    const count = Number(rawValue);
+    if (!Number.isFinite(count) || count < 0) return null;
+
+    const labels: Record<string, string> = {
+      doctor: "huisartspraktijken",
+      dentist: "tandartspraktijken",
+      pharmacy: "apotheken",
+      library: "bibliotheken en andere openbare leespunten",
+    };
+    return {
+      service,
+      count,
+      year: 2025,
+      sourceUrl: inseeCommunePage(codeInsee),
+      sourceName: "INSEE — Base permanente des équipements 2025",
+      basis: `INSEE registreert ${count} ${labels[service] ?? "voorzieningen"} in deze gemeente.`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchOfficialLibraries(codeInsee: string | undefined): Promise<PublicLibraryRow[]> {
+  if (!codeInsee) return [];
+  try {
+    const url = new URL("https://data.culture.gouv.fr/api/explore/v2.1/catalog/datasets/adresses-des-bibliotheques-publiques/records");
+    url.searchParams.set("where", `code_insee_commune = "${codeInsee}"`);
+    url.searchParams.set("limit", "100");
+    const response = await fetch(url, {
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(5000),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return [];
+    const result = await response.json() as { results?: PublicLibraryRow[] };
+    return result.results ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function mapOfficialLibrary(row: PublicLibraryRow, city: string, index: number) {
+  const weeklyHours = typeof row.amplitude_horaire === "number"
+    ? `${row.amplitude_horaire} uur per week volgens het Ministerie van Cultuur`
+    : typeof row.amplitude_horaire === "string" && row.amplitude_horaire.trim()
+      ? `${row.amplitude_horaire} uur per week volgens het Ministerie van Cultuur`
+      : undefined;
+  return {
+    id: `culture-library-${row.code_insee_commune ?? normalizePlaceName(city)}-${index}`,
+    type: "library",
+    name: row.nom_de_l_etablissement?.trim() || row.libelle_2?.trim() || `Bibliotheek in ${row.ville ?? city}`,
+    address: [row.adresse?.trim(), row.cp?.trim(), row.ville?.trim()].filter(Boolean).join(", ") || undefined,
+    phone: row.telephone?.trim() || undefined,
+    website: row.site_internet?.trim() || undefined,
+    extra: weeklyHours ? `Gepubliceerde openingsomvang: ${weeklyHours}. Dit is het totaal per week, geen dagschema.` : undefined,
+    municipality: row.ville?.trim() || city,
+    inSelectedMunicipality: true,
+    distanceKm: undefined,
+    sourceUrl: "https://data.culture.gouv.fr/explore/dataset/adresses-des-bibliotheques-publiques/",
+    sourceName: "Ministère de la Culture — adresses des bibliothèques publiques",
+  };
+}
+
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const city = params.get("city")?.trim() ?? "";
@@ -280,45 +532,82 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Kies een plaats en een geldige dienst." }, { status: 400 });
   }
 
-  const codeInsee = /^\d{5}$/.test(suppliedCodeInsee)
-    ? suppliedCodeInsee
-    : service === "mairie"
-      ? await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude)
-      : undefined;
+  const codeInsee = await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude);
 
-  const officialDirectoryPromise = service === "mairie"
+  const officialDirectoryPromise = service === "mairie" || service === "all"
     ? fetchOfficialMairie(codeInsee)
     : Promise.resolve(null);
+  const communeBoundaryPromise = fetchCommuneBoundary(codeInsee);
+  const requestedServiceTypes = service === "all"
+    ? ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist"]
+    : [service];
+  const officialCountsPromise = service === "all"
+    ? Promise.all(Object.keys(BPE_EQUIPMENT_TYPES).map((type) => fetchOfficialEquipmentCount(codeInsee, type)))
+    : fetchOfficialEquipmentCount(codeInsee, service).then((count) => count ? [count] : []);
+  const officialLibrariesPromise = service === "library" || service === "all"
+    ? fetchOfficialLibraries(codeInsee)
+    : Promise.resolve([] as PublicLibraryRow[]);
 
-  // Search ordinary services inside the selected commune's OSM boundary.
-  // Hospitals are intentionally searched nearby because many communes have no hospital.
-  const searchRadiusMeters = 60000;
+  // Search nearby services as well as the chosen commune. Many villages have
+  // no local GP, dentist, pharmacy or tourist office; cards keep their actual
+  // municipality and distance so they are not passed off as local.
+  const searchRadiusMeters: Record<string, number> = {
+    mairie: 0,
+    doctor: 15000,
+    hospital: 60000,
+    library: 20000,
+    pharmacy: 15000,
+    church: 15000,
+    tourism: 35000,
+    dentist: 15000,
+  };
   const osmFilters: Record<string, string[]> = {
     mairie: ['["amenity"="townhall"]'],
-    doctor: ['["amenity"~"^(doctors|clinic)$"]', '["healthcare"~"^(doctor|clinic)$"]'],
+    doctor: ['["amenity"~"^(doctors|clinic)$"]', '["healthcare"~"^(doctor|clinic|centre)$"]'],
     hospital: ['["amenity"="hospital"]', '["healthcare"="hospital"]'],
     library: ['["amenity"="library"]'],
-    pharmacy: ['["amenity"="pharmacy"]', '["healthcare"="pharmacy"]'],
-    church: ['["amenity"="place_of_worship"]', '["building"~"^(church|chapel)$"]'],
+    pharmacy: ['["amenity"="pharmacy"]', '["healthcare"="pharmacy"]', '["shop"="chemist"]'],
+    church: ['["amenity"="place_of_worship"]', '["building"~"^(church|chapel|cathedral|basilica)$"]'],
     tourism: ['["tourism"="information"]["information"~"^(office|tourist_information)$"]'],
     dentist: ['["amenity"="dentist"]', '["healthcare"="dentist"]'],
   };
-  const communeSelector = codeInsee
-    ? `rel["boundary"="administrative"]["admin_level"="8"]["ref:INSEE"="${overpassLiteral(codeInsee)}"]; rel["boundary"="administrative"]["admin_level"="8"]["ref"="${overpassLiteral(codeInsee)}"];`
-    : `rel["boundary"="administrative"]["admin_level"="8"]["name"="${overpassLiteral(city)}"];`;
-  const query = service === "hospital"
-    ? `[out:json][timeout:12];(${(osmFilters[service] ?? []).map((filter) => `nwr(around:${searchRadiusMeters},${latitude},${longitude})${filter};`).join("")});out center tags;`
-    : `[out:json][timeout:12];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(${(osmFilters[service] ?? []).map((filter) => `nwr(area.selectedArea)${filter};`).join("")});out center tags;`;
-  const osmLookupPromise = (async () => {
+  const communeSelector = [
+    ...(codeInsee ? [
+      `rel["boundary"="administrative"]["admin_level"="8"]["ref:INSEE"="${overpassLiteral(codeInsee)}"];`,
+      `rel["boundary"="administrative"]["admin_level"="8"]["ref"="${overpassLiteral(codeInsee)}"];`,
+    ] : []),
+    `rel["boundary"="administrative"]["admin_level"="8"]["name"="${overpassLiteral(city)}"];`,
+    `rel["boundary"="administrative"]["admin_level"="8"]["name:fr"="${overpassLiteral(city)}"];`,
+  ].join(" ");
+  const buildNearbyQuery = (types: string[], radiusKm?: number) => types.flatMap((type) =>
+    (osmFilters[type] ?? []).map((filter) => {
+      const radius = (radiusKm ?? searchRadiusMeters[type] / 1000) * 1000;
+      return `nwr(around:${radius},${latitude},${longitude})${filter};`;
+    }),
+  ).join("");
+  const osmQueries = service === "mairie"
+    ? [`[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`]
+    : service === "all"
+      ? [
+        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist"], 35)});out center tags;`,
+        `[out:json][timeout:18];(${buildNearbyQuery(["hospital"], 60)});out center tags;`,
+        `[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`,
+      ]
+      : [`[out:json][timeout:15];(${buildNearbyQuery([service])});out center tags;`];
+  const osmLookupPromise = Promise.allSettled(osmQueries.map(async (query) => {
     let lastError: unknown;
     for (const endpoint of ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter"]) {
-      const osmUrl = new URL(endpoint);
-      osmUrl.searchParams.set("data", query);
       try {
-        const response = await fetch(osmUrl, {
+        const response = await fetch(endpoint, {
+          method: "POST",
           next: { revalidate: 86400 },
-          signal: AbortSignal.timeout(6500),
-          headers: { Accept: "application/json", "User-Agent": "Database47MunicipalGuide/1.0" },
+          signal: AbortSignal.timeout(endpoint.includes("private.coffee") ? 4500 : 6500),
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "User-Agent": "Database47MunicipalGuide/1.0",
+          },
+          body: new URLSearchParams({ data: query }),
         });
         if (!response.ok) throw new Error("De kaartgegevens zijn tijdelijk niet bereikbaar.");
         return await response.json() as { elements?: OsmElement[] };
@@ -327,12 +616,31 @@ export async function GET(request: NextRequest) {
       }
     }
     throw lastError ?? new Error("De kaartgegevens zijn tijdelijk niet bereikbaar.");
-  })();
+  })).then((results) => {
+    const successful = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    if (!successful.length) throw new Error("De kaartgegevens zijn tijdelijk niet bereikbaar.");
+    const uniqueElements = new Map<string, OsmElement>();
+    successful.flatMap((result) => result.elements ?? []).forEach((element) => uniqueElements.set(`${element.type}-${element.id}`, element));
+    return { elements: [...uniqueElements.values()] };
+  });
 
-  const [officialResult, osmResult] = await Promise.allSettled([
+  const [officialResult, osmResult, boundaryResult, officialCountsResult, officialLibrariesResult] = await Promise.allSettled([
     officialDirectoryPromise,
     osmLookupPromise,
+    communeBoundaryPromise,
+    officialCountsPromise,
+    officialLibrariesPromise,
   ]);
+  const communeBoundary = boundaryResult.status === "fulfilled" ? boundaryResult.value : null;
+  const officialEquipmentCounts = officialCountsResult.status === "fulfilled"
+    ? officialCountsResult.value.filter((count): count is OfficialEquipmentCount => count !== null)
+    : [];
+  const officialEquipmentCount = service === "all"
+    ? null
+    : officialEquipmentCounts[0] ?? null;
+  const officialLibraryServices = officialLibrariesResult.status === "fulfilled"
+    ? officialLibrariesResult.value.map((row, index) => mapOfficialLibrary(row, city, index))
+    : [];
 
   const officialRow = officialResult.status === "fulfilled" ? officialResult.value : null;
   const officialService = officialRow ? {
@@ -348,17 +656,19 @@ export async function GET(request: NextRequest) {
     extra: officialRow.information_complementaire,
     sourceUrl: directoryUrl(officialRow.annuaire) ?? "https://lannuaire.service-public.gouv.fr/",
     sourceName: "Annuaire officiel Service-Public",
+    municipality: city,
+    inSelectedMunicipality: true,
+    distanceKm: undefined,
     mayorSourceUrl: "https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1",
     mayorSourceName: "Répertoire national des élus — Ministère de l’Intérieur",
   } : null;
 
   const curatedHealthServices = CURATED_HEALTH_SERVICES.flatMap((entry) => {
-    if (entry.type !== service) return [];
-    // Curated health listings are tied to the municipality their source names.
-    // Do not show a Duras doctor as a doctor in Sainte-Foy, even when nearby.
-    if (entry.type === "doctor" && normalizePlaceName(entry.municipality) !== normalizePlaceName(city)) return [];
+    if (service !== "all" && entry.type !== service) return [];
+    // Keep the provider's real commune in the result and cap nearby curated
+    // doctors at 15 km; this avoids showing Duras practitioners as Sainte-Foy's.
     const distanceKm = Math.round(distanceInKm(latitude, longitude, entry.latitude, entry.longitude) * 10) / 10;
-    if (distanceKm > (service === "hospital" ? 60 : 25)) return [];
+    if (distanceKm > (entry.type === "hospital" ? 60 : 15)) return [];
     return [{
       id: entry.id,
       type: entry.type,
@@ -368,6 +678,7 @@ export async function GET(request: NextRequest) {
       phone: entry.phone,
       website: entry.website,
       distanceKm,
+      inSelectedMunicipality: normalizePlaceName(entry.municipality) === normalizePlaceName(city),
       sourceUrl: entry.sourceUrl,
       sourceName: entry.sourceName,
       secondarySourceUrl: entry.secondarySourceUrl,
@@ -379,7 +690,7 @@ export async function GET(request: NextRequest) {
   });
 
   const curatedLocalServices = CURATED_LOCAL_SERVICES.flatMap((entry) => {
-    if (entry.type !== service || normalizePlaceName(entry.municipality) !== normalizePlaceName(city)) return [];
+    if ((service !== "all" && entry.type !== service) || normalizePlaceName(entry.municipality) !== normalizePlaceName(city)) return [];
     return [{
       id: entry.id,
       type: entry.type,
@@ -396,21 +707,46 @@ export async function GET(request: NextRequest) {
       secondarySourceUrl: entry.secondarySourceUrl,
       secondarySourceName: entry.secondarySourceName,
       municipality: entry.municipality,
+      inSelectedMunicipality: true,
       curated: true,
       distanceKm: undefined,
     }];
   });
 
-  const curatedServices = [...curatedHealthServices, ...curatedLocalServices];
+  const nonDuplicateOfficialLibraries = officialLibraryServices.filter((official) => !curatedLocalServices.some((local) => {
+    if (local.type !== "library" || normalizePlaceName(local.municipality) !== normalizePlaceName(official.municipality ?? "")) return false;
+    const officialName = normalizePlaceName(official.name);
+    const localName = normalizePlaceName(local.name);
+    return officialName === localName
+      || officialName.includes(localName)
+      || localName.includes(officialName)
+      || (official.address && normalizePlaceName(official.address) === normalizePlaceName(local.address));
+  }));
+  const curatedServices = [
+    ...(service === "all" && officialService ? [officialService] : []),
+    ...curatedHealthServices,
+    ...curatedLocalServices,
+    ...nonDuplicateOfficialLibraries,
+  ];
 
   const osmElements = osmResult.status === "fulfilled" ? osmResult.value.elements ?? [] : [];
   const osmServices = osmElements.flatMap((element) => {
     const tags = element.tags ?? {};
     const type = osmCategory(tags);
     if (!type) return [];
+    if (service !== "all" && type !== service) return [];
     const distanceKm = osmDistance(latitude, longitude, element);
+    if (service === "all" && type !== "mairie" && distanceKm != null && distanceKm > (searchRadiusMeters[type] ?? 0)) return [];
     const name = tags.name ?? tags["name:fr"];
     if (!name && type !== "mairie") return [];
+    const elementLat = element.lat ?? element.center?.lat;
+    const elementLon = element.lon ?? element.center?.lon;
+    const containedByBoundary = typeof elementLat === "number" && typeof elementLon === "number"
+      ? pointInCommune(elementLon, elementLat, communeBoundary)
+      : undefined;
+    const addressMunicipality = tags["addr:city"] ?? tags["addr:place"] ?? tags["is_in:city"];
+    const inSelectedMunicipality = containedByBoundary
+      ?? (addressMunicipality ? normalizePlaceName(addressMunicipality) === normalizePlaceName(city) : undefined);
     return [{
       id: `osm-${element.type}-${element.id}`,
       type,
@@ -419,7 +755,8 @@ export async function GET(request: NextRequest) {
       phone: tags.phone ?? tags["contact:phone"],
       email: tags.email ?? tags["contact:email"],
       website: tags.website ?? tags["contact:website"],
-      municipality: tags["addr:city"] ?? (service === "hospital" ? undefined : city),
+      municipality: addressMunicipality ?? (inSelectedMunicipality ? city : undefined),
+      inSelectedMunicipality,
       openingHours: tags.opening_hours,
       serviceTimes: tags.service_times,
       distanceKm,
@@ -443,14 +780,19 @@ export async function GET(request: NextRequest) {
   // Use the sourced health listings first; OpenStreetMap remains an additional
   // nearby source, rather than the only place these services can be found.
   const curatedServiceIds = new Set(curatedServices.map((entry) => entry.id));
-  const services = [...curatedServices, ...osmServices]
+  const mergedServices = [...curatedServices, ...osmServices]
     .sort((left, right) => {
+      const leftLocal = left.inSelectedMunicipality === true;
+      const rightLocal = right.inSelectedMunicipality === true;
+      if (leftLocal !== rightLocal) return leftLocal ? -1 : 1;
       const leftCurated = curatedServiceIds.has(left.id);
       const rightCurated = curatedServiceIds.has(right.id);
-      if (service !== "hospital" && leftCurated !== rightCurated) return leftCurated ? -1 : 1;
+      if (leftCurated !== rightCurated) return leftCurated ? -1 : 1;
       return (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE);
-    })
-    .slice(0, service === "hospital" ? 5 : 16);
+    });
+  const services = (service === "all" ? requestedServiceTypes : [service]).flatMap((type) =>
+    mergedServices.filter((entry) => entry.type === type).slice(0, type === "hospital" ? 5 : type === "mairie" ? 1 : 16),
+  );
 
   const mairieFromMap = service === "mairie"
     ? osmServices.filter((entry) => entry.type === "mairie").sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE))[0] ?? null
@@ -476,13 +818,14 @@ export async function GET(request: NextRequest) {
     city,
     updatedAt: new Date().toISOString(),
     officialDirectoryAvailable: service === "mairie" && Boolean(officialRow),
+    officialEquipmentCount,
+    officialEquipmentCounts,
     mapDataAvailable: osmResult.status === "fulfilled",
-    curatedDataAvailable: curatedServices.length > 0,
-    sources: service === "mairie" ? [
-      { name: "Annuaire officiel Service-Public", url: officialService?.sourceUrl ?? "https://lannuaire.service-public.gouv.fr/" },
-      { name: "Répertoire national des élus — Ministère de l’Intérieur", url: "https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1" },
-      { name: "Kaartgegevens van OpenStreetMap", url: `https://www.openstreetmap.org/search?query=${encodeURIComponent(`mairie ${city}`)}` },
-    ] : [],
+    curatedDataAvailable: curatedServices.length > 0 || officialEquipmentCounts.length > 0,
+    sources: [
+      ...new Map(requestedServiceTypes.flatMap((type) => municipalReferenceSources(type, city, codeInsee, latitude, longitude)).map((source) => [source.url, source])).values(),
+      ...officialEquipmentCounts.map((count) => ({ name: count.sourceName, url: count.sourceUrl })),
+    ],
     mairie,
     services,
   });
