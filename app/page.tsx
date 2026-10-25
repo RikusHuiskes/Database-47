@@ -1389,40 +1389,6 @@ export default function Home() {
         {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
       </section>
 
-      <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
-        <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeenten</strong><small>Ontdek de plaatsen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-health" href="#gezondheid"><span className="discovery-icon" aria-hidden="true">♡</span><span><strong>Zorg & gezondheid</strong><small>Actief eropuit</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-      </section>
-
-      <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
-        <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
-        {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
-          {homepagePromotionEvents.map((event) => <article className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
-            <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
-              {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
-            </button>
-            <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
-          </article>)}
-        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
-      </section>
-
-      <section className="featured-section" aria-labelledby="featured-heading">
-        <div className="content-heading"><div><p className="section-kicker">Ideeën voor binnenkort</p><h2 id="featured-heading">Binnenkort in de buurt</h2></div><a className="text-arrow-link" href="#agenda-resultaten">Naar de agenda <span aria-hidden="true">→</span></a></div>
-        {featuredEvents.length > 0 ? <div className="featured-events-grid">
-          {featuredEvents.map((event) => {
-            const date = formatCardDate(event.start_at);
-            return <article className={`featured-event-card${event.promotion_type === "homepage" && event.promotion_status === "active" ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
-              <button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
-                {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
-              </button>
-              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div>{event.promotion_type === "homepage" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}<h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
-            </article>;
-          })}
-        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}
-      </section>
-
       <section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
         {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results">Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
@@ -1477,6 +1443,42 @@ export default function Home() {
           </button>
         </div>
       </section>
+
+      <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
+        <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeenten</strong><small>Ontdek de plaatsen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-health" href="#gezondheid"><span className="discovery-icon" aria-hidden="true">♡</span><span><strong>Zorg & gezondheid</strong><small>Actief eropuit</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+      </section>
+
+      <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
+        <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
+        {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
+          {homepagePromotionEvents.map((event) => <article className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
+            <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
+              {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
+            </button>
+            <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
+          </article>)}
+        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
+      </section>
+
+      <section className="featured-section" aria-labelledby="featured-heading">
+        <div className="content-heading"><div><p className="section-kicker">Ideeën voor binnenkort</p><h2 id="featured-heading">Binnenkort in de buurt</h2></div><a className="text-arrow-link" href="#agenda-resultaten">Naar de agenda <span aria-hidden="true">→</span></a></div>
+        {featuredEvents.length > 0 ? <div className="featured-events-grid">
+          {featuredEvents.map((event) => {
+            const date = formatCardDate(event.start_at);
+            return <article className={`featured-event-card${event.promotion_type === "homepage" && event.promotion_status === "active" ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
+              <button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
+                {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
+              </button>
+              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div>{event.promotion_type === "homepage" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}<h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
+            </article>;
+          })}
+        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}
+      </section>
+
+
 
       <section className="area-explorer" id="gemeenten" aria-labelledby="area-heading">
         <div className="area-explorer-copy">
