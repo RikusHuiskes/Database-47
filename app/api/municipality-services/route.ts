@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { CURATED_HEALTH_SERVICES } from "../../../lib/municipality-health";
+import { CURATED_LOCAL_SERVICES } from "../../../lib/municipality-local-services";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
@@ -340,7 +341,7 @@ export async function GET(request: NextRequest) {
     mayorSourceName: "Répertoire national des élus — Ministère de l’Intérieur",
   } : null;
 
-  const curatedServices = CURATED_HEALTH_SERVICES.flatMap((entry) => {
+  const curatedHealthServices = CURATED_HEALTH_SERVICES.flatMap((entry) => {
     if (entry.type !== service) return [];
     const distanceKm = Math.round(distanceInKm(latitude, longitude, entry.latitude, entry.longitude) * 10) / 10;
     if (distanceKm > (service === "hospital" ? 60 : 25)) return [];
@@ -361,6 +362,29 @@ export async function GET(request: NextRequest) {
       extra: entry.extra,
     }];
   });
+
+  const curatedLocalServices = CURATED_LOCAL_SERVICES.flatMap((entry) => {
+    if (entry.type !== service || normalizePlaceName(entry.municipality) !== normalizePlaceName(city)) return [];
+    return [{
+      id: entry.id,
+      type: entry.type,
+      name: entry.name,
+      address: entry.address,
+      phone: entry.phone,
+      email: entry.email,
+      website: entry.website,
+      openingHours: entry.openingHours,
+      sourceUrl: entry.sourceUrl,
+      sourceName: entry.sourceName,
+      secondarySourceUrl: entry.secondarySourceUrl,
+      secondarySourceName: entry.secondarySourceName,
+      municipality: entry.municipality,
+      curated: true,
+      distanceKm: undefined,
+    }];
+  });
+
+  const curatedServices = [...curatedHealthServices, ...curatedLocalServices];
 
   const osmElements = osmResult.status === "fulfilled" ? osmResult.value.elements ?? [] : [];
   const osmServices = osmElements.flatMap((element) => {
@@ -385,21 +409,29 @@ export async function GET(request: NextRequest) {
       sourceName: "OpenStreetMap",
     }];
   }).filter((candidate) => {
-    if (service !== "doctor" && service !== "hospital") return true;
+    if (!curatedServices.length) return true;
     const element = osmElements.find((item) => `osm-${item.type}-${item.id}` === candidate.id);
     const candidateLat = element?.lat ?? element?.center?.lat;
     const candidateLon = element?.lon ?? element?.center?.lon;
-    if (typeof candidateLat !== "number" || typeof candidateLon !== "number") return true;
     return !curatedServices.some((curated) => {
-      if (normalizePlaceName(curated.name) === normalizePlaceName(candidate.name)) return true;
+      const curatedName = normalizePlaceName(curated.name);
+      const candidateName = normalizePlaceName(candidate.name);
+      if (curatedName === candidateName || curatedName.includes(candidateName) || candidateName.includes(curatedName)) return true;
+      if (typeof candidateLat !== "number" || typeof candidateLon !== "number") return false;
       const curatedEntry = CURATED_HEALTH_SERVICES.find((item) => item.id === curated.id);
       return curatedEntry != null && distanceInKm(candidateLat, candidateLon, curatedEntry.latitude, curatedEntry.longitude) < 0.4;
     });
   });
   // Use the sourced health listings first; OpenStreetMap remains an additional
   // nearby source, rather than the only place these services can be found.
+  const curatedServiceIds = new Set(curatedServices.map((entry) => entry.id));
   const services = [...curatedServices, ...osmServices]
-    .sort((left, right) => (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE))
+    .sort((left, right) => {
+      const leftCurated = curatedServiceIds.has(left.id);
+      const rightCurated = curatedServiceIds.has(right.id);
+      if (leftCurated !== rightCurated) return leftCurated ? -1 : 1;
+      return (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE);
+    })
     .slice(0, service === "hospital" ? 5 : 16);
 
   const mairieFromMap = service === "mairie"

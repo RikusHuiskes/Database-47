@@ -1413,6 +1413,7 @@ export default function Home() {
       : municipalityServiceInfo.services.filter((service) => service.type === municipalityServiceType)
         .slice(0, municipalityServiceType === "hospital" ? 5 : 16);
   const municipalityMapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`;
+  const municipalityLibrarySearchUrl = `https://ccfr.bnf.fr/portailccfr/jsp/query_direct.jsp?query=rnbcd_menu_inst_pub&VILLE=${encodeURIComponent(municipalityName)}`;
   const municipalityDoctolibSearchUrl = `https://www.doctolib.fr/medecin-generaliste/${municipalityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
   return (
     <main className="visitor-site">
@@ -1661,6 +1662,7 @@ export default function Home() {
                 <p>Een lege kaartvermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
                 <div className="municipality-service-links">
                   <a href={municipalityMapSearchUrl} target="_blank" rel="noreferrer">Zoek op Google Maps <span aria-hidden="true">↗</span></a>
+                  {municipalityServiceType === "library" && <a href={municipalityLibrarySearchUrl} target="_blank" rel="noreferrer">Zoek in het bibliotheekregister van de BnF <span aria-hidden="true">↗</span></a>}
                   {municipalityServiceType === "doctor" && <a href={municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Zoek huisartsen op Doctolib <span aria-hidden="true">↗</span></a>}
                   <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`} target="_blank" rel="noreferrer">OpenStreetMap <span aria-hidden="true">↗</span></a>
                 </div>
