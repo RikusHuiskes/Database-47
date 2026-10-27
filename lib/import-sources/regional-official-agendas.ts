@@ -315,8 +315,7 @@ function parseEventPage(html: string, sourceUrl: string, reference: Date, listin
       ? listingDate
       : detailDate;
   if (!date) return null;
-  const listingImage = listing?.cardHtml?.match(/<img\b[^>]*?(?:src|data-src)=["']([^"']+)["'][^>]*>/i)?.[1];
-  const imageUrl = structured?.image_url ?? metaContent(html, "og:image") ?? (listingImage ? decodeHtml(listingImage) : null);
+  const imageUrl = structured?.image_url ?? metaContent(html, "og:image") ?? regionalPagePhoto(html, sourceUrl) ?? (listing?.cardHtml ? regionalPagePhoto(listing.cardHtml,sourceUrl) : null);
   const image = imageUrl ? safeHttpsUrl(imageUrl, sourceUrl) : null;
   const shortDescription = metaContent(html, "description") ?? metaContent(html, "og:description");
   const description = structured?.description ?? shortDescription;
@@ -351,6 +350,21 @@ function parseEventPage(html: string, sourceUrl: string, reference: Date, listin
     verified: false,
   };
   return isUpcoming(candidate, reference) ? candidate : null;
+}
+
+function regionalPagePhoto(html: string, sourceUrl: string): string | null {
+  const markup=html.replace(/<(script|style|header|footer|nav)\b[^>]*>[\s\S]*?<\/\1>/gi, "");
+  const content=markup.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? markup;
+  for(const tag of content.matchAll(/<img\b[^>]*>/gi)) {
+    // Municipal sites put a blank SVG in src and the real photo in data-src.
+    for(const attribute of ['data-src','src']) {
+      const value=tag[0].match(new RegExp(`\\s${attribute}=["']([^"']+)["']`, 'i'))?.[1];
+      if(!value || /^(?:data:|javascript:)/i.test(value) || /(?:logo|placeholder|default-image|favicon)/i.test(value))continue;
+      const url=safeHttpsUrl(decodeHtml(value),sourceUrl);
+      if(url)return url;
+    }
+  }
+  return null;
 }
 
 function safeHttpsUrl(value: string, base: string): string | null {
