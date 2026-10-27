@@ -455,6 +455,7 @@ function candidatesFromListing(html: string, baseUrl: string, config: AgendaConf
 }
 
 function nextListingPageUrl(html: string, currentPageUrl: string, config: AgendaConfig): string | null {
+  const basePath = new URL(config.listingUrl).pathname.replace(/\/+$/, "");
   const links = [...html.matchAll(/<a\b([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi)]
     .map((match) => ({ href: decodeHtml(match[2]), label: visibleText(match[4]), attrs: match[1] + " " + match[3] }));
   const allowed = links.flatMap((link) => {
@@ -462,13 +463,13 @@ function nextListingPageUrl(html: string, currentPageUrl: string, config: Agenda
     if (!href || !config.allowedHosts.includes(new URL(href).hostname)) return [];
     return [{ ...link, url: new URL(href) }];
   });
-  const explicitNext = allowed.find((link) =>
+  const listingLinks = allowed.filter(link => link.url.pathname.replace(/\/+$/, "") === basePath || link.url.pathname.startsWith(basePath + "/page/"));
+  const explicitNext = listingLinks.find((link) =>
     /(?:suivant|next|›|»)/i.test(link.label)
     || /\bnext\b|pagination-next|next-page|rel=["']next["']/i.test(link.attrs)
     || /aria-label=["'][^"']*(?:suivant|next)/i.test(link.attrs));
   if (explicitNext) return explicitNext.url.toString();
 
-  const basePath = new URL(config.listingUrl).pathname.replace(/\/+$/, "");
   const currentUrl = new URL(currentPageUrl);
   const pathPage = (pathname: string) => Number(pathname.match(/\/page\/(\d+)\/?$/i)?.[1] ?? 1);
   const currentPage = Number(currentUrl.searchParams.get("page") ?? currentUrl.searchParams.get("paged") ?? pathPage(currentUrl.pathname));
@@ -585,8 +586,8 @@ async function fetchConfigEvents(config: AgendaConfig, now: Date): Promise<{ eve
   const unique = new Map<string, ImportedEvent>();
   for (const { event } of parsed) {
     if (!event) continue;
-    const key = (event.source_url ?? "") + ":" + slug(event.title) + ":" + event.start_at;
-    unique.set(key, event);
+    const key = slug(event.title) + ":" + slug(event.city ?? "") + ":" + event.start_at;
+    if (!unique.has(key)) unique.set(key, event);
   }
   report.importedCandidates = unique.size;
   return { events: [...unique.values()], report };
