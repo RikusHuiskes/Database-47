@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
+import { eventPhotoType } from "../lib/event-photo";
 import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, type LocalAreaTown } from "../lib/local-area";
 type Category = {
   id: string;
@@ -130,10 +131,11 @@ const frenchEmergencyNumbers = [
 type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 const MAX_VISITOR_PHOTO_BYTES = 5 * 1024 * 1024;
-const VISITOR_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 async function prepareEventPhoto(photo: File): Promise<File> {
-  if (photo.size <= 3_500_000) return photo;
+  const type = eventPhotoType(photo);
+  if (!type) throw new Error("Kies een JPG-, PNG- of WebP-foto.");
+  if (photo.size <= 3_500_000) return new File([photo], photo.name, { type });
   const bitmap = await createImageBitmap(photo);
   const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -1860,11 +1862,11 @@ export default function Home() {
               id="visitor-event-photo"
               ref={visitorPhotoInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               onChange={(event) => {
                 const file = event.target.files?.[0] ?? null;
                 if (!file) { setVisitorPhoto(null); return; }
-                if (!VISITOR_PHOTO_TYPES.has(file.type)) {
+                if (!eventPhotoType(file)) {
                   setVisitorPhoto(null);
                   event.target.value = "";
                   setSubmissionError("Kies een foto in JPG-, PNG- of WebP-formaat.");
@@ -2630,7 +2632,7 @@ export default function Home() {
                 <input
                   style={inputStyle}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   onChange={(e) => {
                     const file = e.target.files?.[0] ?? null;
                     if (file && file.size > MAX_VISITOR_PHOTO_BYTES) {
@@ -2639,7 +2641,7 @@ export default function Home() {
                       e.target.value = "";
                       return;
                     }
-                    if (file && !VISITOR_PHOTO_TYPES.has(file.type)) {
+                    if (file && !eventPhotoType(file)) {
                       setEditPhotoFile(null);
                       setEditError("Kies een JPG-, PNG- of WebP-foto.");
                       e.target.value = "";

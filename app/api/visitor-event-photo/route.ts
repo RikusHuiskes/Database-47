@@ -1,29 +1,15 @@
 import { createServiceClient } from "../../../lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
+import { EVENT_PHOTO_TYPES, eventPhotoType, isEventPhoto } from "../../../lib/event-photo";
 
 export const runtime = "nodejs";
 
 const BUCKET = "visitor-event-photos";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-const PHOTO_EXTENSIONS: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
+const PHOTO_EXTENSIONS: Record<string, string> = EVENT_PHOTO_TYPES;
 
 function serviceClient() {
   return createServiceClient();
-}
-
-function isImageFile(type: string, bytes: Uint8Array) {
-  if (type === "image/jpeg") return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (type === "image/png") return bytes.length >= 8 && bytes.slice(0, 8).join(",") === "137,80,78,71,13,10,26,10";
-  if (type === "image/webp") {
-    return bytes.length >= 12
-      && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF"
-      && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
-  }
-  return false;
 }
 
 async function ensureBucket(client: NonNullable<ReturnType<typeof serviceClient>>) {
@@ -81,11 +67,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "De foto moet kleiner zijn dan 5 MB." }, { status: 400 });
   }
 
-  const extension = PHOTO_EXTENSIONS[photo.type];
+  const contentType = eventPhotoType(photo);
+  const extension = contentType ? PHOTO_EXTENSIONS[contentType] : null;
   if (!extension) return NextResponse.json({ error: "Kies een JPG-, PNG- of WebP-foto." }, { status: 400 });
 
   const bytes = new Uint8Array(await photo.arrayBuffer());
-  if (!isImageFile(photo.type, bytes)) {
+  if (!contentType || !isEventPhoto(contentType, bytes)) {
     return NextResponse.json({ error: "Dit bestand is geen geldige JPG-, PNG- of WebP-foto." }, { status: 400 });
   }
 
@@ -94,7 +81,7 @@ export async function POST(request: NextRequest) {
 
   const path = `visitor-submissions/${crypto.randomUUID()}.${extension}`;
   const { error: uploadError } = await client.storage.from(BUCKET).upload(path, bytes, {
-    contentType: photo.type,
+    contentType,
     cacheControl: "31536000",
     upsert: false,
   });

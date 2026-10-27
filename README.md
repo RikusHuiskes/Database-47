@@ -156,6 +156,15 @@ credentials belong in these data files. The photo uploader now sends new
 authorization. Images above 3.5 MB are resized before upload to fit Vercel's
 request limit; the existing user-facing 5 MB input limit is retained.
 
+Manual event creation and editing share `lib/event-photo.ts` for file type
+recognition. JPG/PNG/WebP files with missing or generic picker MIME types are
+accepted by extension, then checked against their byte signature on the server.
+Storage always receives the normalized MIME type and a fresh UUID path, so a
+replacement cannot overwrite an existing or imported image. Run `pnpm test:photo`
+to check the validation and the actual multipart upload route with mocked storage.
+The public `visitor-event-photos` bucket permits these three MIME types and 5 MB;
+writes use the server service key, so no anonymous Storage write policy is needed.
+
 The SIRTAQUI `PHOTOS` field contains media identifiers and filenames, rather
 than complete URLs. `sirtaquiPhotoUrl` resolves these against the source's media
 host and retains the identifier. The refresh script and live importer use the
