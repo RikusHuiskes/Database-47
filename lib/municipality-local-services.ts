@@ -21,6 +21,29 @@ export type CuratedLocalService = {
 // misrepresented as belonging to a neighbouring town.
 export const CURATED_LOCAL_SERVICES: CuratedLocalService[] = [
   {
+    id: "dentist-mutualiste-marmande", type: "dentist", municipality: "Marmande",
+    name: "Centre de Santé Dentaire Mutualiste — Marmande",
+    address: "77 avenue Jean Jaurès, 47200 Marmande", phone: "05 53 20 93 49",
+    openingHours: "Maandag–vrijdag 08:30–12:30 en 14:00–18:30; zaterdag 08:00–14:00; zondag gesloten. Op afspraak.",
+    website: "https://www.centre-de-sante-dentaire47.fr/",
+    sourceUrl: "https://www.centre-de-sante-dentaire47.fr/", sourceName: "Centre de Santé Dentaire Mutualiste — eigen website",
+    secondarySourceUrl: "https://annuaire-entreprises.data.gouv.fr/etablissement/78215297900251", secondarySourceName: "Annuaire des Entreprises — actief tandartscentrum",
+  },
+  {
+    id: "dentist-mutualiste-agen", type: "dentist", municipality: "Agen",
+    name: "Centre de Santé Dentaire Mutualiste — Agen",
+    address: "259 avenue du Général Leclerc, 47000 Agen", phone: "05 53 77 76 75",
+    openingHours: "Maandag–vrijdag 08:30–12:30 en 14:00–18:30; zaterdag 08:00–14:00; zondag gesloten. Op afspraak.",
+    website: "https://www.centre-de-sante-dentaire47.fr/", sourceUrl: "https://www.centre-de-sante-dentaire47.fr/", sourceName: "Centre de Santé Dentaire Mutualiste — eigen website",
+  },
+  {
+    id: "dentist-mutualiste-villeneuve", type: "dentist", municipality: "Villeneuve-sur-Lot",
+    name: "Centre de Santé Dentaire Mutualiste — Villeneuve-sur-Lot",
+    address: "26 avenue de Fumel, 47300 Villeneuve-sur-Lot", phone: "05 53 40 23 16",
+    openingHours: "Maandag–vrijdag 08:30–12:30 en 14:00–18:30; zaterdag 08:00–14:00; zondag gesloten. Op afspraak.",
+    website: "https://www.centre-de-sante-dentaire47.fr/", sourceUrl: "https://www.centre-de-sante-dentaire47.fr/", sourceName: "Centre de Santé Dentaire Mutualiste — eigen website",
+  },
+  {
     id: "library-duras",
     type: "library",
     municipality: "Duras",

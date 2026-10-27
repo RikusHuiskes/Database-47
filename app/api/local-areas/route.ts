@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, distanceInKm, normalizePlaceName } from "../../../lib/local-area";
+import catalog from "../../../lib/data/area-catalog.json";
 
 // Resolve commune coordinates at request time; cache the official API fetches
 // individually so a production build does not need live network access.
@@ -32,6 +33,7 @@ export async function GET() {
         geometry: "centre",
       });
       const response = await fetch(`https://geo.api.gouv.fr/communes?${params}`, {
+        signal: AbortSignal.timeout(3500),
         next: { revalidate: 86400 },
         headers: { Accept: "application/geo+json, application/json" },
       });
@@ -62,7 +64,8 @@ export async function GET() {
       })
       .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null)
       .sort((left, right) => left.distance - right.distance)[0];
-    const fallback = LOCAL_AREA_TOWNS.find((town) => normalizePlaceName(town.name) === normalizePlaceName(name));
+    const fallback = catalog.areas.find((town) => normalizePlaceName(town.name) === normalizePlaceName(name))
+      ?? LOCAL_AREA_TOWNS.find((town) => normalizePlaceName(town.name) === normalizePlaceName(name));
 
     return {
       id: normalizePlaceName(name).replace(/\s+/g, "-"),

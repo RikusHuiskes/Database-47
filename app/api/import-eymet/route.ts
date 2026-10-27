@@ -3,7 +3,7 @@ import { EYMET_AGENDA_URL, EYMET_SOURCE_NAME, fetchEymetEvents } from "../../../
 
 export const runtime = "nodejs";
 export const revalidate = 0;
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function GET() {
   try {

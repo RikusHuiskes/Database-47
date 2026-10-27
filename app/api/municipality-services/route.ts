@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { CURATED_HEALTH_SERVICES } from "../../../lib/municipality-health";
 import { CURATED_LOCAL_SERVICES } from "../../../lib/municipality-local-services";
+import { municipalCatalog } from "../../../lib/municipal-catalog";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
@@ -653,6 +654,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Kies een plaats en een geldige dienst." }, { status: 400 });
   }
 
+  const catalog = municipalCatalog(city, latitude, longitude, service, suppliedCodeInsee);
+  if (catalog.missingTypes.length === 0) return NextResponse.json(catalog);
   const codeInsee = await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude);
 
   const officialDirectoryPromise = service === "mairie" || service === "all"
@@ -686,6 +689,9 @@ export async function GET(request: NextRequest) {
     tourism: 35000,
     dentist: 15000,
   };
+  for (const type of Object.keys(searchRadiusMeters)) {
+    if (type !== "mairie") searchRadiusMeters[type] = catalog.radiusKm * 1000;
+  }
   const osmFilters: Record<string, string[]> = {
     mairie: ['["amenity"="townhall"]'],
     doctor: ['["amenity"~"^(doctors|clinic)$"]', '["healthcare"~"^(doctor|clinic|centre)$"]'],
@@ -852,6 +858,7 @@ export async function GET(request: NextRequest) {
       || (official.address && normalizePlaceName(official.address) === normalizePlaceName(local.address));
   }));
   const curatedServices = [
+    ...catalog.services,
     ...(service === "all" && officialService ? [officialService] : []),
     ...curatedHealthServices,
     ...sireneServices,
@@ -866,7 +873,7 @@ export async function GET(request: NextRequest) {
     if (!type) return [];
     if (service !== "all" && type !== service) return [];
     const distanceKm = osmDistance(latitude, longitude, element);
-    if (service === "all" && type !== "mairie" && distanceKm != null && distanceKm > (searchRadiusMeters[type] ?? 0)) return [];
+    if (type !== "mairie" && distanceKm != null && distanceKm > catalog.radiusKm) return [];
     const name = tags.name ?? tags["name:fr"];
     if (!name && type !== "mairie") return [];
     const elementLat = element.lat ?? element.center?.lat;
@@ -921,7 +928,7 @@ export async function GET(request: NextRequest) {
       return (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE);
     });
   const services = (service === "all" ? requestedServiceTypes : [service]).flatMap((type) =>
-    mergedServices.filter((entry) => entry.type === type),
+    mergedServices.filter((entry) => entry.type === type && (entry.distanceKm == null || entry.distanceKm <= catalog.radiusKm)),
   );
 
   const mairieFromMap = service === "mairie"
@@ -946,6 +953,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     city,
+    radiusKm: catalog.radiusKm,
     updatedAt: new Date().toISOString(),
     officialDirectoryAvailable: service === "mairie" && Boolean(officialRow),
     officialEquipmentCount,

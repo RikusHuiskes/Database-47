@@ -592,8 +592,11 @@ async function fetchConfigEvents(config: AgendaConfig, now: Date): Promise<{ eve
 
 export const REGIONAL_OFFICIAL_SOURCE_NAME = "Officiële agenda’s in de omgeving";
 
-export async function fetchRegionalOfficialEventsWithReport(now = new Date()): Promise<RegionalAgendaImportFetch> {
-  const sourceResults = await Promise.all(AGENDA_CONFIGS.map(async (config) => {
+export async function fetchRegionalOfficialEventsWithReport(now = new Date(), selectedSource?: string): Promise<RegionalAgendaImportFetch> {
+  const ids = ["marmande", "miramont", "pineuilh", "sainte-foy"];
+  const configs = AGENDA_CONFIGS.filter((_config, index) => !selectedSource || ids[index] === selectedSource);
+  if (!configs.length) throw new Error("Onbekende gemeentelijke agendabron.");
+  const sourceResults = await Promise.all(configs.map(async (config) => {
     try { return await fetchConfigEvents(config, now); } catch (error) {
       return {
         events: [],
@@ -610,7 +613,7 @@ export async function fetchRegionalOfficialEventsWithReport(now = new Date()): P
     }
   }));
   const failedSources = sourceResults.filter((result) => result.report.error);
-  if (failedSources.length === AGENDA_CONFIGS.length) {
+  if (failedSources.length === configs.length) {
     throw new Error("Geen van de officiële gemeentelijke agenda’s was bereikbaar: " + failedSources.map((result) => result.report.source + " (" + result.report.error + ")").join("; "));
   }
   const unique = new Map<string, ImportedEvent>();

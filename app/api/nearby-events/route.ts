@@ -123,16 +123,16 @@ export async function GET(request: NextRequest) {
     if (!data || data.length < pageSize) break;
   }
   const eventIds = rows.map((event) => event.id);
-  let categoryByEvent = new Map<string, string>();
+  const categoryByEvent = new Map<string, string[]>();
   if (eventIds.length > 0) {
-    const { data: links } = await supabase
-      .from("event_categories")
-      .select("event_id,category_id")
-      .in("event_id", eventIds);
-    categoryByEvent = new Map((links ?? []).map((link) => [link.event_id, link.category_id]));
+    for (let offset = 0; offset < eventIds.length; offset += 100) {
+      const { data: links, error } = await supabase.from("event_categories").select("event_id,category_id").in("event_id", eventIds.slice(offset, offset + 100));
+      if (error) return NextResponse.json({ error: "De activiteitcategorieën konden niet worden geladen." }, { status: 502 });
+      for (const link of links ?? []) categoryByEvent.set(link.event_id, [...(categoryByEvent.get(link.event_id) ?? []), link.category_id]);
+    }
   }
 
-  const upcoming = rows.map((event) => ({ ...event, category_id: categoryByEvent.get(event.id) ?? null }))
+  const upcoming = rows.map((event) => ({ ...event, category_id: categoryByEvent.get(event.id)?.[0] ?? null, category_ids: categoryByEvent.get(event.id) ?? [] }))
     .filter((event) => isUpcoming(event, now));
   const homepage_promotions = upcoming
     .filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active")

@@ -3,7 +3,7 @@ import { fetchTourismeDurasEvents, TOURISME_DURAS_AGENDA_URL } from "../../../li
 
 export const runtime = "nodejs";
 export const revalidate = 0;
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function GET() {
   try {

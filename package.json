@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:import": "node --test lib/tourisme-duras.test.mjs lib/regional-official-agendas.test.mjs"
+    "test:import": "node --test lib/tourisme-duras.test.mjs lib/regional-official-agendas.test.mjs lib/additive-import.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",

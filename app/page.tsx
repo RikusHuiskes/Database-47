@@ -24,6 +24,7 @@ type EventRow = {
   slug: string;
   category_name?: string | null;
   category_id?: string | null;
+  category_ids?: string[];
   start_at: string;
   end_at?: string | null;
   venue_name?: string | null;
@@ -130,6 +131,22 @@ type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 const MAX_VISITOR_PHOTO_BYTES = 5 * 1024 * 1024;
 const VISITOR_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+async function prepareEventPhoto(photo: File): Promise<File> {
+  if (photo.size <= 3_500_000) return photo;
+  const bitmap = await createImageBitmap(photo);
+  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) { bitmap.close(); throw new Error("De foto kon niet worden voorbereid. Kies een kleinere foto."); }
+  context.fillStyle = "white"; context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85));
+  if (!blob || blob.size > 3_800_000) throw new Error("De foto is nog te groot. Kies een kleinere JPG-, PNG- of WebP-foto.");
+  return new File([blob], photo.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+}
 
 type EventEditDraft = {
   category_id: string;
@@ -265,6 +282,8 @@ function sourceLabel(value?: string | null): string {
     if (host === "api.neopse.com") return "Commune d’Eymet — officiële agenda-PDF";
     if (host === "pays-bergerac-tourisme.com") return "Pays de Bergerac Tourisme — agenda L’Eden d’Eymet";
     if (host === "tourismeduras.com") return "Tourisme Duras";
+    if (host === "aquitaine.media.tourinsoft.eu") return "SIRTAQUI — CRT Nouvelle-Aquitaine";
+    if (host === "openagenda.com") return "OpenAgenda — landelijke evenementenkalender";
     return host;
   } catch {
     return "Bron niet vermeld";
@@ -503,7 +522,7 @@ export default function Home() {
     return nearbyEvents.filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
-    const matchesCategory = categoryFilter === "all" || event.category_id === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || event.category_id === categoryFilter || event.category_ids?.includes(categoryFilter);
     return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
     }).sort((left, right) => {
     const isCategoryPromotion = (event: NearbyEvent) => categoryFilter !== "all"
@@ -585,6 +604,7 @@ export default function Home() {
   function selectArea(areaId: string) {
     setVisitorLocation(null);
     setSelectedAreaId(areaId);
+    setRadiusKm(["agen", "bergerac"].includes(areaId) ? 10 : 25);
   }
 
   async function findMunicipalityServices(event: React.FormEvent<HTMLFormElement>) {
@@ -628,15 +648,29 @@ export default function Home() {
 
     setError("");
 
+    const readAllEvents = async () => {
+      const rows: EventRow[] = [];
+      for (let offset = 0; ; offset += 500) {
+        const result = await supabase.from("events").select("*").order("start_at", { ascending: true }).order("id").range(offset, offset + 499);
+        if (result.error) return { data: rows, error: result.error };
+        rows.push(...(result.data ?? []) as EventRow[]);
+        if (!result.data || result.data.length < 500) return { data: rows, error: null };
+      }
+    };
+    const readAllEventCategories = async () => {
+      const rows: EventCategoryRow[] = [];
+      for (let offset = 0; ; offset += 500) {
+        const result = await supabase.from("event_categories").select("event_id,category_id").order("event_id").order("category_id").range(offset, offset + 499);
+        if (result.error) return { data: rows, error: result.error };
+        rows.push(...(result.data ?? []));
+        if (!result.data || result.data.length < 500) return { data: rows, error: null };
+      }
+    };
     const [categoryResult, eventResult, eventCategoryResult] =
       await Promise.all([
         supabase.from("categories").select("*").order("name").limit(100),
-        supabase
-          .from("events")
-          .select("*")
-          .order("start_at", { ascending: true })
-          .limit(100),
-        supabase.from("event_categories").select("event_id, category_id"),
+        readAllEvents(),
+        readAllEventCategories(),
       ]);
 
     if (categoryResult.error) {
@@ -996,7 +1030,7 @@ export default function Home() {
       let uploadedImageUrl: string | null = null;
       if (editPhotoFile) {
         const photoForm = new FormData();
-        photoForm.set("photo", editPhotoFile);
+        photoForm.set("photo", await prepareEventPhoto(editPhotoFile));
         const response = await fetch("/api/visitor-event-photo", { method: "POST", body: photoForm });
         const result = await readApiJson<{ imageUrl?: string; path?: string; error?: string }>(response);
         if (!response.ok || !result.imageUrl || !result.path) {
@@ -1138,7 +1172,7 @@ export default function Home() {
     try {
       if (visitorPhoto) {
         const photoForm = new FormData();
-        photoForm.set("photo", visitorPhoto);
+        photoForm.set("photo", await prepareEventPhoto(visitorPhoto));
         const response = await fetch("/api/visitor-event-photo", { method: "POST", body: photoForm });
         const result = await readApiJson<{ imageUrl?: string; path?: string; error?: string }>(response);
         if (!response.ok || !result.imageUrl || !result.path) {
@@ -1321,6 +1355,30 @@ export default function Home() {
     setMessage("");
     setImporting(true);
     setImportNotice("");
+    const supportedSources = importPreview.every(event => /^https:\/\/(www\.)?tourismeduras\.com\//.test(event.source_url)
+      || event.source_url.startsWith("https://www.eymet-dordogne.fr/fr/rb/304280/lespace-culturel#agenda-")
+      || event.source_url.startsWith("https://openagenda.com/")
+      || /^https:\/\/(www\.)?(mairie-marmande\.fr|ville-miramontdeguyenne\.fr|commune-de-miramont-de-guyenne\.neopse-site\.com|pineuilh\.fr|saintefoylagrande\.fr)\//.test(event.source_url)
+      || event.source_url.startsWith("https://aquitaine.media.tourinsoft.eu/upload/SIRTAQUI-OD-liste-csv-agenda-"));
+    if (supportedSources) {
+      let inserted = 0, skipped = 0, processed = 0;
+      try {
+        for (let offset = 0; offset < importPreview.length; offset += 50) {
+          const batch = importPreview.slice(offset, offset + 50);
+          const { data, error: importError } = await supabase.rpc("import_pending_source_events", { p_events: batch });
+          if (importError) throw new Error(importError.message);
+          inserted += Number(data?.inserted ?? 0); skipped += Number(data?.skipped ?? 0); processed += batch.length;
+          setImportNotice(`${processed} van ${importPreview.length} gecontroleerd; ${inserted} toegevoegd, ${skipped} al aanwezig. Bestaande gegevens blijven behouden.`);
+        }
+        setMessage(`${inserted} nieuwe activiteiten toegevoegd; ${skipped} bestaande activiteiten behouden. Nieuwe activiteiten wachten op controle.`);
+        setImportPreview([]);
+        await loadData();
+      } catch (cause) {
+        setImportPreview(current => current.slice(processed));
+        setError(`Import niet volledig afgerond: ${cause instanceof Error ? cause.message : "Verbindingsfout"}. ${inserted} toegevoegd; de resterende activiteiten blijven klaarstaan om opnieuw te proberen.`);
+      } finally { setImporting(false); }
+      return;
+    }
     const sourceUrls = importPreview.map((event) => event.source_url);
     const existingResult = await supabase
       .from("events")
@@ -2250,6 +2308,10 @@ export default function Home() {
             {importLoading ? "Agenda ophalen..." : "Eymet-agenda importeren"}
           </button>
         )}
+        {isAdmin && <button type="button" onClick={() => void previewEventSource("/api/import-sirtaqui", "SIRTAQUI — officiële streekagenda’s")} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>Alle streekagenda’s aanvullen</button>}
+        {isAdmin && <button type="button" onClick={() => void previewEventSource("/api/import-openagenda", "OpenAgenda — nationale evenementenkalender")} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>Nationale agenda importeren</button>}
+        {isAdmin && [["marmande", "Marmande"], ["miramont", "Miramont-de-Guyenne"], ["pineuilh", "Pineuilh"], ["sainte-foy", "Sainte-Foy-la-Grande"]].map(([source, label]) => <button key={source} type="button" onClick={() => void previewEventSource(`/api/import-regional-agendas?source=${source}`, `Gemeentelijke agenda — ${label}`)} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>{label} importeren</button>)}
+        {isAdmin && [["24", "Dordogne"], ["33", "Gironde"], ["47", "Lot-et-Garonne"]].map(([department, label]) => <button key={department} type="button" onClick={() => void previewEventSource(`/api/import-sirtaqui?department=${department}`, `SIRTAQUI — ${label}`)} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>{label} importeren</button>)}
         {isAdmin && (
           <button
             type="button"
@@ -2360,7 +2422,7 @@ export default function Home() {
             </button>
           )}
           <div className="import-preview-list">
-            {importPreview.map((event) => (
+            {importPreview.slice(0, 60).map((event) => (
               <article className="import-event-card" key={event.source_url}>
                 {safeHttpUrl(event.image_url) ? <img className="import-event-image" src={safeHttpUrl(event.image_url)!} alt={`Foto bij ${event.title}`} loading="lazy" /> : <div className="import-event-image import-event-image-placeholder" aria-label="Geen evenementfoto op de beschikbare bronpagina"><span>Foto niet gevonden</span></div>}
                 <div className="import-event-content">

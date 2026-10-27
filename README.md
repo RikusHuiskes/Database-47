@@ -101,3 +101,55 @@ import and only inserts or enriches pending, unverified events. The Eymet import
 uses the current L’Eden agenda published by Pays de Bergerac Tourisme; its event
 detail URL is saved as the source link. The linked municipal cultural page is at
 `eymet-dordogne.fr`. Items that no longer have a future or ongoing date are skipped.
+
+## Additive imports and complete area coverage (27 October 2026)
+
+The new `import_pending_source_events(jsonb)` RPC only inserts new, pending,
+unverified events. It never updates existing event fields, status or category
+links. Imports run in batches of at most 100 with a transaction lock. Duras
+numeric source IDs survive title/URL changes; exact source URLs and matching
+title/date/commune records prevent repeated and cross-source submissions.
+Apply `202610260001_additive_source_import.sql` to Test before deploying this code.
+The RPC is available only to administrators and the server service role.
+
+The admin keeps the existing Duras and Eymet buttons and adds separate previews
+for SIRTAQUI Dordogne, Gironde and Lot-et-Garonne; the four municipal calendars;
+and the national OpenAgenda dataset. Every import goes to Wacht op controle.
+The admin reads all event/category pages, rather than hiding records after 100.
+SIRTAQUI and OpenAgenda daily jobs run at 06:00 and 05:00 UTC respectively.
+Preview deployments can be tested manually; Vercel only schedules Production.
+
+SIRTAQUI's original open CSV feeds are used directly, not the paused DATAtourisme
+API. French source dates and Windows-1252 accents are preserved. OpenAgenda uses
+each published session, not an artificial continuous range. Events with several
+relevant published types keep multiple category links. New source snapshots and
+the 53 place coordinates are under `lib/data/`, with origins and update dates.
+Default search radii are 25 km, and 10 km for Bergerac and Agen.
+
+Municipal information adds downloaded OSM, DILA, Ministry of Culture library,
+SIRTAQUI tourist-office and national elected-official records to the existing
+curated entries. Existing curated details are retained. Source names and links
+remain attached to concrete records. Missing opening times or phone numbers are
+not invented. OSM data is attributed to its contributors under ODbL; DILA,
+Ministry of Culture and elected-official data are under the French Open Licence;
+SIRTAQUI is credited to CRT Nouvelle-Aquitaine with source update dates.
+
+Refresh/recheck commands:
+
+```
+node scripts/refresh-area-data.mjs
+node scripts/refresh-national-agenda.mjs
+node scripts/refresh-municipal-supplements.mjs
+node scripts/refresh-mayors.mjs
+node scripts/audit-coverage.mjs
+node scripts/audit-municipal-coverage.mjs
+pnpm test:import
+pnpm build
+```
+
+Raw download caches and audit intermediates stay in ignored `work/`. Delete a
+cached source file there to force a fresh download on the next refresh. No
+credentials belong in these data files. The photo uploader now sends new
+`sb_secret_` keys only in the API-key header, while retaining legacy/session JWT
+authorization. Images above 3.5 MB are resized before upload to fit Vercel's
+request limit; the existing user-facing 5 MB input limit is retained.
