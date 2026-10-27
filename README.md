@@ -165,6 +165,13 @@ to check the validation and the actual multipart upload route with mocked storag
 The public `visitor-event-photos` bucket permits these three MIME types and 5 MB;
 writes use the server service key, so no anonymous Storage write policy is needed.
 
+Apply `202610270002_manual_event_identity.sql` to allow manual events to share
+a title and organizer URL. The server generates a unique slug for each manual
+submission. The previous form payload is also recognized, including already-open
+deployments. Imported source URLs stay unique; existing rows and photos are not
+rewritten. `supabase/tests/manual_event_identity.sql` checks legacy and current
+payloads, photo retention and import deduplication inside a rollback transaction.
+
 The SIRTAQUI `PHOTOS` field contains media identifiers and filenames, rather
 than complete URLs. `sirtaquiPhotoUrl` resolves these against the source's media
 host and retains the identifier. The refresh script and live importer use the

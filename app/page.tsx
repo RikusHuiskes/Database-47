@@ -1187,6 +1187,7 @@ export default function Home() {
 
       const payload = {
         title: title.trim(),
+        submission_kind: "manual",
         slug: makeSlug(title),
         short_description: shortDescription.trim() || null,
         description: description.trim() || null,
