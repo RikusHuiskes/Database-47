@@ -26,7 +26,7 @@ const AGENDA_CONFIGS: AgendaConfig[] = [
     name: "Ville de Marmande — agenda officiel",
     listingUrl: "https://www.mairie-marmande.fr/evenements/",
     allowedHosts: ["www.mairie-marmande.fr"],
-    eventPath: /^\/evenements\/.+\/$/,
+    eventPath: /^\/evenements\/(?!page\/|feed\/)[^/]+\/$/,
     maxPages: 10,
     maxEvents: 120,
   },
@@ -138,7 +138,8 @@ function metaContent(html: string, key: string): string | null {
 }
 
 function firstHeading(html: string): string | null {
-  const match = html.match(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/i);
+  const markup = html.replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, "");
+  const match = markup.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i) ?? markup.match(/<h[2-4]\b[^>]*>([\s\S]*?)<\/h[2-4]>/i);
   return match ? visibleText(match[1]) : null;
 }
 
@@ -301,7 +302,8 @@ function parseEventPage(html: string, sourceUrl: string, reference: Date, listin
   const structured = parseJsonLd(html).map(fromStructuredEvent).find((item) => item?.title && item.start_at);
   const heading = firstHeading(html);
   const cleanHeading = heading?.replace(/^[^:]{3,120}:\s*/, "") ?? null;
-  const title = structured?.title ?? cleanHeading ?? metaContent(html, "og:title")?.replace(/\s*[|–-].*$/, "") ?? listing?.title ?? null;
+  const pageTitle = metaContent(html, "og:title")?.replace(/\s+(?:[|–—-])\s+(?:Ville de|Mairie de|Commune de).*$/i, "");
+  const title = structured?.title ?? pageTitle ?? cleanHeading ?? listing?.title ?? null;
   if (!title || title.length < 4) return null;
   const visible = visibleText(html);
   const detailDate = dateFromEventText(visible, reference, title);

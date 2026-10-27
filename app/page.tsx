@@ -344,6 +344,7 @@ export default function Home() {
   const [importLoading, setImportLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
+  const [importPreviewLimit, setImportPreviewLimit] = useState(60);
   const [importNotice, setImportNotice] = useState("");
   const [importSourceName, setImportSourceName] = useState("");
   const [showSocialPostForm, setShowSocialPostForm] = useState(false);
@@ -2422,7 +2423,7 @@ export default function Home() {
             </button>
           )}
           <div className="import-preview-list">
-            {importPreview.slice(0, 60).map((event) => (
+            {importPreview.slice(0, importPreviewLimit).map((event) => (
               <article className="import-event-card" key={event.source_url}>
                 {safeHttpUrl(event.image_url) ? <img className="import-event-image" src={safeHttpUrl(event.image_url)!} alt={`Foto bij ${event.title}`} loading="lazy" /> : <div className="import-event-image import-event-image-placeholder" aria-label="Geen evenementfoto op de beschikbare bronpagina"><span>Foto niet gevonden</span></div>}
                 <div className="import-event-content">
@@ -2445,6 +2446,7 @@ export default function Home() {
         </section>
       )}
 
+      {importPreview.length > importPreviewLimit && <button type="button" onClick={() => setImportPreviewLimit(count => count + 60)}>Toon meer importvoorbeelden ({importPreview.length - importPreviewLimit} resterend)</button>}
       <h2>Evenementen beheren</h2>
 
       {(() => {
