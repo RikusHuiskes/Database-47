@@ -1532,6 +1532,11 @@ export default function Home() {
       </div>
     </article>;
   };
+  function openEventEntryForm() {
+    setShowForm(true);
+    window.setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
+
   return (
     <main className="visitor-site">
       <header className="site-header">
@@ -1544,7 +1549,7 @@ export default function Home() {
             <a href="#agenda">Agenda</a>
             <a href="#ontdekken">Ontdekken</a>
             <a href="#gemeenten">Gemeente informatie</a>
-            <a href="#praktische-info">Praktische info</a>
+            <a href="#activity-tip-form" onClick={openEventEntryForm}>Voer uw evenement in</a>
             <a href="#gezondheid">Gezondheid</a>
           </nav>
           <a className="region-note" href="#gemeenten"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
@@ -1669,7 +1674,7 @@ export default function Home() {
       <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
         <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
         <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeentegids</strong><small>Lokale diensten & adressen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-nature" href="#praktische-info"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
+        <a className="discovery-tile discovery-nature" href="#natuur-cultuur"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
       </section>
 
       <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
@@ -1820,17 +1825,7 @@ export default function Home() {
           <p>Even wandelen, samen op pad of iets nieuws proberen? Bekijk activiteiten in en rond de gemeenten die nu in de agenda staan.</p>
           <a href="#agenda">Bekijk activiteiten <span aria-hidden="true">→</span></a>
         </article>
-        <article className="guide-card guide-practical" id="praktische-info">
-          <span className="guide-icon" aria-hidden="true">✳</span>
-          <p className="section-kicker">Praktische info</p>
-          <h2>Maak je uitstap makkelijk.</h2>
-          <p>Kies je gemeente, stel in hoe ver je wilt reizen en ontdek ook gratis activiteiten. Je kunt zoeken vanaf je huidige locatie.</p>
-          <div className="guide-actions">
-            <button type="button" onClick={() => { setRadiusKm(50); setFreeOnly(false); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>Zoek binnen 50 km <span aria-hidden="true">→</span></button>
-            <button type="button" onClick={() => { setFreeOnly(true); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>Toon gratis uitjes <span aria-hidden="true">→</span></button>
-          </div>
-        </article>
-        <article className="guide-card guide-nature">
+        <article className="guide-card guide-nature" id="natuur-cultuur">
           <span className="guide-icon" aria-hidden="true">⌖</span>
           <p className="section-kicker">Natuur & cultuur</p>
           <h2>Laat je verrassen door het lokale leven.</h2>
@@ -2137,7 +2132,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong><small>Evenementen en informatie binnen 50 kilometer</small></span>
         </a>
-        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#praktische-info">Praktische info</a><a href="#tip-activiteit" onClick={() => setShowForm(true)}>Activiteit doorgeven</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
+        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Voer uw evenement in</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
       </footer>
 

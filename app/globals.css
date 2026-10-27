@@ -651,7 +651,7 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .search-controls-primary { grid-template-columns: minmax(170px, .8fr) minmax(190px, 1fr) auto; }
 .search-controls-secondary { grid-template-columns: minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, 1fr) auto; }
 .area-explorer { margin-top: 0; margin-bottom: 44px; border-radius: 20px; }
-.visitor-guides { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; margin-bottom: 52px; }
+.visitor-guides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; margin-bottom: 52px; }
 .guide-card { position: relative; min-height: 270px; padding: 25px 23px; overflow: hidden; border: 1px solid #e5e6db; border-radius: 18px; background: #fffefa; }
 .guide-card::after { position: absolute; right: -30px; bottom: -48px; width: 150px; height: 150px; border: 1px solid #ffffff8a; border-radius: 50%; box-shadow: 0 0 0 18px #ffffff39, 0 0 0 38px #ffffff22; content: ""; pointer-events: none; }
 .guide-health { background: #e9efe5; }
