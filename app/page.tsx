@@ -1535,6 +1535,8 @@ export default function Home() {
     </article>;
   };
   function openEventEntryForm() {
+    setError("");
+    setMessage("");
     setShowForm(true);
     window.setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
@@ -1667,8 +1669,8 @@ export default function Home() {
         {displayedNearbyEvents.length < standardNearbyEvents.length && <button className="show-more-events" type="button" onClick={() => setVisibleEventCount((count) => Math.min(count + 18, standardNearbyEvents.length))}>Toon meer activiteiten ({standardNearbyEvents.length - displayedNearbyEvents.length} resterend)</button>}
         <div className="tip-invitation" id="tip-activiteit">
           <div><p className="section-kicker">Ken jij de streek?</p><strong>Staat jouw favoriete activiteit er nog niet bij?</strong><p>Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien.</p></div>
-          <button className="button button-dark" type="button" onClick={() => { setShowForm((current) => !current); setError(""); setMessage(""); }}>
-            {showForm ? "Tipformulier sluiten" : "Een activiteit doorgeven"}<span aria-hidden="true">→</span>
+          <button className="button button-dark" type="button" onClick={openEventEntryForm} aria-controls="activity-tip-form">
+            Een nieuw evenement aanmaken<span aria-hidden="true">→</span>
           </button>
         </div>
       </section>
@@ -1851,7 +1853,8 @@ export default function Home() {
             marginBottom: 28,
           }}
         >
-          <h2>Geef een activiteit door</h2>
+          <h2>Een nieuw evenement aanmaken</h2>
+          <button type="button" onClick={() => setShowForm(false)} disabled={saving} style={{ justifySelf: "end" }}>Formulier sluiten</button>
           <p style={{ marginTop: 0, color: "#64748b" }}>
             Je tip komt eerst bij de beheerder ter controle. Een link naar de organisator of informatiebron helpt ons de gegevens te verifiëren.
           </p>
@@ -2247,11 +2250,8 @@ export default function Home() {
       >
         <button
           type="button"
-          onClick={() => {
-            setShowForm(!showForm);
-            setError("");
-            setMessage("");
-          }}
+          onClick={openEventEntryForm}
+          aria-controls="activity-tip-form"
           style={{
             padding: "12px 18px",
             border: 0,
@@ -2262,7 +2262,7 @@ export default function Home() {
             fontSize: 15,
           }}
         >
-          {showForm ? "Formulier sluiten" : "+ Nieuw evenement"}
+          Een nieuw evenement aanmaken
         </button>
 
         <button
