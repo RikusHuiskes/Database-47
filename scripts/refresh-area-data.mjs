@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { stripTypeScriptTypes } from 'node:module';
-import { parseSirtaquiCsv, sirtaquiLocalTimestamp, sirtaquiCategory, sirtaquiCategories } from '../lib/sirtaqui.ts';
+import { parseSirtaquiCsv, sirtaquiLocalTimestamp, sirtaquiCategory, sirtaquiCategories, sirtaquiPhotoUrl } from '../lib/sirtaqui.ts';
 
 const areaCode = stripTypeScriptTypes(await readFile(new URL('../lib/local-area.ts', import.meta.url), 'utf8'));
 const { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, distanceInKm } = await import('data:text/javascript;base64,' + Buffer.from(areaCode).toString('base64'));
@@ -59,7 +59,7 @@ for (const department of ['24','33','47']) {
       allEvents.push({ source_id: id, category_slug, category_slugs: sirtaquiCategories(row), title: row.NOM_OFFRE, slug, short_description: row.DESCRIPTIF.slice(0,250) || null, description: `${row.DESCRIPTIF || ''}\n\nBron: SIRTAQUI — CRT Nouvelle-Aquitaine. Bron bijgewerkt: ${row.DATE_DERNIERE_MAJ || 'niet vermeld'}.`.trim(),
         start_at, end_at, venue_name: row.LIEU || null, address: row.ADRESSE || null, postcode: row.CODE_POSTAL, city: row.COMMUNE, latitude, longitude,
         price_from: null, price_to: null, is_free: /^gratuit\b/i.test(row.TARIFS), tariff_text: row.TARIFS || null,
-        website_url: row.SITE_WEB.split(' # ')[0] || null, booking_url: null, contact_phone: row.TEL || null, image_url: null, organizer_name: row.ORGANISATEUR || null,
+        website_url: row.SITE_WEB.split(' # ')[0] || null, booking_url: null, contact_phone: row.TEL || null, image_url: sirtaquiPhotoUrl(row.PHOTOS), organizer_name: row.ORGANISATEUR || null,
         source_category: row.CATEGORIE || row.TYPE, source_url: `${sourceUrl}#${id}-${start_at.slice(0,10)}`, source_updated_at: row.DATE_DERNIERE_MAJ, status:'pending', verified:false });
       relevant++;
     }

@@ -1,4 +1,4 @@
-import { parseSirtaquiCsv, sirtaquiLocalTimestamp, sirtaquiCategories } from "../sirtaqui";
+import { parseSirtaquiCsv, sirtaquiLocalTimestamp, sirtaquiCategories, sirtaquiPhotoUrl } from "../sirtaqui";
 import { distanceInKm } from "../local-area";
 import catalog from "../data/area-catalog.json";
 import snapshot from "../data/sirtaqui-events.json";
@@ -28,7 +28,7 @@ export async function fetchSirtaquiEvents(now=new Date(), departments=["24","33"
           return [{source_id:id,category_slugs,title:row.NOM_OFFRE,slug,short_description:row.DESCRIPTIF.slice(0,250)||null,description:`${row.DESCRIPTIF||''}\n\nBron: SIRTAQUI — CRT Nouvelle-Aquitaine. Bron bijgewerkt: ${row.DATE_DERNIERE_MAJ||'niet vermeld'}.`.trim(),
             start_at,end_at,venue_name:row.LIEU||null,address:row.ADRESSE||null,postcode:row.CODE_POSTAL||null,city:row.COMMUNE||null,latitude,longitude,
             price_from:null,price_to:null,is_free:/^gratuit\b/i.test(row.TARIFS),website_url:row.SITE_WEB.split(" # ")[0]||null,booking_url:null,
-            contact_phone:row.TEL||null,image_url:null,organizer_name:row.ORGANISATEUR||null,source_category:row.CATEGORIE||row.TYPE,
+            contact_phone:row.TEL||null,image_url:sirtaquiPhotoUrl(row.PHOTOS),organizer_name:row.ORGANISATEUR||null,source_category:row.CATEGORIE||row.TYPE,
             source_url:`${source}#${id}-${start_at.slice(0,10)}`,status:"pending" as const,verified:false as const}];
         });
       });

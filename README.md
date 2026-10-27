@@ -105,8 +105,10 @@ detail URL is saved as the source link. The linked municipal cultural page is at
 ## Additive imports and complete area coverage (27 October 2026)
 
 The new `import_pending_source_events(jsonb)` RPC only inserts new, pending,
-unverified events. It never updates existing event fields, status or category
-links. Imports run in batches of at most 100 with a transaction lock. Duras
+unverified events. Existing text, dates, photos, status and category links are
+preserved. After `202610270001_source_photo_supplements.sql`, repeated imports
+can also fill a missing photo from the same source URL. Imports run in batches
+of at most 100 with a transaction lock. Duras
 numeric source IDs survive title/URL changes; exact source URLs and matching
 title/date/commune records prevent repeated and cross-source submissions.
 Apply `202610260001_additive_source_import.sql` to Test before deploying this code.
@@ -153,3 +155,14 @@ credentials belong in these data files. The photo uploader now sends new
 `sb_secret_` keys only in the API-key header, while retaining legacy/session JWT
 authorization. Images above 3.5 MB are resized before upload to fit Vercel's
 request limit; the existing user-facing 5 MB input limit is retained.
+
+The SIRTAQUI `PHOTOS` field contains media identifiers and filenames, rather
+than complete URLs. `sirtaquiPhotoUrl` resolves these against the source's media
+host and retains the identifier. The refresh script and live importer use the
+same parser. `prepare-source-photo-repair.mjs` prepares photo-only additions for
+previous imports; the admin/server RPC never replaces an existing photo.
+
+Use the existing feature branch for test deployments. Its Preview environment
+contains the Test Supabase URL, public key and server key. A deployment from a
+different branch does not inherit branch-specific keys. The stable test URL is
+https://database-47-git-feature-tourisme-duras-enrichment-rikushuiskes.vercel.app/ .

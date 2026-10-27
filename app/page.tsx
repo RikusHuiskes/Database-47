@@ -2503,7 +2503,7 @@ export default function Home() {
           )}
           {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 8, marginBottom: 12 }} />}
           <p><strong>Categorie:</strong> {event.category_name ?? "Nog niet ingedeeld"}</p>
-          <p>{formatDate(event.start_at)}</p>
+          <p>{formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}</p>
           {(event.venue_name || event.address || event.postcode || event.city) && (
             <p>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ")}</p>
           )}
