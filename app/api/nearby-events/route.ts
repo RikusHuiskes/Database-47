@@ -85,9 +85,9 @@ async function getCommuneCenter(city: string, postcode: string | null) {
 }
 
 export async function GET(request: NextRequest) {
-  const latitude = Number(request.nextUrl.searchParams.get("lat"));
-  const longitude = Number(request.nextUrl.searchParams.get("lon"));
-  const requestedRadius = Number(request.nextUrl.searchParams.get("radius"));
+  const latitude = Number(request.nextUrl.searchParams.get("lat") || Number.NaN);
+  const longitude = Number(request.nextUrl.searchParams.get("lon") || Number.NaN);
+  const requestedRadius = Number(request.nextUrl.searchParams.get("radius") || Number.NaN);
   const radiusKm = Math.min(50, Math.max(5, Number.isFinite(requestedRadius) ? requestedRadius : 25));
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
@@ -134,12 +134,6 @@ export async function GET(request: NextRequest) {
 
   const upcoming = rows.map((event) => ({ ...event, category_id: categoryByEvent.get(event.id)?.[0] ?? null, category_ids: categoryByEvent.get(event.id) ?? [] }))
     .filter((event) => isUpcoming(event, now));
-  const homepage_promotions = upcoming
-    .filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active")
-    .slice(0, 3);
-  const category_promotions = upcoming
-    .filter((event) => event.promotion_type === "category" && event.promotion_status === "active")
-    .slice(0, 30);
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
   const results = await Promise.all(upcoming.map(async (event) => {
@@ -175,5 +169,7 @@ export async function GET(request: NextRequest) {
 
   const events = results.filter((event): event is NonNullable<typeof event> => event !== null)
     .sort((a, b) => a.distance_km - b.distance_km || a.start_at.localeCompare(b.start_at));
+  const homepage_promotions = events.filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active").slice(0, 3);
+  const category_promotions = events.filter((event) => event.promotion_type === "category" && event.promotion_status === "active");
   return NextResponse.json({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount });
 }

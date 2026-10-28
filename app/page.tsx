@@ -535,9 +535,9 @@ export default function Home() {
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
     });
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly]);
-  const categoryPromotionEvents = useMemo(() => categoryFilter === "all" ? [] : categoryPromotions.filter((event) =>
-    event.category_id === categoryFilter && event.promotion_type === "category" && event.promotion_status === "active"
-  ), [categoryFilter, categoryPromotions]);
+  const categoryPromotionEvents = useMemo(() => categoryFilter === "all" ? [] : visibleNearbyEvents.filter((event) =>
+    event.promotion_type === "category" && event.promotion_status === "active"
+  ), [categoryFilter, visibleNearbyEvents]);
   const categoryPromotionIds = useMemo(() => new Set(categoryPromotionEvents.map((event) => event.id)), [categoryPromotionEvents]);
   const standardNearbyEvents = useMemo(
     () => visibleNearbyEvents.filter((event) => !categoryPromotionIds.has(event.id)),
@@ -1477,7 +1477,7 @@ export default function Home() {
     document.getElementById("agenda-resultaten")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const homepagePromotionEvents = homepagePromotions.slice(0, 3);
+  const homepagePromotionEvents = visibleNearbyEvents.filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active").slice(0, 3);
   const featuredEvents = useMemo(
     () => visibleNearbyEvents.filter((event) => !(event.promotion_type === "homepage" && event.promotion_status === "active")).slice(0, 3),
     [visibleNearbyEvents]
@@ -2138,7 +2138,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong><small>Evenementen en informatie binnen 50 kilometer</small></span>
         </a>
-        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Voer uw evenement in</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
+        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="/disclaimer">Disclaimer</a><a href="/contact">Contactgegevens</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Voer uw evenement in</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
       </footer>
 
