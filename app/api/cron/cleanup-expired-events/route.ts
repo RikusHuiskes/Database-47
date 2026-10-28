@@ -22,6 +22,8 @@ export async function GET(request: Request) {
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
     const { data, error } = await supabase.rpc("delete_expired_events_cron");
     if (error) throw new Error(error.message);
+    const {error: analyticsError} = await supabase.rpc("prune_site_analytics");
+    if (analyticsError) throw new Error(`Evenementen opgeruimd; analytics opruimen mislukt: ${analyticsError.message}`);
     return NextResponse.json({ ok: true, deleted: typeof data === "number" ? data : 0 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Onbekende fout";

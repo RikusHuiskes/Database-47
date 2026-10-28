@@ -1,5 +1,34 @@
 # DATABASE 47
 
+### Audience analytics
+
+Apply `supabase/migrations/202610280001_analytics.sql` to the intended Supabase
+environment before deploying the analytics release. It creates a new RLS-enabled
+`site_analytics` table, a service-role-only recording RPC, an admin-only report
+RPC and a service-role-only retention RPC. It does not change event rows,
+categories, authentication accounts or existing storage policies. Daily cleanup
+calls the retention RPC along with the existing expired-event cleanup.
+
+The admin dashboard reports measured browser visitors, 30-minute sessions,
+category and town interest, event opens, visible placements and outbound clicks,
+with period selection and CSV export. Consent is required before a visitor or
+session identifier is created. No IP address, email, search text or full URL is
+included in the analytics records. Codes/consent expire after 180 days; records
+are pruned after 13 months. Reporting starts at activation and is indicative,
+not a complete person count or proof of bookings. Browser administrators and
+known bot user agents are excluded. Impressions require 50% visibility for one
+second and are deduplicated per session/event/placement. Identified sessions
+are rate-limited, but public client-side analytics is not fraud-proof.
+
+The report also shows agenda pageviews, monthly unique browser/session totals,
+and combinations of town, category and 10/25/50 km filters, including the initial
+selection. GPS coordinates and free-text searches are never recorded. The agenda
+is a single-page application; event detail openings have their own metric.
+
+Run `node --test lib/analytics.test.mjs lib/analytics-sql.test.mjs` for consent,
+collector validation and PostgreSQL integration tests. SQL tests use an isolated
+in-memory PGlite instance; they never connect to Supabase.
+
 ### Supermarkets, fuel and EV charging
 
 The municipal guide includes supermarkets, fuel stations and EV charging

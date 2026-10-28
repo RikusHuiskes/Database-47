@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test:import": "node --test lib/tourisme-duras.test.mjs lib/regional-official-agendas.test.mjs lib/additive-import.test.mjs",
-    "test:photo": "node --test lib/event-photo.test.mjs"
+    "test:photo": "node --test lib/event-photo.test.mjs",
+    "test:analytics": "node --test lib/analytics.test.mjs lib/analytics-sql.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",
@@ -17,6 +18,7 @@
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.12",
     "@types/node": "latest",
     "@types/react": "latest",
     "typescript": "latest"

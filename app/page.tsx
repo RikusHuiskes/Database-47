@@ -3,6 +3,9 @@
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import AnalyticsConsent from "./components/AnalyticsConsent";
+import AnalyticsDashboard from "./components/AnalyticsDashboard";
+import {trackAnalytics} from "../lib/analytics-client";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
@@ -521,6 +524,18 @@ export default function Home() {
   }, []);
 
   const selectedArea = areaOptions.find((area) => area.id === selectedAreaId);
+  useEffect(()=>{
+    const measure=()=>{if(selectedVisitorEvent)trackAnalytics('event_view',{eventId:selectedVisitorEvent.id});};
+    measure();window.addEventListener('analytics-ready',measure);return()=>window.removeEventListener('analytics-ready',measure);
+  },[selectedVisitorEvent?.id]);
+  useEffect(()=>{
+    const measure=()=>{if(categoryFilter!=="all")trackAnalytics('category_view',{categoryId:categoryFilter});if(selectedArea&&!visitorLocation)trackAnalytics('place_view',{area:selectedArea.name});};
+    measure();window.addEventListener('analytics-ready',measure);return()=>window.removeEventListener('analytics-ready',measure);
+  },[categoryFilter,selectedArea?.name,visitorLocation]);
+  useEffect(()=>{
+    const measure=()=>trackAnalytics('filter_view',{radius:String(radiusKm),categoryId:categoryFilter==='all'?undefined:categoryFilter,area:visitorLocation?undefined:selectedArea?.name});
+    measure();window.addEventListener('analytics-ready',measure);return()=>window.removeEventListener('analytics-ready',measure);
+  },[categoryFilter,selectedArea?.name,visitorLocation,radiusKm]);
   const searchArea = areaOptions.find((area) => area.id === deferredSelectedAreaId);
   const searchLatitude = deferredVisitorLocation?.latitude ?? searchArea?.latitude ?? null;
   const searchLongitude = deferredVisitorLocation?.longitude ?? searchArea?.longitude ?? null;
@@ -1636,14 +1651,14 @@ export default function Home() {
         {locationlessCount > 0 && <p className="location-note">{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
         {categoryFilter !== "all" && <section className="category-promotion-slot" aria-labelledby="category-promotion-heading">
           <div className="category-promotion-heading"><div><p className="section-kicker">Lokale partner</p><h3 id="category-promotion-heading">Uitgelicht in {categories.find((category) => category.id === categoryFilter)?.name ?? "deze categorie"}</h3></div><span aria-hidden="true">✦</span></div>
-          {categoryPromotionEvents.length > 0 ? <div className="category-promotion-grid">{categoryPromotionEvents.map((event) => <article className="category-promotion-card" key={`category-promotion-${event.id}`}>
+          {categoryPromotionEvents.length > 0 ? <div className="category-promotion-grid">{categoryPromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="category" className="category-promotion-card" key={`category-promotion-${event.id}`}>
             {safeHttpUrl(event.image_url) && <button className="category-promotion-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}><img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></button>}
             <div><span className="sponsored-label">Categoriepartner</span><h4><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h4><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p><button className="category-promotion-link" type="button" onClick={() => openVisitorEvent(event)}>Bekijk evenement <span aria-hidden="true">→</span></button></div>
           </article>)}</div> : <div className="category-promotion-empty"><p>Hier is plek voor een uitgelicht evenement uit deze categorie.</p><button type="button" onClick={() => { setShowForm(true); setPromotionType("category"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Vraag categoriepromotie aan <span aria-hidden="true">→</span></button></div>}
         </section>}
         <div className="event-grid" aria-label="Aankomende activiteiten">
           {displayedNearbyEvents.map((event) => (
-            <article className={`activity-card${event.promotion_type === "highlight" && event.promotion_status === "active" ? " activity-card-highlighted" : ""}`} key={event.id}>
+            <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={event.promotion_status === "active" ? event.promotion_type || "standard" : "standard"} className={`activity-card${event.promotion_type === "highlight" && event.promotion_status === "active" ? " activity-card-highlighted" : ""}`} key={event.id}>
               <div className="activity-media">
                 <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                   {safeHttpUrl(event.image_url)
@@ -1665,9 +1680,9 @@ export default function Home() {
                 {(event.short_description || event.description) && <p className="activity-description">{event.short_description || event.description}</p>}
                 <div className="activity-links">
                   <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event)}>Bekijk evenementdetails <span aria-hidden="true">→</span></button>
-                  {safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
-                  {safeHttpUrl(event.website_url) && <a className="activity-link" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
-                  {safeHttpUrl(event.source_url) && <a className="activity-link" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie <span aria-hidden="true">↗</span></a>}
+                  {safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
+                  {safeHttpUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
+                  {safeHttpUrl(event.source_url) && <a className="activity-link" data-analytics-channel="source" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie <span aria-hidden="true">↗</span></a>}
                 </div>
                 <p className="external-link-note">Externe pagina’s openen in een nieuw tabblad; deze agenda blijft open.</p>
                 {event.source_url && <p className="activity-source">Bron: {sourceLabel(event.source_url)}</p>}
@@ -1693,7 +1708,7 @@ export default function Home() {
       <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
         <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
         {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
-          {homepagePromotionEvents.map((event) => <article className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
+          {homepagePromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="homepage" className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
             <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
               {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
             </button>
@@ -1707,7 +1722,7 @@ export default function Home() {
         {featuredEvents.length > 0 ? <div className="featured-events-grid">
           {featuredEvents.map((event) => {
             const date = formatCardDate(event.start_at);
-            return <article className={`featured-event-card${event.promotion_type === "homepage" && event.promotion_status === "active" ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
+            return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={event.promotion_status === "active" ? event.promotion_type || "standard" : "standard"} className={`featured-event-card${event.promotion_type === "homepage" && event.promotion_status === "active" ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
               <button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                 {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
               </button>
@@ -2141,6 +2156,7 @@ export default function Home() {
       {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
+      <AnalyticsConsent disabled={isAdmin || authLoading} />
       <footer className="site-footer">
         <a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
@@ -2181,6 +2197,7 @@ export default function Home() {
       )}
 
       {isAdmin && <>
+      <AnalyticsDashboard client={supabase} />
       <div
         style={{
           display: "grid",
@@ -2440,8 +2457,8 @@ export default function Home() {
                   {(event.short_description || event.description) && <p className="import-event-description">{event.short_description || event.description}</p>}
                   <div className="import-event-meta">
                     {event.contact_phone && <span>Tel. {event.contact_phone}</span>}
-                    {safeHttpUrl(event.website_url) && <a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</a>}
-                    {safeHttpUrl(event.booking_url) && <a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
+                    {safeHttpUrl(event.website_url) && <a data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</a>}
+                    {safeHttpUrl(event.booking_url) && <a data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a>}
                   </div>
                   <p className="import-category-suggestion"><strong>Voorgestelde categorie:</strong> {categories.find((category) => category.id === event.category_id)?.name ?? "Nog te bepalen"}. Je kunt deze na import wijzigen via BEWERKEN.</p>
                   <a className="import-source-link" href={event.source_url} target="_blank" rel="noreferrer">Oorspronkelijke bron bekijken ↗ <span>{sourceLabel(event.source_url)}</span></a>
@@ -2514,12 +2531,12 @@ export default function Home() {
             <p>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ")}</p>
           )}
           {event.contact_phone && <p>Telefoon: <a href={`tel:${event.contact_phone.replace(/[^+\d]/g, "")}`}>{event.contact_phone}</a></p>}
-          {safeHttpUrl(event.website_url) && <p><a href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website</a></p>}
-          {safeHttpUrl(event.booking_url) && <p><a href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a></p>}
+          {safeHttpUrl(event.website_url) && <p><a data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website</a></p>}
+          {safeHttpUrl(event.booking_url) && <p><a data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a></p>}
           {event.source_category && <p>Type bij bron: {event.source_category}</p>}
           {event.organizer_name && <p>Organisator: {event.organizer_name}</p>}
           {event.source_url && <p>Bron: {sourceLabel(event.source_url)}</p>}
-          {safeHttpUrl(event.source_url) && <p><a href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Bronpagina</a></p>}
+          {safeHttpUrl(event.source_url) && <p><a data-analytics-channel="source" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Bronpagina</a></p>}
           {event.short_description && <p>{event.short_description}</p>}
           {event.description && <p>{event.description}</p>}
           <p>
@@ -2848,7 +2865,7 @@ export default function Home() {
       </details>
       {selectedVisitorEvent && typeof document !== "undefined" && createPortal(
         <div className="event-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeVisitorEvent(); }}>
-          <section className="event-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="visitor-event-title" tabIndex={-1}>
+          <section data-analytics-event={selectedVisitorEvent.id} className="event-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="visitor-event-title" tabIndex={-1}>
             <div className="event-detail-topbar">
               <button className="event-detail-back" type="button" autoFocus onClick={closeVisitorEvent}><span aria-hidden="true">←</span> Terug naar de agenda</button>
               <button className="event-detail-close" type="button" aria-label="Sluiten" onClick={closeVisitorEvent}>×</button>
@@ -2862,9 +2879,9 @@ export default function Home() {
               {(selectedVisitorEvent.short_description || selectedVisitorEvent.description) && <p className="event-detail-description">{selectedVisitorEvent.description || selectedVisitorEvent.short_description}</p>}
               {selectedVisitorEvent.is_free ? <p className="event-detail-price">Gratis</p> : selectedVisitorEvent.price_from != null ? <p className="event-detail-price">Vanaf €{Number(selectedVisitorEvent.price_from).toFixed(2)}{selectedVisitorEvent.price_to != null ? ` tot €${Number(selectedVisitorEvent.price_to).toFixed(2)}` : ""}</p> : null}
               <div className="event-detail-links">
-                {safeHttpUrl(selectedVisitorEvent.booking_url) && <a className="event-detail-primary" href={safeHttpUrl(selectedVisitorEvent.booking_url)!} target="_blank" rel="noopener noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
-                {safeHttpUrl(selectedVisitorEvent.website_url) && <a href={safeHttpUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer">Website organisator <span aria-hidden="true">↗</span></a>}
-                {safeHttpUrl(selectedVisitorEvent.source_url) && <a href={safeHttpUrl(selectedVisitorEvent.source_url)!} target="_blank" rel="noopener noreferrer">Oorspronkelijke informatie <span aria-hidden="true">↗</span></a>}
+                {safeHttpUrl(selectedVisitorEvent.booking_url) && <a className="event-detail-primary" data-analytics-channel="booking" href={safeHttpUrl(selectedVisitorEvent.booking_url)!} target="_blank" rel="noopener noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
+                {safeHttpUrl(selectedVisitorEvent.website_url) && <a data-analytics-channel="website" href={safeHttpUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer">Website organisator <span aria-hidden="true">↗</span></a>}
+                {safeHttpUrl(selectedVisitorEvent.source_url) && <a data-analytics-channel="source" href={safeHttpUrl(selectedVisitorEvent.source_url)!} target="_blank" rel="noopener noreferrer">Oorspronkelijke informatie <span aria-hidden="true">↗</span></a>}
               </div>
               <p className="event-detail-note">Externe pagina’s openen in een nieuw tabblad. Je kunt hierna direct terug naar de agenda.</p>
               {selectedVisitorEvent.source_url && <p className="activity-source">Bron: {sourceLabel(selectedVisitorEvent.source_url)}</p>}

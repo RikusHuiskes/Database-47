@@ -879,3 +879,26 @@ body { font-family: Arial, Helvetica, sans-serif; }
   .municipality-service-card { padding: 13px; }
   .emergency-number-card { min-height: 0; }
 }
+/* First-party audience measurement and admin reporting. */
+.analytics-dashboard { margin: 24px 0; padding: 24px; background: #fff; border: 1px solid #d8e2da; border-radius: 16px; color: #193e3a; }
+.analytics-dashboard p { line-height: 1.6; max-width: 1050px; }
+.analytics-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.analytics-dashboard button,.analytics-dashboard select,.analytics-dashboard input { padding: 10px; border: 1px solid #9bac9e; border-radius: 6px; background: white; color: #193e3a; font: inherit; }
+.analytics-kpis { display: grid; grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: 12px; margin: 24px 0; }
+.analytics-kpis > div { padding: 18px; background: #edf3ed; border-radius: 10px; }
+.analytics-kpis span,.analytics-kpis strong { display: block; }
+.analytics-kpis strong { font-size: 30px; margin-top: 10px; }
+.analytics-table { overflow-x: auto; margin: 16px 0 28px; }
+.analytics-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.analytics-table th,.analytics-table td { padding: 12px; text-align: left; border-bottom: 1px solid #d8e2da; }
+.analytics-table thead { background: #edf3ed; }
+.analytics-table tbody th { min-width: 170px; }
+.analytics-chart { display: flex; align-items: flex-end; gap: 8px; overflow-x: auto; min-height: 145px; }
+.analytics-chart > div { min-width: 40px; text-align: center; }
+.analytics-chart span { display: block; background: #397b6a; border-radius: 4px 4px 0 0; }
+.analytics-chart small,.analytics-chart b { display: block; font-size: 11px; }
+.analytics-settings { margin: 20px 24px 0; border: 0; background: none; color: #244f45; text-decoration: underline; cursor: pointer; }
+.analytics-consent { position: fixed; bottom: 16px; left: 16px; width: min(540px,calc(100vw - 32px)); box-sizing: border-box; z-index: 2000; padding: 22px; border: 1px solid #9bac9e; border-radius: 12px; background: white; color: #193e3a; box-shadow: 0 5px 35px #0003; }
+.analytics-consent p { font-size: 14px; line-height: 1.5; }
+.analytics-consent > div { display: flex; gap: 12px; }
+.analytics-consent button { flex: 1; padding: 12px; border: 1px solid #193e3a; border-radius: 6px; background: #193e3a; color: white; font: inherit; cursor: pointer; }
