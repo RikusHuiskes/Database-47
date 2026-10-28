@@ -9,6 +9,7 @@ type EventRecord = {
   title: string;
   slug: string;
   start_at: string;
+  is_directory_entry?: boolean;
   end_at?: string | null;
   city?: string | null;
   postcode?: string | null;
@@ -37,6 +38,7 @@ type CommuneFeature = {
 };
 
 function isUpcoming(event: EventRecord, now: Date): boolean {
+  if (event.is_directory_entry) return true;
   const relevantDate = event.end_at || event.start_at;
   if (!relevantDate) return false;
   // Date-only events last through the local calendar day instead of expiring
@@ -89,6 +91,10 @@ export async function GET(request: NextRequest) {
   const longitude = Number(request.nextUrl.searchParams.get("lon") || Number.NaN);
   const requestedRadius = Number(request.nextUrl.searchParams.get("radius") || Number.NaN);
   const radiusKm = Math.min(50, Math.max(5, Number.isFinite(requestedRadius) ? requestedRadius : 25));
+  const category = request.nextUrl.searchParams.get('category');
+  if(category && category!=='all' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(category)) {
+    return NextResponse.json({error:'Kies een geldige categorie.'},{status:400});
+  }
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
       || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
@@ -112,7 +118,7 @@ export async function GET(request: NextRequest) {
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status")
+      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status")
       .eq("status", "approved")
       .eq("verified", true)
       .order("start_at", { ascending: true })
@@ -132,8 +138,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const upcoming = rows.map((event) => ({ ...event, category_id: categoryByEvent.get(event.id)?.[0] ?? null, category_ids: categoryByEvent.get(event.id) ?? [] }))
-    .filter((event) => isUpcoming(event, now));
+  const upcoming = rows.map((event) => ({ ...event, start_at:event.start_at??'', category_id: categoryByEvent.get(event.id)?.[0] ?? null, category_ids: categoryByEvent.get(event.id) ?? [] }))
+    .filter((event) => isUpcoming(event, now) && (!category || category==='all' || event.category_ids.includes(category)));
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
   const results = await Promise.all(upcoming.map(async (event) => {

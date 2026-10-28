@@ -1,5 +1,46 @@
 # DATABASE 47
 
+### Permanent listings and category search (28 October 2026)
+
+The categories Hotels & Chambres d’hôtes & Gîtes, Wijnhuizen and Cafés use
+SIRTAQUI’s published hotel, guesthouse, holiday rental, vineyard, nightlife and
+restaurant CSV feeds. Cafés are selected from source names/types, rather than
+from a restaurant merely mentioning a bar service. Source attribution and update
+dates remain in descriptions. Public map feeds are an optional supplement; errors
+are recorded in the source report and do not masquerade as empty coverage.
+
+`node scripts/refresh-directory.mjs` refreshes `lib/data/directory-entries.json`.
+`POST /api/import-directory` imports fixed 100-record snapshot batches after a
+normal admin session check. The database import RPC is service-role-only and
+deduplicates source identities, URLs and matching directory names/towns. Existing
+records and admin edits are preserved. Imported listings remain pending review.
+The admin includes a repeat-import button; only new listings are added.
+
+Apply `20261028153003_directory_entries.sql` before deploying this release.
+Permanent listings have `is_directory_entry=true` and null start/end dates.
+Ordinary events still require a start date. The existing expired-event cleanup
+therefore leaves permanent listings intact. Listings use the same approve,
+edit, photo, category and admin-delete flows as events. The existing category
+link cascade is retained. The admin-delete policy migration restores the missing
+authenticated-admin DELETE permission without allowing ordinary users to delete.
+
+Public search validates category UUIDs and intersects `event_categories`
+membership with date/approval and distance filters. The browser also checks the
+returned category-link array. Promotions use the same filtered result set.
+Selecting all categories keeps unlinked eligible events visible.
+
+The Test import added 4,815 pending listings: 4,016 accommodations, 571 wineries
+and 228 cafés. 4,512 have source photos. All 53 guide towns have all three types
+within their configured search radius; this does not mean every town has a local
+business in each category. `scripts/directory-coverage-query.mjs` produces the
+database audit query, which distinguishes exact town/postcode counts from radius
+counts. No businesses are assigned to a nearby town to fill gaps.
+
+Regression checks: `node --test lib/nearby-events.test.mjs lib/directory.test.mjs
+lib/admin-delete.test.mjs lib/analytics.test.mjs lib/analytics-sql.test.mjs
+lib/event-photo.test.mjs lib/additive-import.test.mjs lib/tourisme-duras.test.mjs
+lib/regional-official-agendas.test.mjs`, followed by `next build`.
+
 ### Audience analytics
 
 Apply `supabase/migrations/202610280001_analytics.sql` to the intended Supabase

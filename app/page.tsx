@@ -30,6 +30,7 @@ type EventRow = {
   category_id?: string | null;
   category_ids?: string[];
   start_at: string;
+  is_directory_entry?: boolean;
   end_at?: string | null;
   venue_name?: string | null;
   city?: string | null;
@@ -545,11 +546,11 @@ export default function Home() {
     return nearbyEvents.filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
-    const matchesCategory = categoryFilter === "all" || event.category_id === categoryFilter || event.category_ids?.includes(categoryFilter);
+    const matchesCategory = categoryFilter === "all" || event.category_ids?.includes(categoryFilter) === true;
     return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
     }).sort((left, right) => {
     const isCategoryPromotion = (event: NearbyEvent) => categoryFilter !== "all"
-      && event.category_id === categoryFilter
+      && event.category_ids?.includes(categoryFilter)
       && event.promotion_type === "category"
       && event.promotion_status === "active";
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
@@ -588,6 +589,7 @@ export default function Home() {
       lat: String(searchLatitude),
       lon: String(searchLongitude),
       radius: String(radiusKm),
+      category: categoryFilter,
     });
     void fetch(`/api/nearby-events?${params}`)
       .then(async (response) => {
@@ -607,7 +609,7 @@ export default function Home() {
       })
       .finally(() => { if (active) setNearbyLoading(false); });
     return () => { active = false; };
-  }, [localAreas.length, searchLatitude, searchLongitude, radiusKm]);
+  }, [localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter]);
 
   function useCurrentLocation() {
     if (!navigator.geolocation) {
@@ -676,7 +678,7 @@ export default function Home() {
       for (let offset = 0; ; offset += 500) {
         const result = await supabase.from("events").select("*").order("start_at", { ascending: true }).order("id").range(offset, offset + 499);
         if (result.error) return { data: rows, error: result.error };
-        rows.push(...(result.data ?? []) as EventRow[]);
+        rows.push(...((result.data ?? []) as EventRow[]).map(event=>({...event,start_at:event.start_at??''})));
         if (!result.data || result.data.length < 500) return { data: rows, error: null };
       }
     };
@@ -732,6 +734,7 @@ export default function Home() {
           return {
             ...event,
             category_id: link?.category_id ?? null,
+            category_ids: eventCategoryRows.filter(row=>row.event_id===event.id).map(row=>row.category_id),
             category_name: category?.name ?? category?.slug ?? null,
           };
         }
@@ -935,6 +938,25 @@ export default function Home() {
     setUpdatingEventId(null);
   }
 
+  async function importDirectory() {
+    if(!supabase||!isAdmin)return;
+    setImporting(true);setError('');setMessage('Vaste vermeldingen importeren…');
+    try{
+      const {data}=await supabase.auth.getSession();
+      if(!data.session)throw new Error('Log opnieuw in als beheerder.');
+      let inserted=0,skipped=0,total=1;
+      for(let offset=0;offset<total;offset+=100){
+        const response=await fetch('/api/import-directory',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${data.session.access_token}`},body:JSON.stringify({offset})});
+        const result=await readApiJson<{inserted:number;skipped:number;total:number;error?:string}>(response);
+        if(!response.ok)throw new Error(result.error??'Import mislukt.');
+        total=result.total;inserted+=result.inserted;skipped+=result.skipped;
+        setMessage(`Vaste vermeldingen: ${Math.min(offset+100,total)} van ${total} verwerkt…`);
+      }
+      await loadData();setMessage(`${inserted} nieuwe vaste vermeldingen bij Wacht op controle; ${skipped} bestaande vermeldingen behouden.`);
+    }catch(cause){setError(cause instanceof Error?cause.message:'Import mislukt.');}
+    finally{setImporting(false);}
+  }
+
   async function deleteEvent(event: EventRow) {
     if (!supabase || !isAdmin) {
       setError("Log in als beheerder om een evenement te verwijderen.");
@@ -1041,7 +1063,7 @@ export default function Home() {
       setEditError("Geen databaseverbinding. Vernieuw de pagina en probeer opnieuw.");
       return;
     }
-    if (!editDraft.title.trim() || !editDraft.start_at) {
+    if (!editDraft.title.trim() || (!event.is_directory_entry && !editDraft.start_at)) {
       setEditError("Vul minimaal de titel en startdatum in.");
       return;
     }
@@ -1069,8 +1091,8 @@ export default function Home() {
         title: editDraft.title.trim(),
         short_description: editDraft.short_description.trim() || null,
         description: editDraft.description.trim() || null,
-        start_at: new Date(editDraft.start_at).toISOString(),
-        end_at: editDraft.end_at ? new Date(editDraft.end_at).toISOString() : null,
+        start_at: event.is_directory_entry ? null : new Date(editDraft.start_at).toISOString(),
+        end_at: event.is_directory_entry ? null : editDraft.end_at ? new Date(editDraft.end_at).toISOString() : null,
         venue_name: editDraft.venue_name.trim() || null,
         address: editDraft.address.trim() || null,
         postcode: editDraft.postcode.trim() || null,
@@ -1418,7 +1440,7 @@ export default function Home() {
     const knownSourceUrls = new Set((existingResult.data ?? []).map((row) => row.source_url).filter(Boolean));
     const knownTitleDates = new Set([
       ...events.map((event) => `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`),
-      ...(existingResult.data ?? []).map((event) => `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at.slice(0, 10)}`),
+      ...(existingResult.data ?? []).map((event) => `${event.title.trim().toLocaleLowerCase("fr-FR")}|${event.start_at?.slice(0, 10)??''}`),
     ]);
     let inserted = 0;
     let enriched = 0;
@@ -1474,7 +1496,7 @@ export default function Home() {
   }
 
   function formatDate(value?: string | null) {
-    if (!value) return "Datum onbekend";
+    if (!value) return "Vaste vermelding · controleer openingstijden bij de aanbieder";
     return new Date(value).toLocaleString("nl-NL", {
       dateStyle: "medium",
       timeStyle: "short",
@@ -2198,6 +2220,7 @@ export default function Home() {
 
       {isAdmin && <>
       <AnalyticsDashboard client={supabase} />
+      <p><button type="button" disabled={importing} onClick={()=>void importDirectory()}>Accommodaties, wijnhuizen en cafés importeren</button> Nieuwe vermeldingen komen bij Wacht op controle; bestaande wijzigingen blijven behouden.</p>
       <div
         style={{
           display: "grid",
@@ -2682,11 +2705,12 @@ export default function Home() {
               </label>
 
               <label style={labelStyle}>
-                Begindatum en -tijd *
+                {event.is_directory_entry?'Vaste vermelding — geen evenementdatum':'Begindatum en -tijd *'}
                 <input
                   style={inputStyle}
                   type="datetime-local"
                   required
+                  disabled={event.is_directory_entry}
                   value={editDraft.start_at}
                   onChange={(e) => updateEditDraft("start_at", e.target.value)}
                 />
@@ -2697,6 +2721,7 @@ export default function Home() {
                 <input
                   style={inputStyle}
                   type="datetime-local"
+                  disabled={event.is_directory_entry}
                   value={editDraft.end_at}
                   onChange={(e) => updateEditDraft("end_at", e.target.value)}
                 />
