@@ -1,4 +1,6 @@
 import mapData from "./data/municipal-osm.json";
+import mobilityData from "./data/municipal-mobility.json";
+import { mobilityType, mobilityName, mobilityDetails } from "./municipal-mobility";
 import officialData from "./data/municipal-official.json";
 import centres from "./data/commune-centres.json";
 import areas from "./data/area-catalog.json";
@@ -16,7 +18,7 @@ export type CatalogService = {
   mayorSourceUrl?: string; mayorSourceName?: string;
   distanceKm?: number; inSelectedMunicipality?: boolean; sourceUrl: string; sourceName: string;
 };
-export const MUNICIPAL_TYPES = ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist"];
+export const MUNICIPAL_TYPES = ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging"];
 function parsed(value: unknown): unknown { try { return typeof value === "string" ? JSON.parse(value) : value; } catch { return value; } }
 function string(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value.trim() : undefined; }
 function contact(value: unknown): string | undefined {
@@ -41,6 +43,7 @@ function officialService(row: RecordValue): CatalogService | null {
     sourceUrl:string(row.url_service_public) ?? "https://lannuaire.service-public.gouv.fr/",sourceName:"Service-Public.gouv.fr / DILA" };
 }
 function mapType(tags: Record<string,string>): string | undefined {
+  if (mobilityType(tags)) return mobilityType(tags);
   if (tags.amenity === "townhall") return "mairie";
   if (tags.amenity === "hospital" || tags.healthcare === "hospital") return "hospital";
   if (tags.amenity === "pharmacy" || tags.healthcare === "pharmacy") return "pharmacy";
@@ -50,11 +53,12 @@ function mapType(tags: Record<string,string>): string | undefined {
   if (tags.amenity === "place_of_worship" && /christian|catholic|protestant|orthodox/i.test(tags.religion ?? "")) return "church";
   if (tags.tourism === "information" && ["office","tourist_information"].includes(tags.information)) return "tourism";
 }
-const mapped: CatalogService[] = mapData.elements.flatMap(element => {
+const mapped: CatalogService[] = [...mapData.elements, ...mobilityData.elements].flatMap(element => {
   const entry = element as {type:string;id:number;lat?:number;lon?:number;center?:{lat:number;lon:number};tags?:Record<string,string>};
   const tags=entry.tags ?? {}, type=mapType(tags), latitude=entry.lat ?? entry.center?.lat, longitude=entry.lon ?? entry.center?.lon;
-  if (!type || !tags.name || latitude == null || longitude == null || tags.disused === "yes" || tags.abandoned === "yes") return [];
-  return [{id:`osm-${entry.type}-${entry.id}`,type,name:tags.name,latitude,longitude,
+  const name = mobilityName(tags) || tags.name;
+  if (!type || !name || latitude == null || longitude == null || tags.disused === "yes" || tags.abandoned === "yes") return [];
+  return [{id:`osm-${entry.type}-${entry.id}`,type,name,latitude,longitude,extra:mobilityDetails(tags),
     municipality:tags["addr:city"] ?? tags["addr:place"],address:[tags["addr:housenumber"],tags["addr:street"],tags["addr:postcode"],tags["addr:city"]].filter(Boolean).join(" ") || undefined,
     phone:tags.phone ?? tags["contact:phone"],email:tags.email ?? tags["contact:email"],website:tags.website ?? tags["contact:website"],
     openingHours:tags.opening_hours,serviceTimes:tags.service_times,sourceUrl:`https://www.openstreetmap.org/${entry.type}/${entry.id}`,sourceName:"OpenStreetMap contributors (ODbL)"}];

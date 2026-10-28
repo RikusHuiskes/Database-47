@@ -3,6 +3,7 @@ import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { CURATED_HEALTH_SERVICES } from "../../../lib/municipality-health";
 import { CURATED_LOCAL_SERVICES } from "../../../lib/municipality-local-services";
 import { municipalCatalog } from "../../../lib/municipal-catalog";
+import { mobilityType, mobilityName, mobilityDetails } from "../../../lib/municipal-mobility";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
@@ -98,6 +99,9 @@ const serviceTypes = new Set([
   "church",
   "tourism",
   "dentist",
+  "supermarket",
+  "fuel",
+  "charging",
 ]);
 
 function parseSerialized(value: unknown): unknown {
@@ -409,6 +413,7 @@ async function fetchOfficialMairie(codeInsee: string | undefined): Promise<Offic
 }
 
 function osmCategory(tags: Record<string, string>): string | undefined {
+  if (mobilityType(tags)) return mobilityType(tags);
   const amenity = tags.amenity;
   const healthcare = tags.healthcare;
   if (amenity === "townhall") return "mairie";
@@ -663,7 +668,7 @@ export async function GET(request: NextRequest) {
     : Promise.resolve(null);
   const communeBoundaryPromise = fetchCommuneBoundary(codeInsee);
   const requestedServiceTypes = service === "all"
-    ? ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist"]
+    ? ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging"]
     : [service];
   const officialCountsPromise = service === "all"
     ? Promise.all(Object.keys(BPE_EQUIPMENT_TYPES).map((type) => fetchOfficialEquipmentCount(codeInsee, type)))
@@ -688,6 +693,9 @@ export async function GET(request: NextRequest) {
     church: 15000,
     tourism: 35000,
     dentist: 15000,
+    supermarket: 25000,
+    fuel: 25000,
+    charging: 25000,
   };
   for (const type of Object.keys(searchRadiusMeters)) {
     if (type !== "mairie") searchRadiusMeters[type] = catalog.radiusKm * 1000;
@@ -701,6 +709,9 @@ export async function GET(request: NextRequest) {
     church: ['["amenity"="place_of_worship"]', '["building"~"^(church|chapel|cathedral|basilica)$"]'],
     tourism: ['["tourism"="information"]["information"~"^(office|tourist_information)$"]'],
     dentist: ['["amenity"="dentist"]', '["healthcare"="dentist"]'],
+    supermarket: ['["shop"="supermarket"]'],
+    fuel: ['["amenity"="fuel"]'],
+    charging: ['["amenity"="charging_station"]'],
   };
   const communeSelector = [
     ...(codeInsee ? [
@@ -720,7 +731,7 @@ export async function GET(request: NextRequest) {
     ? [`[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`]
     : service === "all"
       ? [
-        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist"], 35)});out center tags;`,
+        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging"], 35)});out center tags;`,
         `[out:json][timeout:18];(${buildNearbyQuery(["hospital"], 60)});out center tags;`,
         `[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`,
       ]
@@ -874,7 +885,7 @@ export async function GET(request: NextRequest) {
     if (service !== "all" && type !== service) return [];
     const distanceKm = osmDistance(latitude, longitude, element);
     if (type !== "mairie" && distanceKm != null && distanceKm > catalog.radiusKm) return [];
-    const name = tags.name ?? tags["name:fr"];
+    const name = mobilityName(tags) || tags.name || tags["name:fr"];
     if (!name && type !== "mairie") return [];
     const elementLat = element.lat ?? element.center?.lat;
     const elementLon = element.lon ?? element.center?.lon;
@@ -886,6 +897,8 @@ export async function GET(request: NextRequest) {
       ?? (addressMunicipality ? normalizePlaceName(addressMunicipality) === normalizePlaceName(city) : undefined);
     return [{
       id: `osm-${element.type}-${element.id}`,
+      latitude: elementLat,
+      longitude: elementLon,
       type,
       name: name ?? `Mairie - ${city}`,
       address: osmAddress(tags),
@@ -895,6 +908,7 @@ export async function GET(request: NextRequest) {
       municipality: addressMunicipality ?? (inSelectedMunicipality ? city : undefined),
       inSelectedMunicipality,
       openingHours: tags.opening_hours,
+      extra: mobilityDetails(tags),
       serviceTimes: tags.service_times,
       distanceKm,
       sourceUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,

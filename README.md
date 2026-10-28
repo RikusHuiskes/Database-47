@@ -1,5 +1,18 @@
 # DATABASE 47
 
+### Supermarkets, fuel and EV charging
+
+The municipal guide includes supermarkets, fuel stations and EV charging
+locations, both individually and under all categories. A sourced OpenStreetMap
+snapshot in `lib/data/municipal-mobility.json` keeps these searches available
+without waiting for an external map server. Refresh it with
+`node scripts/refresh-municipal-mobility.mjs`. Private, inaccessible, disused
+and explicitly bicycle-only charging sites are excluded. Customer-only access
+is labelled. Map links use exact coordinates where available. Charging details
+are source information rather than live availability or a tariff guarantee.
+Run `node --test lib/municipal-mobility.test.mjs` to verify classification and
+coverage of all three categories across all 53 guide towns.
+
 Central events platform for Lot-et-Garonne (47).
 
 ## Stack

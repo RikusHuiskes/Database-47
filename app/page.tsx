@@ -55,8 +55,10 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
-type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist";
+type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging";
 type MunicipalityServiceEntry = {
+  latitude?: number;
+  longitude?: number;
   id: string;
   type: string;
   municipality?: string;
@@ -117,6 +119,9 @@ const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }
   { id: "church", label: "Kerk & mis- of diensttijden" },
   { id: "tourism", label: "Office de tourisme" },
   { id: "dentist", label: "Tandarts" },
+  { id: "supermarket", label: "Supermarkten" },
+  { id: "fuel", label: "Tankstations" },
+  { id: "charging", label: "Laadpalen voor elektrische voertuigen" },
   { id: "emergency", label: "Noodnummers" },
 ];
 
@@ -1495,6 +1500,9 @@ export default function Home() {
     tourism: 35,
     emergency: 0,
     dentist: 15,
+    supermarket: 25,
+    fuel: 25,
+    charging: 25,
   };
   const municipalityServiceEntries: MunicipalityServiceEntry[] = !municipalityServiceInfo
     ? []
@@ -1531,7 +1539,7 @@ export default function Home() {
         {(groupType === "mairie" || municipalityServiceType === "all" && service.type === "mairie") && safeHttpUrl(service.mayorSourceUrl) && <a href={safeHttpUrl(service.mayorSourceUrl)!} target="_blank" rel="noreferrer">Bron burgemeester: {service.mayorSourceName ?? "Ministerie van Binnenlandse Zaken"} <span aria-hidden="true">↗</span></a>}
         {safeHttpUrl(service.appointmentUrl) && <a href={safeHttpUrl(service.appointmentUrl)!} target="_blank" rel="noreferrer">Afspraak via Maiia <span aria-hidden="true">↗</span></a>}
         {(groupType === "doctor" || municipalityServiceType === "all" && service.type === "doctor") && <a href={safeHttpUrl(service.doctolibUrl) ?? municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer">Doctolib <span aria-hidden="true">↗</span></a>}
-        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer">Kaart: Google Maps <span aria-hidden="true">↗</span></a>
+        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.latitude != null && service.longitude != null ? `${service.latitude},${service.longitude}` : `${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer">Kaart: Google Maps <span aria-hidden="true">↗</span></a>
       </div>
     </article>;
   };
