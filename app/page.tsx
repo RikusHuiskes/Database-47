@@ -7,6 +7,7 @@ import AnalyticsConsent from "./components/AnalyticsConsent";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
 import {searchAdminEvents} from "../lib/admin-event-search";
+import {approvePendingImports,isPendingImport} from "../lib/admin-bulk-approve";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
@@ -32,6 +33,7 @@ type EventRow = {
   category_ids?: string[];
   start_at: string;
   is_directory_entry?: boolean;
+  is_manual_entry?: boolean;
   end_at?: string | null;
   venue_name?: string | null;
   city?: string | null;
@@ -338,6 +340,8 @@ export default function Home() {
   const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
   const [adminEventPage, setAdminEventPage] = useState(1);
+  const [bulkApproving,setBulkApproving]=useState(false);
+  const [bulkApprovalNotice,setBulkApprovalNotice]=useState('');
   const [adminEventSearch,setAdminEventSearch]=useState('');
   const [adminCategoryFilter,setAdminCategoryFilter]=useState('all');
   const [adminContentMounted, setAdminContentMounted] = useState(false);
@@ -869,6 +873,30 @@ export default function Home() {
       setEditingEventId(null);
       setEditDraft(null);
     }
+  }
+
+  async function approveAllImports() {
+    if(!supabase||!isAdmin||bulkApproving||importing||updatingEventId)return;
+    const candidates=events.filter(isPendingImport);
+    if(!candidates.length)return;
+    if(!window.confirm(`Alle ${candidates.length} wachtende imports goedkeuren? Ze worden openbaar zichtbaar. Dit geldt voor alle categorieën en alle pagina’s, ook buiten je zoekfilters. Handmatige inzendingen worden niet meegenomen.`))return;
+    setBulkApproving(true);setError('');setMessage('Imports goedkeuren…');setBulkApprovalNotice('Imports goedkeuren…');
+    let approved=0;
+    try{
+      const result=await approvePendingImports(supabase,candidates,progress=>{
+        approved=progress.approved;
+        setBulkApprovalNotice(`${progress.processed} van ${progress.total} imports verwerkt; ${approved} goedgekeurd. Houd deze pagina open totdat de actie klaar is.`);
+        setMessage(`${progress.processed} van ${progress.total} imports verwerkt; ${approved} goedgekeurd. Houd deze pagina open totdat de actie klaar is.`);
+      });
+      await loadData();
+      setBulkApprovalNotice(`${result.approved} imports goedgekeurd.${result.skipped?` ${result.skipped} inmiddels gewijzigde of niet-toegankelijke vermeldingen overgeslagen.`:''}`);
+      setMessage(`${result.approved} imports goedgekeurd en openbaar zichtbaar.${result.skipped?` ${result.skipped} al gewijzigde of niet-toegankelijke vermeldingen overgeslagen.`:''}`);
+      setAdminEventPage(1);
+    }catch(cause){
+      await loadData();
+      setBulkApprovalNotice(`Actie gestopt; ${approved} goedkeuringen bevestigd. Start opnieuw voor de resterende wachtende imports.`);
+      setError(`${approved} imports goedgekeurd. De actie is gestopt: ${cause instanceof Error?cause.message:'Verbindingsfout'}. Je kunt opnieuw starten voor de resterende wachtende imports.`);
+    }finally{setBulkApproving(false);}
   }
 
   async function setEventStatus(event: EventRow, status: "approved" | "rejected") {
@@ -2500,6 +2528,7 @@ export default function Home() {
 
       {(() => {
         const pendingEvents = events.filter((event) => event.status?.toLowerCase() === "pending");
+        const pendingImportCount=events.filter(isPendingImport).length;
         const results=searchAdminEvents(events,adminEventSearch,adminCategoryFilter,adminEventFilter,adminEventPage);
         return <>
           <div role="group" aria-label="Filter evenementen" style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "12px 0 18px" }}>
@@ -2519,6 +2548,11 @@ export default function Home() {
             >
               Alle evenementen ({events.length})
             </button>
+          </div>
+          <div style={{padding:14,marginBottom:16,background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:8}}>
+            <button type="button" disabled={loading||bulkApproving||importing||updatingEventId!==null||pendingImportCount===0} onClick={()=>void approveAllImports()} style={{padding:'10px 14px',border:0,borderRadius:7,background:'#16734b',color:'white',fontWeight:700}}>{bulkApproving?'Imports worden goedgekeurd…':`Alle imports goedkeuren (${pendingImportCount})`}</button>
+            <p style={{margin:'8px 0 0'}}>Keur alle wachtende imports goed, in alle categorieën en op alle pagina’s. De vermeldingen worden openbaar zichtbaar. Handmatige inzendingen blijven apart ter controle.</p>
+            {bulkApprovalNotice&&<p role="status" aria-live="polite">{bulkApprovalNotice}</p>}
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:14,alignItems:'end',marginBottom:16}}>
             <label style={{...labelStyle,flex:'1 1 240px'}}>Zoek op naam
@@ -2589,19 +2623,19 @@ export default function Home() {
           {event.promotion_type && event.promotion_type !== "none" && <div className="admin-promotion-request">
             <p><strong>Promotieaanvraag:</strong> {event.promotion_type === "homepage" ? "Homepage" : event.promotion_type === "category" ? "Categorie" : "Omkaderde vermelding"} · {event.promotion_status === "active" ? "actief" : event.promotion_status === "ended" ? "beëindigd" : "wacht op betaling/controle"}</p>
             {event.advertiser_email && <p>Contact adverteerder: <a href={`mailto:${event.advertiser_email}`}>{event.advertiser_email}</a></p>}
-            {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && event.status === "approved" && event.verified === true && <button type="button" disabled={updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "active")}>Activeer na betaalbevestiging</button>}
+            {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && event.status === "approved" && event.verified === true && <button type="button" disabled={bulkApproving || updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "active")}>Activeer na betaalbevestiging</button>}
             {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && (event.status !== "approved" || event.verified !== true) && <p>Keur het evenement eerst goed en bevestig de betaling voordat je de promotie activeert.</p>}
-            {isAdmin && event.promotion_status === "active" && <button type="button" disabled={updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "ended")}>Promotie stoppen</button>}
+            {isAdmin && event.promotion_status === "active" && <button type="button" disabled={bulkApproving || updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "ended")}>Promotie stoppen</button>}
           </div>}
 
           {isAdmin && editingEventId !== event.id && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-              <button type="button" onClick={() => beginEdit(event)} style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: "white", cursor: "pointer" }}>
+              <button type="button" disabled={bulkApproving} onClick={() => beginEdit(event)} style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: "white", cursor: "pointer" }}>
                 BEWERKEN
               </button>
               {event.status?.toLowerCase() === "pending" && <button
                 type="button"
-                disabled={updatingEventId === event.id}
+                disabled={bulkApproving || updatingEventId === event.id}
                 onClick={() => void setEventStatus(event, "approved")}
                 style={{ padding: "10px 14px", border: 0, borderRadius: 7, background: updatingEventId === event.id ? "#94a3b8" : "#16734b", color: "white", cursor: updatingEventId === event.id ? "wait" : "pointer" }}
               >
@@ -2609,7 +2643,7 @@ export default function Home() {
               </button>}
               <button
                 type="button"
-                disabled={updatingEventId === event.id}
+                disabled={bulkApproving || updatingEventId === event.id}
                 onClick={() => void deleteEvent(event)}
                 style={{ padding: "10px 14px", border: "1px solid #fecaca", borderRadius: 7, background: "white", color: "#b91c1c", cursor: updatingEventId === event.id ? "wait" : "pointer" }}
               >
@@ -2860,7 +2894,7 @@ export default function Home() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 <button
                   type="submit"
-                  disabled={updatingEventId === event.id}
+                  disabled={bulkApproving || updatingEventId === event.id}
                   style={{
                     padding: "11px 16px",
                     border: 0,
@@ -2874,7 +2908,7 @@ export default function Home() {
                 </button>
                 <button
                   type="button"
-                  disabled={updatingEventId === event.id}
+                  disabled={bulkApproving || updatingEventId === event.id}
                   onClick={() => {
                     setEditingEventId(null);
                     setEditDraft(null);

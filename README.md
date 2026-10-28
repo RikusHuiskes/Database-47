@@ -8,6 +8,17 @@ ignores accents and punctuation. Results have counts, reset controls and 25-row
 pages; filter changes restart at page one. Pagination clamps safely after
 approvals or deletions. Run `node --test lib/admin-event-search.test.mjs`.
 
+The admin's “Alle imports goedkeuren” button confirms the full pending import
+count across all search filters and pages, then approves a snapshot in batches
+of 100 through the existing authenticated/RLS-protected update path. Each update
+still requires pending status and `is_manual_entry=false`. Known source hosts
+identify imports; manual and rejected submissions are excluded. The action only
+sets status/verification and preserves categories, images and promotion state.
+Progress and partial failures remain visible; retries process remaining pending
+imports. Adding this button does not itself approve any records.
+Run `node --test lib/admin-bulk-approve.test.mjs` for batch, concurrency and retry
+checks.
+
 The categories Hotels & Chambres d’hôtes & Gîtes, Wijnhuizen and Cafés use
 SIRTAQUI’s published hotel, guesthouse, holiday rental, vineyard, nightlife and
 restaurant CSV feeds. Cafés are selected from source names/types, rather than
