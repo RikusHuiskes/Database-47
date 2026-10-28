@@ -2,6 +2,12 @@
 
 ### Permanent listings and category search (28 October 2026)
 
+Admin management searches the complete loaded collection by name, linked
+category (including uncategorized), and pending/all status together. Name search
+ignores accents and punctuation. Results have counts, reset controls and 25-row
+pages; filter changes restart at page one. Pagination clamps safely after
+approvals or deletions. Run `node --test lib/admin-event-search.test.mjs`.
+
 The categories Hotels & Chambres d’hôtes & Gîtes, Wijnhuizen and Cafés use
 SIRTAQUI’s published hotel, guesthouse, holiday rental, vineyard, nightlife and
 restaurant CSV feeds. Cafés are selected from source names/types, rather than

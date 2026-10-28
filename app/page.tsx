@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
+import {searchAdminEvents} from "../lib/admin-event-search";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
@@ -336,7 +337,9 @@ export default function Home() {
   const [editError, setEditError] = useState("");
   const [savedEventId, setSavedEventId] = useState<string | null>(null);
   const [adminEventFilter, setAdminEventFilter] = useState<"pending" | "all">("pending");
-  const [adminEventVisibleCount, setAdminEventVisibleCount] = useState(12);
+  const [adminEventPage, setAdminEventPage] = useState(1);
+  const [adminEventSearch,setAdminEventSearch]=useState('');
+  const [adminCategoryFilter,setAdminCategoryFilter]=useState('all');
   const [adminContentMounted, setAdminContentMounted] = useState(false);
   const [editDraft, setEditDraft] = useState<EventEditDraft | null>(null);
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
@@ -2493,17 +2496,17 @@ export default function Home() {
       )}
 
       {importPreview.length > importPreviewLimit && <button type="button" onClick={() => setImportPreviewLimit(count => count + 60)}>Toon meer importvoorbeelden ({importPreview.length - importPreviewLimit} resterend)</button>}
-      <h2>Evenementen beheren</h2>
+      <h2 id="admin-results-heading">Evenementen beheren</h2>
 
       {(() => {
         const pendingEvents = events.filter((event) => event.status?.toLowerCase() === "pending");
-        const adminVisibleEvents = adminEventFilter === "pending" ? pendingEvents : events;
+        const results=searchAdminEvents(events,adminEventSearch,adminCategoryFilter,adminEventFilter,adminEventPage);
         return <>
           <div role="group" aria-label="Filter evenementen" style={{ display: "flex", flexWrap: "wrap", gap: 10, margin: "12px 0 18px" }}>
             <button
               type="button"
               aria-pressed={adminEventFilter === "pending"}
-              onClick={() => { setAdminEventFilter("pending"); setAdminEventVisibleCount(12); }}
+              onClick={() => { setAdminEventFilter("pending"); setAdminEventPage(1); }}
               style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: adminEventFilter === "pending" ? "#173f5f" : "white", color: adminEventFilter === "pending" ? "white" : "#172033", cursor: "pointer", fontWeight: 700 }}
             >
               Wacht op controle ({pendingEvents.length})
@@ -2511,15 +2514,28 @@ export default function Home() {
             <button
               type="button"
               aria-pressed={adminEventFilter === "all"}
-              onClick={() => { setAdminEventFilter("all"); setAdminEventVisibleCount(12); }}
+              onClick={() => { setAdminEventFilter("all"); setAdminEventPage(1); }}
               style={{ padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 7, background: adminEventFilter === "all" ? "#173f5f" : "white", color: adminEventFilter === "all" ? "white" : "#172033", cursor: "pointer", fontWeight: 700 }}
             >
               Alle evenementen ({events.length})
             </button>
           </div>
-          {!loading && adminVisibleEvents.length === 0 && (
+          <div style={{display:'flex',flexWrap:'wrap',gap:14,alignItems:'end',marginBottom:16}}>
+            <label style={{...labelStyle,flex:'1 1 240px'}}>Zoek op naam
+              <input type="search" style={inputStyle} value={adminEventSearch} placeholder="Bijvoorbeeld Château of Café de la place" onChange={e=>{setAdminEventSearch(e.target.value);setAdminEventPage(1);}} />
+            </label>
+            <label style={{...labelStyle,flex:'1 1 240px'}}>Categorie in beheer
+              <select style={inputStyle} value={adminCategoryFilter} onChange={e=>{setAdminCategoryFilter(e.target.value);setAdminEventPage(1);}}>
+                <option value="all">Alle categorieën</option><option value="none">Nog niet ingedeeld</option>
+                {categories.map(category=><option key={category.id} value={category.id}>{category.name??category.slug}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={()=>{setAdminEventSearch('');setAdminCategoryFilter('all');setAdminEventPage(1);}}>Zoekfilters wissen</button>
+          </div>
+          {!loading&&<p role="status" aria-live="polite">{results.total} {results.total===1?'resultaat':'resultaten'} · {results.total?`${results.from}–${results.to} getoond · pagina ${results.page} van ${results.pages}`:'pas de naam, categorie of status aan'}</p>}
+          {!loading && results.total === 0 && (
             <p role="status" style={{ padding: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, color: "#166534" }}>
-              {adminEventFilter === "pending" ? "Er staan geen evenementen op Wacht op controle." : "Er zijn nog geen evenementen opgeslagen."}
+              Geen vermeldingen gevonden met deze combinatie van naam, categorie en status.
             </p>
           )}
 
@@ -2529,7 +2545,7 @@ export default function Home() {
         <p>Er zijn nog geen evenementen opgeslagen.</p>
       )}
 
-      {adminVisibleEvents.slice(0, adminEventVisibleCount).map((event) => (
+      {results.items.map((event) => (
         <article
           key={event.id}
           style={{
@@ -2548,7 +2564,7 @@ export default function Home() {
             </p>
           )}
           {safeHttpUrl(event.image_url) && <img src={safeHttpUrl(event.image_url)!} alt={event.title} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 8, marginBottom: 12 }} />}
-          <p><strong>Categorie:</strong> {event.category_name ?? "Nog niet ingedeeld"}</p>
+          <p><strong>Categorie:</strong> {event.category_ids?.map(id=>categories.find(c=>c.id===id)?.name).filter(Boolean).join(', ') || event.category_name || "Nog niet ingedeeld"}</p>
           <p>{formatDate(event.start_at)}{event.end_at ? ` t/m ${formatDate(event.end_at)}` : ""}</p>
           {(event.venue_name || event.address || event.postcode || event.city) && (
             <p>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ")}</p>
@@ -2882,7 +2898,11 @@ export default function Home() {
         </article>
 
       ))}
-          {adminVisibleEvents.length > adminEventVisibleCount && <button className="show-more-events" type="button" onClick={() => setAdminEventVisibleCount((count) => Math.min(count + 12, adminVisibleEvents.length))}>Toon meer evenementen ({adminVisibleEvents.length - adminEventVisibleCount} resterend)</button>}
+          {results.pages>1&&<nav aria-label="Pagina’s beheerresultaten" style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',margin:'20px 0'}}>
+            <button type="button" disabled={results.page<=1} onClick={()=>{setAdminEventPage(results.page-1);document.getElementById('admin-results-heading')?.scrollIntoView({behavior:'smooth'});}}>Vorige pagina</button>
+            <span>Pagina {results.page} van {results.pages}</span>
+            <button type="button" disabled={results.page>=results.pages} onClick={()=>{setAdminEventPage(results.page+1);document.getElementById('admin-results-heading')?.scrollIntoView({behavior:'smooth'});}}>Volgende pagina</button>
+          </nav>}
         </>;
       })()}
       </>}
