@@ -1,5 +1,28 @@
 # DATABASE 47
 
+### Daily directory imports: verified execution, production still pending (29 October 2026)
+
+Run `node --test lib/directory-cron.test.mjs lib/directory.test.mjs`.
+These five checks execute the actual directory cron handler with mocked external
+services and the actual import SQL in an isolated database. They verify rejected
+unauthorized calls, missing configuration, 100-record batches, fallback reporting,
+stopping after a failed batch with committed progress, source failures before any
+write, and preserving existing edits on repeat imports. No real records are added.
+
+Production inspection still found commit `fc4100d` (main), with only the Duras
+cron scheduled. Production has CRON_SECRET but no SUPABASE_SERVICE_ROLE_KEY or
+SUPABASE_SECRET_KEY. Its database (`jhzbfeyhtyzyobsxypvj`) does not yet contain
+import_directory_entries(jsonb), import_pending_source_events(jsonb), or
+delete_expired_events_cron(). The newer Preview uses a separate Test database
+(`evvanbexkkdaqdfoginp`); never copy its server key into Production.
+
+Complete the production migration review and apply the required migrations to
+the production database, configure that database's own server key as a Production
+Secret, then stage/test a production build with all seven schedules before
+release. Confirm an authenticated run and a subsequently scheduled run before
+calling daily imports active. Preview readiness does not establish this.
+Mollie is explicitly deferred by the user and is not a prerequisite for imports.
+
 ### Owner management, advertising and compact analytics (29 October 2026)
 
 The first menu item opens `/de-streek-beleven` with the supplied introduction.
