@@ -1,5 +1,26 @@
 # DATABASE 47
 
+### Mollie return reconciliation (29 October 2026)
+
+The user resumed Mollie setup. A profile-specific Test key for cotededuras.com
+is stored as a Vercel Secret only on the existing Preview branch; no live key
+has been configured. A real Mollie test-mode checkout for EUR 149 succeeded,
+but the owner page still displayed `open` after returning from checkout.
+
+The owner page now automatically checks open payments through POST
+`/api/mollie/status`, and offers a manual retry if that check fails. The server
+requires same-origin requests and the listing's private management capability,
+reads the payment reference and amount from its own order, fetches the payment
+from Mollie, verifies amount/currency/order identity and settles through the
+existing SQL function. Return URL parameters never establish payment. Approval
+and the scheduled advertisement period remain required for public display.
+Run `node --test lib/mollie-status.test.mjs lib/owner-advertising.test.mjs`.
+
+Preview remains protected. Reconciliation on the owner's return is a fallback,
+not evidence that Mollie's background webhook can reach a protected deployment.
+Verify webhook delivery on the intended publicly reachable payment origin before
+launch. Production imports and migration work remain separate open items below.
+
 ### Daily directory imports: verified execution, production still pending (29 October 2026)
 
 Run `node --test lib/directory-cron.test.mjs lib/directory.test.mjs`.
@@ -21,7 +42,7 @@ the production database, configure that database's own server key as a Productio
 Secret, then stage/test a production build with all seven schedules before
 release. Confirm an authenticated run and a subsequently scheduled run before
 calling daily imports active. Preview readiness does not establish this.
-Mollie is explicitly deferred by the user and is not a prerequisite for imports.
+Mollie is not a prerequisite for imports; its resumed setup is described above.
 
 ### Owner management, advertising and compact analytics (29 October 2026)
 

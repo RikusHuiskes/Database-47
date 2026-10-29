@@ -3,6 +3,10 @@ import {useEffect,useState} from 'react';
 import {prepareEventPhoto} from '../../lib/event-photo-browser';
 type Access={id:string;token:string};
 type SavedLink={title:string;fragment:string};
+async function checkedPaymentStatus(access:Access){
+ const response=await fetch('/api/mollie/status',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id}),cache:'no-store'});
+ const data=await response.json();if(!response.ok)throw Error(data.error);return String(data.paymentStatus);
+}
 export default function MyListing(){
   const [access,setAccess]=useState<Access|null>(null),[event,setEvent]=useState<Record<string,unknown>|null>(null),[category,setCategory]=useState(''),[categories,setCategories]=useState<{id:string;name:string}[]>([]),[savedLinks,setSavedLinks]=useState<SavedLink[]>([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[link,setLink]=useState(''),[photo,setPhoto]=useState<File|null>(null),[ad,setAd]=useState<{amount_cents:number;payment_status:string;starts_on:string;ends_on:string}|null>(null);
   const [paymentReady,setPaymentReady]=useState(false);
@@ -15,7 +19,12 @@ export default function MyListing(){
   },[]);
   useEffect(()=>{
     if(!access)return;let active=true;setBusy(true);setMessage('');
-    void fetch('/api/managed-event?id='+access.id,{headers:{Authorization:'Bearer '+access.token},cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active){setEvent(data.event);setCategory(data.categoryId);setCategories(data.categories??[]);setAd(data.advertising);}}).catch(error=>{if(active)setMessage(error.message);}).finally(()=>{if(active)setBusy(false);});
+    void fetch('/api/managed-event?id='+access.id,{headers:{Authorization:'Bearer '+access.token},cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active){setEvent(data.event);setCategory(data.categoryId);setCategories(data.categories??[]);setAd(data.advertising);}
+      if(data.advertising?.payment_status==='open'){
+        try{const status=await checkedPaymentStatus(access);if(active){setAd(previous=>previous?{...previous,payment_status:status}:null);if(status==='paid')setMessage('Je betaling is bevestigd. De vermelding wacht zo nodig nog op goedkeuring.');}}
+        catch(error){if(active)setMessage(error instanceof Error?error.message:'De betaalstatus kon niet worden gecontroleerd.');}
+      }
+    }).catch(error=>{if(active)setMessage(error.message);}).finally(()=>{if(active)setBusy(false);});
     return()=>{active=false;};
   },[access]);
   const change=(key:string,value:unknown)=>setEvent(previous=>previous?{...previous,[key]:value}:null);
@@ -30,6 +39,7 @@ export default function MyListing(){
     finally{if(path&&!complete)await fetch('/api/visitor-event-photo',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})}).catch(()=>{});setBusy(false);}
   }
   async function checkout(){if(!access)return;setBusy(true);try{const response=await fetch('/api/mollie/checkout',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id})});const data=await response.json();if(!response.ok)throw Error(data.error);window.location.assign(data.checkoutUrl);}catch(error){setMessage(error instanceof Error?error.message:'Betaling niet beschikbaar.');setBusy(false);}}
+  async function refreshPayment(){if(!access)return;setBusy(true);setMessage('');try{const status=await checkedPaymentStatus(access);setAd(previous=>previous?{...previous,payment_status:status}:null);setMessage(status==='paid'?'Je betaling is bevestigd. De vermelding wacht zo nodig nog op goedkeuring.':'De betaalstatus is gecontroleerd.');}catch(error){setMessage(error instanceof Error?error.message:'De betaalstatus kon niet worden gecontroleerd.');}finally{setBusy(false);}}
   const field=(key:string,label:string,type='text',required=false)=><label key={key}>{label}{required?' *':''}<input type={type} required={required} value={String(event?.[key]??'')} onChange={e=>change(key,e.target.value)}/></label>;
   const localDate=(value:unknown)=>{if(!value)return '';const date=new Date(String(value));return Number.isFinite(date.getTime())?new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16):'';};
   return <main className="region-introduction owner-management"><nav><a href="/">← Côte de Duras</a><a href="/#agenda">Agenda</a></nav><h1>Mijn evenement/vermelding wijzigen</h1><p>Gebruik de persoonlijke beheerlink die je na invoer hebt ontvangen. Bewaar deze als een wachtwoord: iedereen met de link kan deze vermelding wijzigen.</p>
@@ -40,7 +50,7 @@ export default function MyListing(){
       {field('venue_name','Locatie / zaal')}{field('address','Adres')}{field('postcode','Postcode')}{field('city','Plaats','text',true)}{field('contact_phone','Telefoon','tel')}{field('website_url','Website','text',true)}{field('booking_url','Reserveringslink','text',true)}{field('source_url','Informatiebron','text',true)}
       <label><input type="checkbox" checked={event.is_free===true} onChange={e=>change('is_free',e.target.checked)}/> Gratis activiteit</label>{!event.is_free&&<>{field('price_from','Prijs vanaf (€)','number')}{field('price_to','Prijs tot (€)','number')}</>}
       {typeof event.image_url==='string'&&<img className="owner-photo" src={event.image_url} alt="Huidige foto"/>}<label>Foto vervangen (JPG, PNG, WebP, maximaal 5 MB)<input type="file" accept=".jpg,.jpeg,.png,.webp" onChange={e=>setPhoto(e.target.files?.[0]??null)}/></label><button type="submit" disabled={busy}>Wijzigingen opslaan</button></form>
-      {ad&&<section><h2>Advertentieaanvraag</h2><p>Periode: {ad.starts_on} tot {ad.ends_on}. Bedrag: €{(ad.amount_cents/100).toFixed(2).replace('.',',')}. Betaalstatus: {ad.payment_status}.</p>{ad.payment_status!=='paid'&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void checkout()}>Betalen via Mollie</button>}<p>Côte de Duras · 1049 Route du Nourissat · 47120 Savignac de Duras · SIRET 93451899400025. De getoonde bedragen zijn de te betalen bedragen.</p>{!paymentReady&&<p>Online betalen wordt binnenkort beschikbaar. Je aanvraag is opgeslagen.</p>}<p>Een advertentie verschijnt na goedkeuring en betaalbevestiging, uitsluitend in de afgesproken periode.</p></section>}
+      {ad&&<section><h2>Advertentieaanvraag</h2><p>Periode: {ad.starts_on} tot {ad.ends_on}. Bedrag: €{(ad.amount_cents/100).toFixed(2).replace('.',',')}. Betaalstatus: {ad.payment_status}.</p>{ad.payment_status!=='paid'&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void checkout()}>Betalen via Mollie</button>}{ad.payment_status==='open'&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void refreshPayment()}>Betaalstatus controleren</button>}<p>Côte de Duras · 1049 Route du Nourissat · 47120 Savignac de Duras · SIRET 93451899400025. De getoonde bedragen zijn de te betalen bedragen.</p>{!paymentReady&&<p>Online betalen wordt binnenkort beschikbaar. Je aanvraag is opgeslagen.</p>}<p>Een advertentie verschijnt na goedkeuring en betaalbevestiging, uitsluitend in de afgesproken periode.</p></section>}
       <p><button type="button" onClick={()=>{setAccess(null);setEvent(null);sessionStorage.removeItem('cdd-management-session');}}>Andere vermelding openen</button></p></>}
   </main>;
 }
