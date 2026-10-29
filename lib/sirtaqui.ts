@@ -1,3 +1,4 @@
+import {isWineTasting} from "./wine-category.ts";
 /** SIRTAQUI's published open CSV is semicolon separated, Windows-1252 and
  * contains quoted multiline fields. Never split it by lines or shift its dates. */
 export function sirtaquiPhotoUrl(value: string | undefined): string | null {
@@ -64,6 +65,7 @@ export function sirtaquiCategory(row: Record<string, string>): string {
   const norm = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const kind = norm(`${row.CATEGORIE} ${row.TYPE} ${row.THEME}`);
   const title = norm(row.NOM_OFFRE ?? "");
+  if (isWineTasting({title:row.NOM_OFFRE,description:row.DESCRIPTIF,source_category:kind})) return "wijnhuizen";
   // Classify by the publisher's precise event type before its broad theme.
   if (/exposition|vernissage/.test(kind)) return "art-expositions";
   if (/concert|recital|musique|jazz/.test(kind)) return "concerts-musique";
@@ -90,7 +92,7 @@ export function sirtaquiCategories(row: Record<string, string>): string[] {
   const title = normalize(row.NOM_OFFRE ?? "");
   const categories = new Set([sirtaquiCategory(row)]);
   if (/animations locales|vie locale|portes ouvertes|loto|jeux de societe|caritatif/.test(kind)) categories.add("vie-locale");
-  if (!categories.has("marches-brocantes") && /gastronomie|degustation|repas/.test(kind)) categories.add("restaurants-gastronomie");
+  if (!categories.has("marches-brocantes") && !categories.has("wijnhuizen") && /gastronomie|degustation|repas/.test(kind)) categories.add("restaurants-gastronomie");
   if (/jeune public|enfants|famille/.test(kind)) categories.add("enfants-famille");
   if (/randonnee|balade/.test(kind + " " + title)) categories.add("nature-randonnee");
   return [...categories];

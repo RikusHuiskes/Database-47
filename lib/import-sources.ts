@@ -1,3 +1,4 @@
+import {isWineTasting} from "./wine-category.ts";
 import type { ImportedEvent } from "./tourisme-duras";
 
 export type ImportCategory = { id: string; slug: string };
@@ -39,6 +40,7 @@ export async function runExternalEventImport(
 }
 
 export function inferEventCategorySlug(event: ImportedEvent): string | null {
+  if(isWineTasting(event))return "wijnhuizen";
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const title = normalize(`${event.title} ${event.description ?? ""}`);
   const kind = normalize(event.source_category ?? "");

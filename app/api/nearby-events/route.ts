@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { savedCommuneCenter } from "../../../lib/commune-center";
-import { uniqueEventRecords } from "../../../lib/event-presentation";
+import { uniqueEventRecords, promotionIsActive } from "../../../lib/event-presentation";
 
 export const revalidate = 0;
 
@@ -33,6 +33,8 @@ type EventRecord = {
   longitude?: number | string | null;
   promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
   promotion_status?: "none" | "requested" | "active" | "ended" | null;
+  promotion_start_at?: string | null;
+  promotion_end_at?: string | null;
 };
 
 type CommuneFeature = {
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
   for (let offset = 0; ; offset += pageSize) {
     let query = supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
+      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status,promotion_start_at,promotion_end_at,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
       .eq("status", "approved")
       .eq("verified", true)
       // Latitude is a conservative coarse bound. Missing/invalid coordinates
@@ -179,7 +181,7 @@ export async function GET(request: NextRequest) {
 
   const events = results.filter((event): event is NonNullable<typeof event> => event !== null)
     .sort((a, b) => a.distance_km - b.distance_km || a.start_at.localeCompare(b.start_at));
-  const homepage_promotions = events.filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active").slice(0, 3);
-  const category_promotions = events.filter((event) => event.promotion_type === "category" && event.promotion_status === "active");
+  const homepage_promotions = events.filter((event) => event.promotion_type === "homepage" && promotionIsActive(event, now)).slice(0, 3);
+  const category_promotions = events.filter((event) => event.promotion_type === "category" && promotionIsActive(event, now));
   return NextResponse.json({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount });
 }

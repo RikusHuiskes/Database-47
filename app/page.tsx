@@ -3,17 +3,22 @@
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import AdvertiserFields from "./components/AdvertiserFields";
+import {emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
 import AnalyticsConsent from "./components/AnalyticsConsent";
+import AdvertisingRequests from "./components/AdvertisingRequests";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
-import {upcomingHighlights,promotionPlacements,uniqueEventRecords} from "../lib/event-presentation";
+import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive} from "../lib/event-presentation";
 import {normalizeWebAddress} from "../lib/web-address";
 import {loadAdminEvents} from "../lib/admin-event-loader";
+import {alphabeticalPlaces} from "../lib/place-order";
 import {searchAdminEvents} from "../lib/admin-event-search";
 import {approvePendingImports,isPendingImport} from "../lib/admin-bulk-approve";
 import { createClient } from "@supabase/supabase-js";
 import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras";
 import { inferEventCategorySlug } from "../lib/import-sources";
+import {prepareEventPhoto} from "../lib/event-photo-browser";
 import { eventPhotoType } from "../lib/event-photo";
 import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, type LocalAreaTown } from "../lib/local-area";
 type Category = {
@@ -55,6 +60,8 @@ type EventRow = {
   source_url?: string | null;
   promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
   promotion_status?: "none" | "requested" | "active" | "ended" | null;
+  promotion_start_at?:string|null;
+  promotion_end_at?:string|null;
   advertiser_email?: string | null;
 };
 
@@ -142,23 +149,6 @@ type ImportPreviewEvent = ImportedEvent & { category_id: string };
 
 const MAX_VISITOR_PHOTO_BYTES = 5 * 1024 * 1024;
 
-async function prepareEventPhoto(photo: File): Promise<File> {
-  const type = eventPhotoType(photo);
-  if (!type) throw new Error("Kies een JPG-, PNG- of WebP-foto.");
-  if (photo.size <= 3_500_000) return new File([photo], photo.name, { type });
-  const bitmap = await createImageBitmap(photo);
-  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  const context = canvas.getContext("2d");
-  if (!context) { bitmap.close(); throw new Error("De foto kon niet worden voorbereid. Kies een kleinere foto."); }
-  context.fillStyle = "white"; context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", 0.85));
-  if (!blob || blob.size > 3_800_000) throw new Error("De foto is nog te groot. Kies een kleinere JPG-, PNG- of WebP-foto.");
-  return new File([blob], photo.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
-}
 
 type EventEditDraft = {
   category_id: string;
@@ -317,6 +307,8 @@ export default function Home() {
   const [radiusKm, setRadiusKm] = useState(25);
   const [eventSearch, setEventSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [promotionClock,setPromotionClock]=useState(0);
+  useEffect(()=>{const timer=window.setInterval(()=>setPromotionClock(Date.now()),60000);return()=>window.clearInterval(timer);},[]);
   const [freeOnly, setFreeOnly] = useState(false);
   const [visibleEventCount, setVisibleEventCount] = useState(18);
   const [nearbyEvents, setNearbyEvents] = useState<NearbyEvent[]>([]);
@@ -408,7 +400,9 @@ export default function Home() {
   const [sourceUrl, setSourceUrl] = useState("https://");
   const [categoryId, setCategoryId] = useState("");
   const [promotionType, setPromotionType] = useState<"none" | "homepage" | "category" | "highlight">("none");
-  const [advertiserEmail, setAdvertiserEmail] = useState("");
+  const [advertiser,setAdvertiser] = useState({...emptyAdvertiser});
+  const [managementLink,setManagementLink] = useState("");
+  const [entryKind,setEntryKind] = useState("event");
 
   const [supabase] = useState(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -446,21 +440,7 @@ export default function Home() {
   );
 
   function renderAreaOptions() {
-    return <>
-      {VISITOR_EVENT_CITY_GROUPS.map((group) => (
-        <optgroup label={group.label} key={group.label}>
-          {group.cities.map((name) => {
-            const area = areaOptionsByName.get(normalizePlaceName(name));
-            return <option key={area?.id ?? name} value={area?.id ?? ""} disabled={!area || area.latitude == null || area.longitude == null}>{name}</option>;
-          })}
-        </optgroup>
-      ))}
-      {otherAreaOptions.length > 0 && (
-        <optgroup label="Overige plaatsen">
-          {otherAreaOptions.map((area) => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>)}
-        </optgroup>
-      )}
-    </>;
+    return alphabeticalPlaces(areaOptions).map(area => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>);
   }
 
   function openVisitorEvent(event: EventRow, placement = "standard") {
@@ -550,7 +530,7 @@ export default function Home() {
   const searchLabel = deferredVisitorLocation ? "jouw locatie" : searchArea?.name ?? "Duras";
   const visibleNearbyEvents = useMemo(() => {
     const query = eventSearch.trim().toLocaleLowerCase("nl-NL");
-    return uniqueEventRecords(nearbyEvents).filter((event) => {
+    return uniqueEventRecords(nearbyEvents).map(event=>({...event,promotion_status:event.promotion_status==='active'&&!promotionIsActive(event)?'none' as const:event.promotion_status})).filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
     const matchesCategory = categoryFilter === "all" || event.category_ids?.includes(categoryFilter) === true;
@@ -562,7 +542,7 @@ export default function Home() {
       && event.promotion_status === "active";
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
     });
-  }, [nearbyEvents, eventSearch, categoryFilter, freeOnly]);
+  }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
   const placements = useMemo(() => promotionPlacements(visibleNearbyEvents, categoryFilter), [visibleNearbyEvents, categoryFilter]);
   const categoryPromotionEvents = placements.category;
   const categoryPromotionIds = useMemo(() => new Set(categoryPromotionEvents.map((event) => event.id)), [categoryPromotionEvents]);
@@ -876,7 +856,7 @@ export default function Home() {
       .from("events")
       .update({ status, verified: status === "approved" })
       .eq("id", event.id)
-      .select("id")
+      .select("id,promotion_status")
       .maybeSingle();
 
     if (updateError) {
@@ -891,7 +871,7 @@ export default function Home() {
       return;
     }
 
-    setEvents(current => current.map(item => item.id === event.id ? {...item, status, verified: status === "approved"} : item));
+    setEvents(current => current.map(item => item.id === event.id ? {...item, status, verified: status === "approved",promotion_status:data.promotion_status} : item));
     setMessage(
       status === "approved"
         ? `“${event.title}” is goedgekeurd.`
@@ -932,23 +912,10 @@ export default function Home() {
     setUpdatingEventId(null);
   }
 
-  async function importDirectory() {
-    if(!supabase||!isAdmin)return;
-    setImporting(true);setError('');setMessage('Vaste vermeldingen importeren…');
-    try{
-      const {data}=await supabase.auth.getSession();
-      if(!data.session)throw new Error('Log opnieuw in als beheerder.');
-      let inserted=0,skipped=0,total=1;
-      for(let offset=0;offset<total;offset+=100){
-        const response=await fetch('/api/import-directory',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${data.session.access_token}`},body:JSON.stringify({offset})});
-        const result=await readApiJson<{inserted:number;skipped:number;total:number;error?:string}>(response);
-        if(!response.ok)throw new Error(result.error??'Import mislukt.');
-        total=result.total;inserted+=result.inserted;skipped+=result.skipped;
-        setMessage(`Vaste vermeldingen: ${Math.min(offset+100,total)} van ${total} verwerkt…`);
-      }
-      await loadData();setMessage(`${inserted} nieuwe vaste vermeldingen bij Wacht op controle; ${skipped} bestaande vermeldingen behouden.`);
-    }catch(cause){setError(cause instanceof Error?cause.message:'Import mislukt.');}
-    finally{setImporting(false);}
+  async function createOwnerLink(event:EventRow) {
+    if(!supabase||!isAdmin)return;setError('');
+    try { const session=await supabase.auth.getSession();const response=await fetch('/api/admin/event-access',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.data.session?.access_token},body:JSON.stringify({eventId:event.id})});const data=await response.json();if(!response.ok)throw Error(data.error);setManagementLink(window.location.origin+'/mijn-vermelding#'+data.manageFragment);setMessage('Persoonlijke beheerlink gemaakt. Geef deze uitsluitend aan de geverifieerde inzender.');}
+    catch(cause){setError(cause instanceof Error?cause.message:'Beheerlink maken mislukt.');}
   }
 
   async function deleteEvent(event: EventRow) {
@@ -1182,7 +1149,8 @@ export default function Home() {
     setSourceUrl("https://");
     setCategoryId("");
     setPromotionType("none");
-    setAdvertiserEmail("");
+    setAdvertiser({...emptyAdvertiser});
+    setEntryKind("event");
   }
 
   async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
@@ -1197,13 +1165,12 @@ export default function Home() {
       return;
     }
 
-    if (!title.trim() || !startAt) {
-      setSubmissionError("Vul minimaal de titel en startdatum in.");
+    if (!title.trim() || (entryKind === "event" && !startAt)) {
+      setSubmissionError("Vul de titel en voor een evenement ook de startdatum in.");
       return;
     }
-    if (promotionType !== "none" && !advertiserEmail.trim()) {
-      setSubmissionError("Vul je e-mailadres in voor de betaalde promotieaanvraag.");
-      return;
+    if (promotionType !== "none") {
+      try { validateAdvertiser(promotionType,advertiser); } catch(cause) { setSubmissionError(cause instanceof Error?cause.message:"Controleer de factuurgegevens.");return; }
     }
 
     const website = normalizeWebAddress(websiteUrl);
@@ -1241,8 +1208,9 @@ export default function Home() {
         slug: makeSlug(title),
         short_description: shortDescription.trim() || null,
         description: description.trim() || null,
-        start_at: new Date(startAt).toISOString(),
-        end_at: endAt ? new Date(endAt).toISOString() : null,
+        is_directory_entry: entryKind === "directory",
+        start_at: entryKind === "directory" ? null : new Date(startAt).toISOString(),
+        end_at: entryKind === "directory" ? null : endAt ? new Date(endAt).toISOString() : null,
         venue_name: venueName.trim() || null,
         address: address.trim() || null,
         postcode: postcode.trim() || null,
@@ -1256,24 +1224,16 @@ export default function Home() {
         image_url: uploadedImageUrl,
         promotion_type: promotionType,
         promotion_status: promotionType === "none" ? "none" : "requested",
-        advertiser_email: promotionType === "none" ? null : advertiserEmail.trim(),
         status: "pending",
         verified: false,
       };
 
-      const { error: insertError } = await supabase.rpc("submit_pending_event", {
-        p_event: payload,
-        p_category_id: categoryId || null,
-      });
-
-      if (insertError) {
-        console.error("[visitor-event] submission failed", {
-          code: insertError.code,
-          message: insertError.message,
-        });
-        setSubmissionError(`De activiteit is niet opgeslagen${uploadedImageUrl ? " en de foto is opgeruimd" : ""}. Controleer de gegevens en probeer opnieuw. (${insertError.message})`);
-        return;
-      }
+      const response = await fetch("/api/visitor-events", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:payload,categoryId:categoryId||null,advertiser:promotionType==='none'?null:advertiser})});
+      const result = await readApiJson<{error?:string;manageFragment?:string}>(response);
+      if(!response.ok||!result.manageFragment)throw new Error(result.error||"De vermelding kon niet worden opgeslagen.");
+      const privateLink=window.location.origin+"/mijn-vermelding#"+result.manageFragment;
+      setManagementLink(privateLink);
+      try {const links=JSON.parse(localStorage.getItem('cdd-managed-links')||'[]');links.push({title:payload.title,fragment:result.manageFragment});localStorage.setItem('cdd-managed-links',JSON.stringify(links));}catch{}
 
       eventSaved = true;
       resetForm();
@@ -1604,13 +1564,15 @@ export default function Home() {
             <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
           </a>
           <nav className="primary-nav" aria-label="Hoofdnavigatie">
+            <a href="/de-streek-beleven">De streek beleven</a>
             <a href="#agenda">Agenda</a>
             <a href="#ontdekken">Ontdekken</a>
             <a href="#gemeenten">Gemeente informatie</a>
-            <a href="#activity-tip-form" onClick={openEventEntryForm}>Voer uw evenement in</a>
+            <a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a>
             <a href="#gezondheid">Gezondheid</a>
+            <a href="/mijn-vermelding">Mijn vermelding</a>
           </nav>
-          <a className="region-note" href="#gemeenten"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
+          <a className="region-note" href="/de-streek-beleven"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
         </div>
         <div className="hero-grid" id="top">
           <div className="hero-art" aria-hidden="true"><img src="/lot-et-garonne-hero.png" alt="" /></div>
@@ -1724,7 +1686,7 @@ export default function Home() {
         <div className="tip-invitation" id="tip-activiteit">
           <div><p className="section-kicker">Ken jij de streek?</p><strong>Staat jouw favoriete activiteit er nog niet bij?</strong><p>Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien.</p></div>
           <button className="button button-dark" type="button" onClick={openEventEntryForm} aria-controls="activity-tip-form">
-            Een nieuw evenement aanmaken<span aria-hidden="true">→</span>
+            Een nieuw evenement/vermelding<span aria-hidden="true">→</span>
           </button>
         </div>
       </section>
@@ -1899,7 +1861,7 @@ export default function Home() {
             marginBottom: 28,
           }}
         >
-          <h2>Een nieuw evenement aanmaken</h2>
+          <h2>Een nieuw evenement/vermelding</h2>
           <button type="button" onClick={() => setShowForm(false)} disabled={saving} style={{ justifySelf: "end" }}>Formulier sluiten</button>
           <p style={{ marginTop: 0, color: "#64748b" }}>
             Je tip komt eerst bij de beheerder ter controle. Een link naar de organisator of informatiebron helpt ons de gegevens te verifiëren.
@@ -1949,9 +1911,10 @@ export default function Home() {
                 <span><strong>{heading}</strong><small>{copy}</small></span>
               </label>)}
             </div>
-            {promotionType !== "none" && <label className="promotion-email-label">E-mailadres voor de advertentieaanvraag *<input type="email" autoComplete="email" required value={advertiserEmail} onChange={(event) => setAdvertiserEmail(event.target.value)} placeholder="naam@bedrijf.fr" /></label>}
+            {promotionType !== "none" && <AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/>}
           </fieldset>
 
+          <label style={labelStyle}>Wat wil je invoeren?<select style={inputStyle} value={entryKind} onChange={e=>setEntryKind(e.target.value)}><option value="event">Evenement met datum</option><option value="directory">Vaste vermelding / bedrijf / accommodatie</option></select></label>
           <div>
             <label style={labelStyle}>Titel *</label>
             <input
@@ -2000,6 +1963,7 @@ export default function Home() {
             />
           </div>
 
+          {entryKind === "event" && <>
           <div>
             <label style={labelStyle}>Begindatum en -tijd *</label>
             <input
@@ -2021,6 +1985,7 @@ export default function Home() {
             />
           </div>
 
+          </>}
           <div>
             <label style={labelStyle}>Locatie / zaal</label>
             <input
@@ -2061,11 +2026,7 @@ export default function Home() {
               }}
             >
               <option value="" disabled>Kies een plaats</option>
-              {VISITOR_EVENT_CITY_GROUPS.map((group) => (
-                <optgroup label={group.label} key={group.label}>
-                  {group.cities.map((city) => <option value={city} key={city}>{city}</option>)}
-                </optgroup>
-              ))}
+              {alphabeticalPlaces(areaOptions).map(area => <option key={area.id} value={area.name}>{area.name}</option>)}
               <option value="__other__">Andere plaats…</option>
             </select>
             {cityChoice === "__other__" && (
@@ -2152,12 +2113,13 @@ export default function Home() {
               fontSize: 16,
             }}
           >
-            {saving ? "Opslaan..." : "Evenement opslaan"}
+            {saving ? "Opslaan..." : "Evenement/vermelding opslaan"}
           </button>
         </form>
       )}
 
       {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
+      {managementLink && <aside className="management-link-notice"><h3>Bewaar je persoonlijke beheerlink</h3><p>Via deze link kun je later zelf je evenement/vermelding en foto wijzigen. Deel hem niet met anderen.</p><a href={managementLink}>Mijn vermelding wijzigen →</a><label>Persoonlijke link<input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}>Beheerlink kopiëren</button></aside>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
       <AnalyticsConsent disabled={isAdmin || authLoading} />
@@ -2166,7 +2128,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong><small>Evenementen en informatie binnen 50 kilometer</small></span>
         </a>
-        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="/disclaimer">Disclaimer</a><a href="/contact">Contactgegevens</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Voer uw evenement in</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
+        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="/disclaimer">Disclaimer</a><a href="/contact">Contactgegevens</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
       </footer>
 
@@ -2202,7 +2164,7 @@ export default function Home() {
 
       {isAdmin && <>
       <AnalyticsDashboard client={supabase} />
-      <p><button type="button" disabled={importing} onClick={()=>void importDirectory()}>Accommodaties, wijnhuizen en cafés importeren</button> Nieuwe vermeldingen komen bij Wacht op controle; bestaande wijzigingen blijven behouden.</p>
+      <AdvertisingRequests client={supabase}/>
       <div
         style={{
           display: "grid",
@@ -2293,7 +2255,7 @@ export default function Home() {
             fontSize: 15,
           }}
         >
-          Een nieuw evenement aanmaken
+          Een nieuw evenement/vermelding
         </button>
 
         <button
@@ -2555,6 +2517,7 @@ export default function Home() {
             <p>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ")}</p>
           )}
           {event.contact_phone && <p>Telefoon: <a href={`tel:${event.contact_phone.replace(/[^+\d]/g, "")}`}>{event.contact_phone}</a></p>}
+          {event.is_manual_entry && <div><button type="button" onClick={()=>void createOwnerLink(event)}>Persoonlijke beheerlink voor inzender maken</button>{managementLink.includes(event.id+":")&&<label>Alleen delen met de geverifieerde inzender<input style={inputStyle} readOnly value={managementLink} onFocus={e=>e.target.select()}/></label>}</div>}
           {safeHttpUrl(event.website_url) && <p><a data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website</a></p>}
           {safeHttpUrl(event.booking_url) && <p><a data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren</a></p>}
           {event.source_category && <p>Type bij bron: {event.source_category}</p>}

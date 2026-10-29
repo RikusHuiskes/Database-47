@@ -1,5 +1,63 @@
 # DATABASE 47
 
+### Owner management, advertising and compact analytics (29 October 2026)
+
+The first menu item opens `/de-streek-beleven` with the supplied introduction.
+Manual submission is labelled “Een nieuw evenement/vermelding”; a permanent
+listing needs no artificial dates. Place menus use an alphabetic list and a
+shared Intl.Collator helper accepting Dutch, English and French locales.
+
+Analytics retains its existing collection/report RPC, retention and all data.
+The dashboard uses six tabs, searches, sortable columns and 10/25/50-row pages.
+CSV exports the complete report, independent of the visible table filter/page.
+
+Apply `20261029132413_owner_management_and_advertising_preparation.sql` to Test
+before deploying. It creates private, RLS-protected `event_owner_access` and
+`advertising_requests` tables. Anon/authenticated cannot read these tables or
+execute the new privileged RPCs. Wine tastings explicitly mentioning vineyards,
+wine or cellars are reclassified from gastronomy into wineries; source snapshots
+and live importers use the same rule. Existing event content/photos are retained.
+
+New manual submissions atomically store the listing and a SHA-256 capability
+hash. The random 256-bit private management link is returned once, stored in the
+submitting browser and shown for copying. `/mijn-vermelding` takes the token from
+the URL fragment, removes it from the address bar, and uses a Bearer header with
+no-store requests. No email is automatically sent. Owners can edit their own
+text, dates, category, prices, addresses and photo; identity, approval/payment
+state and advertisement terms are not client-editable. Existing approval is
+retained. Active advertisement categories cannot be changed. An admin can issue
+a link for legacy manual listings after verifying the original submitter. A lost
+link cannot be recovered by guessing a title/email; the requester must be verified.
+
+Payable monthly EUR prices are homepage 149, category 79 and highlighted results
+15, with no added charge. The user chooses a start date and 1–12 calendar months.
+End anniversaries clamp to month end; the end is exclusive. Promotion times use
+Europe/Paris. Public placements check both activation and time range, with a
+client-side recheck each minute. Contact/invoice details remain in the private
+request table. Seller: Côte de Duras, 1049 Route du Nourissat, 47120 Savignac de
+Duras, SIRET 93451899400025. No invoice PDF or card data is generated/stored here.
+
+Mollie preparation includes idempotent checkout, server-stored amounts and a
+webhook that fetches payment data from Mollie, verifies request identity/EUR
+amount, and handles refunds before settling atomically. Redirects never mark a
+request paid; initial event approval is still required. Set server-only
+`MOLLIE_API_KEY` to a `test_` key in this branch's Preview environment first.
+`live_` keys are rejected outside Production. `PUBLIC_SITE_URL` must identify a
+public HTTPS origin whose webhook is reachable from Mollie; a protected Preview
+cannot receive ordinary public callbacks. No payment starts without the key.
+Configure a live key/public domain only for the eventual launch.
+
+The manual directory import button is removed. `/api/cron/import-directory`
+refreshes published SIRTAQUI accommodation/vineyard/café feeds at 11:00 UTC daily,
+using CRON_SECRET and 100-record additive batches. Existing edits are preserved;
+new entries stay pending. Fresh source snapshots cover temporary publisher
+failures and every fallback is identified in the job response. As with all
+existing Vercel cron jobs, schedules run only on Production, not Preview.
+
+Validation adds `lib/owner-advertising.test.mjs` for SQL grants, capabilities,
+status injection, calendar/month prices, scheduling, refunds, owner/photo
+preservation, language-aware ordering and wine classification, followed by build.
+
 ### Search performance and advertising checks (29 October 2026)
 
 Public visitors load categories and nearby results, without downloading the
