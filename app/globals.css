@@ -601,6 +601,7 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .promotion-placement-card { overflow: hidden; border: 1px solid #e3d7c1; border-radius: 15px; background: #fffefa; box-shadow: 0 7px 20px #203b350b; }
 .promotion-placement-image { display: grid; width: 100%; height: 150px; padding: 0; place-items: center; overflow: hidden; border: 0; background: linear-gradient(135deg, #819775, #d8b879); color: #fff; cursor: pointer; font: 42px Georgia, serif; }
 .promotion-placement-image img, .category-promotion-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 220ms ease; }
+.promotion-placement-image img { object-position: center 75%; }
 .promotion-placement-card:hover .promotion-placement-image img, .category-promotion-card:hover .category-promotion-image img { transform: scale(1.035); }
 .promotion-placement-copy { padding: 13px 15px 15px; }
 .promotion-placement-copy h3, .category-promotion-card h4 { margin: 0 0 5px; color: #1d3936; font-family: Georgia, "Times New Roman", serif; font-size: 18px; }

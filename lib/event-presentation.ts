@@ -8,7 +8,8 @@ type PresentedEvent = {
 };
 
 export function upcomingHighlights<T extends PresentedEvent>(events: T[]) {
-  return events.filter(event => !event.is_directory_entry && Number.isFinite(Date.parse(event.start_at)))
+  return events.filter(event => !event.is_directory_entry && Number.isFinite(Date.parse(event.start_at))
+      && !(event.promotion_type === 'homepage' && event.promotion_status === 'active'))
     .sort((left, right) => Date.parse(left.start_at) - Date.parse(right.start_at) || left.id.localeCompare(right.id))
     .slice(0, 3);
 }

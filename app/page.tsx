@@ -1941,7 +1941,7 @@ export default function Home() {
             <div className="promotion-options">
               {([
                 ["none", "Gratis vermelding (standaard)", "Je evenement komt na goedkeuring gewoon in de agenda, zonder advertentiekosten."],
-                ["homepage", "Op de homepage", "Extra zichtbaarheid bij ‘Binnenkort in de buurt’."],
+                ["homepage", "Op de homepage", "Een eigen advertentieplek bij ‘Uitgelicht op de homepage’."],
                 ["category", "Bovenaan de categorie", "Uitgelicht wanneer bezoekers jouw categorie kiezen."],
                 ["highlight", "Omkaderd in resultaten", "Een opvallend kader in de lijst met activiteiten."],
               ] as const).map(([value, heading, copy]) => <label className={`promotion-option${promotionType === value ? " promotion-option-selected" : ""}`} key={value}>
