@@ -82,15 +82,15 @@ export function sirtaquiCategory(row: Record<string, string>): string {
   return "vie-locale";
 }
 
-/** An event can genuinely belong to several published types (a food market,
- * a family workshop). Keep those links instead of losing all but one. */
+/** Keep specific published types; a broad food theme does not turn a market
+ * into a restaurant activity. */
 export function sirtaquiCategories(row: Record<string, string>): string[] {
   const normalize = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const kind = normalize(`${row.CATEGORIE} ${row.TYPE} ${row.THEME}`);
   const title = normalize(row.NOM_OFFRE ?? "");
   const categories = new Set([sirtaquiCategory(row)]);
   if (/animations locales|vie locale|portes ouvertes|loto|jeux de societe|caritatif/.test(kind)) categories.add("vie-locale");
-  if (/gastronomie|degustation|repas/.test(kind)) categories.add("restaurants-gastronomie");
+  if (!categories.has("marches-brocantes") && /gastronomie|degustation|repas/.test(kind)) categories.add("restaurants-gastronomie");
   if (/jeune public|enfants|famille/.test(kind)) categories.add("enfants-famille");
   if (/randonnee|balade/.test(kind + " " + title)) categories.add("nature-randonnee");
   return [...categories];

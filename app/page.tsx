@@ -6,6 +6,9 @@ import { createPortal } from "react-dom";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
+import {upcomingHighlights,promotionPlacements,uniqueEventRecords} from "../lib/event-presentation";
+import {normalizeWebAddress} from "../lib/web-address";
+import {loadAdminEvents} from "../lib/admin-event-loader";
 import {searchAdminEvents} from "../lib/admin-event-search";
 import {approvePendingImports,isPendingImport} from "../lib/admin-bulk-approve";
 import { createClient } from "@supabase/supabase-js";
@@ -17,11 +20,6 @@ type Category = {
   id: string;
   name?: string;
   slug?: string;
-};
-
-type EventCategoryRow = {
-  event_id: string;
-  category_id: string;
 };
 
 type EventRow = {
@@ -404,9 +402,9 @@ export default function Home() {
   const [priceFrom, setPriceFrom] = useState("");
   const [priceTo, setPriceTo] = useState("");
   const [isFree, setIsFree] = useState(false);
-  const [websiteUrl, setWebsiteUrl] = useState("");
-  const [bookingUrl, setBookingUrl] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("https://");
+  const [bookingUrl, setBookingUrl] = useState("https://");
+  const [sourceUrl, setSourceUrl] = useState("https://");
   const [categoryId, setCategoryId] = useState("");
   const [promotionType, setPromotionType] = useState<"none" | "homepage" | "category" | "highlight">("none");
   const [advertiserEmail, setAdvertiserEmail] = useState("");
@@ -550,7 +548,7 @@ export default function Home() {
   const searchLabel = deferredVisitorLocation ? "jouw locatie" : searchArea?.name ?? "Duras";
   const visibleNearbyEvents = useMemo(() => {
     const query = eventSearch.trim().toLocaleLowerCase("nl-NL");
-    return nearbyEvents.filter((event) => {
+    return uniqueEventRecords(nearbyEvents).filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
     const matchesCategory = categoryFilter === "all" || event.category_ids?.includes(categoryFilter) === true;
@@ -563,9 +561,8 @@ export default function Home() {
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
     });
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly]);
-  const categoryPromotionEvents = useMemo(() => categoryFilter === "all" ? [] : visibleNearbyEvents.filter((event) =>
-    event.promotion_type === "category" && event.promotion_status === "active"
-  ), [categoryFilter, visibleNearbyEvents]);
+  const placements = useMemo(() => promotionPlacements(visibleNearbyEvents, categoryFilter), [visibleNearbyEvents, categoryFilter]);
+  const categoryPromotionEvents = placements.category;
   const categoryPromotionIds = useMemo(() => new Set(categoryPromotionEvents.map((event) => event.id)), [categoryPromotionEvents]);
   const standardNearbyEvents = useMemo(
     () => visibleNearbyEvents.filter((event) => !categoryPromotionIds.has(event.id)),
@@ -590,6 +587,7 @@ export default function Home() {
     }
 
     let active = true;
+    const controller = new AbortController();
     setNearbyLoading(true);
     setNearbyError("");
     const params = new URLSearchParams({
@@ -598,7 +596,7 @@ export default function Home() {
       radius: String(radiusKm),
       category: categoryFilter,
     });
-    void fetch(`/api/nearby-events?${params}`)
+    void fetch(`/api/nearby-events?${params}`, {signal: controller.signal})
       .then(async (response) => {
         const result = await readApiJson<{ events?: NearbyEvent[]; homepage_promotions?: EventRow[]; category_promotions?: EventRow[]; error?: string; locationless_count?: number }>(response);
         if (!response.ok) throw new Error(result.error ?? "Evenementen konden niet worden geladen.");
@@ -615,7 +613,7 @@ export default function Home() {
         if (active) setNearbyError(cause instanceof Error ? cause.message : "Evenementen konden niet worden geladen.");
       })
       .finally(() => { if (active) setNearbyLoading(false); });
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter]);
 
   function useCurrentLocation() {
@@ -671,7 +669,7 @@ export default function Home() {
     }
   }
 
-  async function loadData() {
+  async function loadData(includeEvents = isAdmin) {
     if (!supabase) {
       setError("Supabase-instellingen ontbreken. Controleer Vercel.");
       setLoading(false);
@@ -681,29 +679,14 @@ export default function Home() {
     setError("");
 
     const readAllEvents = async () => {
-      const rows: EventRow[] = [];
-      for (let offset = 0; ; offset += 500) {
-        const result = await supabase.from("events").select("*").order("start_at", { ascending: true }).order("id").range(offset, offset + 499);
-        if (result.error) return { data: rows, error: result.error };
-        rows.push(...((result.data ?? []) as EventRow[]).map(event=>({...event,start_at:event.start_at??''})));
-        if (!result.data || result.data.length < 500) return { data: rows, error: null };
-      }
+      if (!includeEvents) return {data: [] as (EventRow & {event_categories?: {category_id:string}[]})[], error: null};
+      const result = await loadAdminEvents(supabase);
+      return {...result, data: ((result.data ?? []) as (EventRow & {event_categories?: {category_id:string}[]})[]).map(event => ({...event, start_at: event.start_at ?? ''}))};
     };
-    const readAllEventCategories = async () => {
-      const rows: EventCategoryRow[] = [];
-      for (let offset = 0; ; offset += 500) {
-        const result = await supabase.from("event_categories").select("event_id,category_id").order("event_id").order("category_id").range(offset, offset + 499);
-        if (result.error) return { data: rows, error: result.error };
-        rows.push(...(result.data ?? []));
-        if (!result.data || result.data.length < 500) return { data: rows, error: null };
-      }
-    };
-    const [categoryResult, eventResult, eventCategoryResult] =
-      await Promise.all([
-        supabase.from("categories").select("*").order("name").limit(100),
-        readAllEvents(),
-        readAllEventCategories(),
-      ]);
+    const [categoryResult, eventResult] = await Promise.all([
+      supabase.from("categories").select("*").order("name").limit(100),
+      readAllEvents(),
+    ]);
 
     if (categoryResult.error) {
       setError("Categorieën laden mislukt: " + categoryResult.error.message);
@@ -717,35 +700,13 @@ export default function Home() {
           ? previous + " | Evenementen: " + eventResult.error.message
           : "Evenementen laden mislukt: " + eventResult.error.message
       );
-    } else if (eventCategoryResult.error) {
-      setError((previous) =>
-        previous
-          ? previous + " | Categoriekoppelingen laden mislukt: " + eventCategoryResult.error.message
-          : "Categoriekoppelingen laden mislukt: " + eventCategoryResult.error.message
-      );
-      setEvents((eventResult.data ?? []) as EventRow[]);
     } else {
-      const eventCategoryRows =
-        (eventCategoryResult.data ?? []) as EventCategoryRow[];
-      const categoryRows = (categoryResult.data ?? []) as Category[];
-
-      const eventsWithCategories = ((eventResult.data ?? []) as EventRow[]).map(
-        (event) => {
-          const link = eventCategoryRows.find(
-            (row) => row.event_id === event.id
-          );
-          const category = categoryRows.find(
-            (row) => row.id === link?.category_id
-          );
-
-          return {
-            ...event,
-            category_id: link?.category_id ?? null,
-            category_ids: eventCategoryRows.filter(row=>row.event_id===event.id).map(row=>row.category_id),
-            category_name: category?.name ?? category?.slug ?? null,
-          };
-        }
-      );
+      const categoryById = new Map(((categoryResult.data ?? []) as Category[]).map(category => [category.id, category]));
+      const eventsWithCategories = (eventResult.data ?? []).map(({event_categories, ...event}) => {
+        const category_ids = (event_categories ?? []).map(link => link.category_id);
+        const category = categoryById.get(category_ids[0]);
+        return {...event, category_id: category_ids[0] ?? null, category_ids, category_name: category?.name ?? category?.slug ?? null};
+      });
 
       setEvents(eventsWithCategories);
     }
@@ -801,10 +762,10 @@ export default function Home() {
         setIsAdmin(false);
       }
       setAuthLoading(false);
-      await loadData();
+      await loadData(confirmedAdmin);
       if (confirmedAdmin && active) {
         const deletedCount = await removeExpiredEvents();
-        if (deletedCount && deletedCount > 0) await loadData();
+        if (deletedCount && deletedCount > 0) await loadData(true);
       }
     });
 
@@ -855,10 +816,10 @@ export default function Home() {
     const { data: adminStatus, error: adminError } = await supabase.rpc("is_admin");
     const confirmedAdmin = !adminError && adminStatus === true;
     setIsAdmin(confirmedAdmin);
-    await loadData();
+    await loadData(confirmedAdmin);
     if (confirmedAdmin) {
       const deletedCount = await removeExpiredEvents();
-      if (deletedCount && deletedCount > 0) await loadData();
+      if (deletedCount && deletedCount > 0) await loadData(true);
     }
   }
 
@@ -928,7 +889,7 @@ export default function Home() {
       return;
     }
 
-    await loadData();
+    setEvents(current => current.map(item => item.id === event.id ? {...item, status, verified: status === "approved"} : item));
     setMessage(
       status === "approved"
         ? `“${event.title}” is goedgekeurd.`
@@ -962,7 +923,7 @@ export default function Home() {
       setUpdatingEventId(null);
       return;
     }
-    await loadData();
+    setEvents(current => current.map(item => item.id === event.id ? {...item, promotion_status: status} : item));
     setMessage(status === "active"
       ? `De betaalde promotie van “${event.title}” is geactiveerd.`
       : `De promotie van “${event.title}” is gestopt.`);
@@ -1099,6 +1060,9 @@ export default function Home() {
       return;
     }
 
+    for (const value of [editDraft.website_url, editDraft.booking_url, editDraft.source_url]) {
+      if (value.trim() && !normalizeWebAddress(value)) { setEditError("Controleer de webadressen. Je kunt ook een adres met www. invoeren."); return; }
+    }
     setUpdatingEventId(event.id);
     let eventSaved = false;
     let uploadedPhotoPath: string | null = null;
@@ -1131,9 +1095,9 @@ export default function Home() {
         price_from: editDraft.is_free || !editDraft.price_from ? null : Number(editDraft.price_from),
         price_to: editDraft.is_free || !editDraft.price_to ? null : Number(editDraft.price_to),
         is_free: editDraft.is_free,
-        website_url: editDraft.website_url.trim() || null,
-        booking_url: editDraft.booking_url.trim() || null,
-        source_url: editDraft.source_url.trim() || null,
+        website_url: normalizeWebAddress(editDraft.website_url),
+        booking_url: normalizeWebAddress(editDraft.booking_url),
+        source_url: normalizeWebAddress(editDraft.source_url),
         ...(uploadedImageUrl ? { image_url: uploadedImageUrl } : {}),
       };
       const { data, error: updateError } = await supabase
@@ -1211,9 +1175,9 @@ export default function Home() {
     setPriceFrom("");
     setPriceTo("");
     setIsFree(false);
-    setWebsiteUrl("");
-    setBookingUrl("");
-    setSourceUrl("");
+    setWebsiteUrl("https://");
+    setBookingUrl("https://");
+    setSourceUrl("https://");
     setCategoryId("");
     setPromotionType("none");
     setAdvertiserEmail("");
@@ -1240,6 +1204,17 @@ export default function Home() {
       return;
     }
 
+    const website = normalizeWebAddress(websiteUrl);
+    const booking = normalizeWebAddress(bookingUrl);
+    const source = normalizeWebAddress(sourceUrl);
+    if (!website || !booking || !source) {
+      setSubmissionError("Vul een geldig webadres in bij Website, Reserveringslink en Informatiebron. Een adres met www. wordt automatisch aangevuld met https://.");
+      return;
+    }
+    if (promotionType === "category" && !categoryId) {
+      setSubmissionError("Kies een categorie voor de categoriepromotie.");
+      return;
+    }
     setSaving(true);
 
     let uploadedImageUrl: string | null = null;
@@ -1273,9 +1248,9 @@ export default function Home() {
         price_from: isFree || priceFrom === "" ? null : Number(priceFrom),
         price_to: isFree || priceTo === "" ? null : Number(priceTo),
         is_free: isFree,
-        website_url: websiteUrl.trim() || null,
-        booking_url: bookingUrl.trim() || null,
-        source_url: sourceUrl.trim() || null,
+        website_url: website,
+        booking_url: booking,
+        source_url: source,
         image_url: uploadedImageUrl,
         promotion_type: promotionType,
         promotion_status: promotionType === "none" ? "none" : "requested",
@@ -1550,9 +1525,9 @@ export default function Home() {
     document.getElementById("agenda-resultaten")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const homepagePromotionEvents = visibleNearbyEvents.filter((event) => event.promotion_type === "homepage" && event.promotion_status === "active").slice(0, 3);
+  const homepagePromotionEvents = placements.homepage;
   const featuredEvents = useMemo(
-    () => visibleNearbyEvents.filter((event) => !(event.promotion_type === "homepage" && event.promotion_status === "active")).slice(0, 3),
+    () => upcomingHighlights(visibleNearbyEvents),
     [visibleNearbyEvents]
   );
   const municipalityServiceLabel = municipalityServiceOptions.find((option) => option.id === municipalityServiceType)?.label ?? "Dienst";
@@ -1707,7 +1682,7 @@ export default function Home() {
           {categoryPromotionEvents.length > 0 ? <div className="category-promotion-grid">{categoryPromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="category" className="category-promotion-card" key={`category-promotion-${event.id}`}>
             {safeHttpUrl(event.image_url) && <button className="category-promotion-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}><img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></button>}
             <div><span className="sponsored-label">Categoriepartner</span><h4><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h4><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p><button className="category-promotion-link" type="button" onClick={() => openVisitorEvent(event)}>Bekijk evenement <span aria-hidden="true">→</span></button></div>
-          </article>)}</div> : <div className="category-promotion-empty"><p>Hier is plek voor een uitgelicht evenement uit deze categorie.</p><button type="button" onClick={() => { setShowForm(true); setPromotionType("category"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Vraag categoriepromotie aan <span aria-hidden="true">→</span></button></div>}
+          </article>)}</div> : <div className="category-promotion-empty"><p>Hier is plek voor een uitgelicht evenement uit deze categorie.</p><button type="button" onClick={() => { setShowForm(true); setPromotionType("category"); setCategoryId(categoryFilter); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Vraag categoriepromotie aan <span aria-hidden="true">→</span></button></div>}
         </section>}
         <div className="event-grid" aria-label="Aankomende activiteiten">
           {displayedNearbyEvents.map((event) => (
@@ -1722,10 +1697,10 @@ export default function Home() {
               </div>
               <div className="activity-card-content">
                 <div className="activity-tags">
-                  {event.category_id && <span className="category-pill">{categories.find((category) => category.id === event.category_id)?.name ?? "Activiteit"}</span>}
+                  {event.category_ids?.length ? <span className="category-pill">{event.category_ids.map(id => categories.find(category => category.id === id)?.name).filter(Boolean).join(" · ")}</span> : null}
                   {event.is_free && <span className="free-pill">Gratis</span>}
                   {event.promotion_type === "highlight" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}
-                  {categoryFilter !== "all" && event.category_id === categoryFilter && event.promotion_type === "category" && event.promotion_status === "active" && <span className="sponsored-label">Categoriepartner</span>}
+                  {categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && event.promotion_type === "category" && event.promotion_status === "active" && <span className="sponsored-label">Categoriepartner</span>}
                 </div>
                 <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3>
                 <p className="activity-date">{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
@@ -1755,7 +1730,6 @@ export default function Home() {
       <section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
         <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true">▦</span><span><strong>Agenda</strong><small>Wat is er te doen?</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
         <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeentegids</strong><small>Lokale diensten & adressen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
-        <a className="discovery-tile discovery-nature" href="#natuur-cultuur"><span className="discovery-icon" aria-hidden="true">❋</span><span><strong>Natuur & cultuur</strong><small>Beleef de streek</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
       </section>
 
       <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
@@ -1767,7 +1741,7 @@ export default function Home() {
             </button>
             <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
           </article>)}
-        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
+        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setPromotionType("homepage"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
       </section>
 
       <section className="featured-section" aria-labelledby="featured-heading">
@@ -1905,13 +1879,6 @@ export default function Home() {
           <h2>Goed voor jezelf zorgen begint ook buiten.</h2>
           <p>Even wandelen, samen op pad of iets nieuws proberen? Bekijk activiteiten in en rond de gemeenten die nu in de agenda staan.</p>
           <a href="#agenda">Bekijk activiteiten <span aria-hidden="true">→</span></a>
-        </article>
-        <article className="guide-card guide-nature" id="natuur-cultuur">
-          <span className="guide-icon" aria-hidden="true">⌖</span>
-          <p className="section-kicker">Natuur & cultuur</p>
-          <h2>Laat je verrassen door het lokale leven.</h2>
-          <p>Dorpsfeesten, markten, muziek en uitstapjes: de agenda groeit mee met tips en bronnen uit de streek.</p>
-          <button type="button" onClick={() => { setEventSearch(""); setCategoryFilter("all"); document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth" }); }}>Ontdek wat er speelt <span aria-hidden="true">→</span></button>
         </article>
       </section>
 
@@ -2155,39 +2122,21 @@ export default function Home() {
           )}
 
           <div>
-            <label style={labelStyle}>Website</label>
-            <input
-              style={inputStyle}
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://..."
-            />
+            <label htmlFor="event-websiteUrl" style={labelStyle}>Website * — https://</label>
+            <input id="event-websiteUrl" style={inputStyle} type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" required value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} onBlur={() => { const address = normalizeWebAddress(websiteUrl); if (address) setWebsiteUrl(address); }} placeholder="https://www.voorbeeld.fr" />
           </div>
 
           <div>
-            <label style={labelStyle}>Reserveringslink</label>
-            <input
-              style={inputStyle}
-              type="url"
-              value={bookingUrl}
-              onChange={(e) => setBookingUrl(e.target.value)}
-              placeholder="https://..."
-            />
+            <label htmlFor="event-bookingUrl" style={labelStyle}>Reserveringslink * — https://</label>
+            <input id="event-bookingUrl" style={inputStyle} type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" required value={bookingUrl} onChange={e => setBookingUrl(e.target.value)} onBlur={() => { const address = normalizeWebAddress(bookingUrl); if (address) setBookingUrl(address); }} placeholder="https://www.voorbeeld.fr" />
           </div>
 
           <div>
-            <label style={labelStyle}>Informatiebron *</label>
-            <input
-              style={inputStyle}
-              type="url"
-              required
-              value={sourceUrl}
-              onChange={(e) => setSourceUrl(e.target.value)}
-              placeholder="https://..."
-            />
+            <label htmlFor="event-sourceUrl" style={labelStyle}>Informatiebron * — https://</label>
+            <input id="event-sourceUrl" style={inputStyle} type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" required value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} onBlur={() => { const address = normalizeWebAddress(sourceUrl); if (address) setSourceUrl(address); }} placeholder="https://www.voorbeeld.fr" />
           </div>
 
+          <p>Je kunt ook www.voorbeeld.fr invoeren; https:// wordt automatisch toegevoegd. Gebruik dezelfde website als er geen aparte reserveringspagina of bronpagina is.</p>
           <button
             type="submit"
             disabled={saving}
@@ -2859,7 +2808,8 @@ export default function Home() {
                 Website
                 <input
                   style={inputStyle}
-                  type="url"
+                  type="text"
+                  inputMode="url"
                   value={editDraft.website_url}
                   onChange={(e) => updateEditDraft("website_url", e.target.value)}
                 />
@@ -2869,7 +2819,8 @@ export default function Home() {
                 Reserveringslink
                 <input
                   style={inputStyle}
-                  type="url"
+                  type="text"
+                  inputMode="url"
                   value={editDraft.booking_url}
                   onChange={(e) => updateEditDraft("booking_url", e.target.value)}
                 />
@@ -2879,7 +2830,8 @@ export default function Home() {
                 Bronlink
                 <input
                   style={inputStyle}
-                  type="url"
+                  type="text"
+                  inputMode="url"
                   value={editDraft.source_url}
                   onChange={(e) => updateEditDraft("source_url", e.target.value)}
                 />

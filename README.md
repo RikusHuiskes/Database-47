@@ -1,5 +1,46 @@
 # DATABASE 47
 
+### Search performance and advertising checks (29 October 2026)
+
+Public visitors load categories and nearby results, without downloading the
+complete admin collection. Nearby queries embed category links, apply category
+membership in the database and use a conservative latitude bound before exact
+distance checks. Missing coordinates retain the commune fallback, which first
+uses the existing official snapshot. Every paged query orders by date and ID;
+results also deduplicate IDs, preserving separate occurrences and manual events.
+This fixes repeated cards for the same hotel/café caused by unstable pagination
+of thousands of undated permanent listings. The three reported businesses each
+had one stored record, so no business records were deleted.
+
+Admin loading embeds category links in 500-record pages with at most four pages
+in parallel. Individual approval and promotion updates change the confirmed
+record locally instead of downloading the entire collection again. Apply
+`20261029082920_event_search_performance_and_market_categories.sql` to Test:
+it adds category/event and date/ID indexes and removes the broad secondary
+gastronomy link from imported SIRTAQUI markets. Other categories, manual entries,
+events, photos and promotion/approval state remain unchanged. The live importer
+and fallback snapshot follow the same market classification rule.
+
+Homepage and category placements include active promotions only and keep the
+current search/category filters. Their request buttons preselect the placement;
+category requests also select the current category. Paid activation remains an
+admin action after payment confirmation. “Binnenkort in de buurt” contains only
+dated events, sorted by start date; undated directory listings are excluded.
+The redundant Natuur & Cultuur tile and card are removed.
+
+Manual event forms require website, booking and source addresses and start with
+`https://`. Bare domains and `www.` addresses normalize to complete HTTPS URLs.
+Explicit HTTP URLs remain supported; unsafe schemes and incomplete prefixes are
+rejected. Edit fields use the same normalization. When there is no separate
+booking/source page, the organizer can use their website in those fields.
+
+Regression suite: `node --test lib/event-presentation.test.mjs
+lib/market-categories.test.mjs lib/nearby-events.test.mjs lib/directory.test.mjs
+lib/admin-delete.test.mjs lib/analytics.test.mjs lib/analytics-sql.test.mjs
+lib/event-photo.test.mjs lib/additive-import.test.mjs lib/admin-event-search.test.mjs
+lib/admin-bulk-approve.test.mjs lib/tourisme-duras.test.mjs
+lib/regional-official-agendas.test.mjs`, then `next build`.
+
 ### Permanent listings and category search (28 October 2026)
 
 Admin management searches the complete loaded collection by name, linked

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
+import { savedCommuneCenter } from "../../../lib/commune-center";
+import { uniqueEventRecords } from "../../../lib/event-presentation";
 
 export const revalidate = 0;
 
@@ -26,6 +28,7 @@ type EventRecord = {
   category_id?: string | null;
   status?: string | null;
   verified?: boolean | null;
+  event_categories?: { category_id: string }[];
   latitude?: number | string | null;
   longitude?: number | string | null;
   promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
@@ -57,6 +60,8 @@ function isUpcoming(event: EventRecord, now: Date): boolean {
 }
 
 async function getCommuneCenter(city: string, postcode: string | null) {
+  const saved = savedCommuneCenter(city, postcode);
+  if (saved) return saved;
   const params = new URLSearchParams({
     nom: city,
     fields: "nom,codesPostaux",
@@ -66,6 +71,7 @@ async function getCommuneCenter(city: string, postcode: string | null) {
   const response = await fetch(`https://geo.api.gouv.fr/communes?${params}`, {
     next: { revalidate: 86400 },
     headers: { Accept: "application/geo+json, application/json" },
+    signal: AbortSignal.timeout(3000),
   });
   if (!response.ok) return null;
 
@@ -111,34 +117,32 @@ export async function GET(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const now = new Date();
-  // Read every approved, verified record in pages. A single 500 row limit hid
-  // events in larger databases before the radius filter was applied.
+  // Fetch category links with each page, not in one additional request per 100
+  // events. The inner relation restricts parent rows at the database boundary.
   const pageSize = 500;
   const rows: EventRecord[] = [];
   for (let offset = 0; ; offset += pageSize) {
-    const { data, error } = await supabase
+    let query = supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status")
+      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
       .eq("status", "approved")
       .eq("verified", true)
+      // Latitude is a conservative coarse bound. Missing/invalid coordinates
+      // still take the commune fallback; exact distance is checked below.
+      .or(`and(latitude.gte.${latitude-radiusKm/110},latitude.lte.${latitude+radiusKm/110}),latitude.is.null,longitude.is.null,latitude.lt.-90,latitude.gt.90,longitude.lt.-180,longitude.gt.180`)
       .order("start_at", { ascending: true })
-      .range(offset, offset + pageSize - 1);
+      .order("id");
+    if (category && category !== 'all') query = query.eq("matching_category.category_id", category);
+    const { data, error } = await query.range(offset, offset + pageSize - 1);
 
     if (error) return NextResponse.json({ error: "Evenementen konden niet worden geladen." }, { status: 502 });
-    rows.push(...((data ?? []) as EventRecord[]));
+    rows.push(...((data ?? []) as unknown as EventRecord[]));
     if (!data || data.length < pageSize) break;
   }
-  const eventIds = rows.map((event) => event.id);
-  const categoryByEvent = new Map<string, string[]>();
-  if (eventIds.length > 0) {
-    for (let offset = 0; offset < eventIds.length; offset += 100) {
-      const { data: links, error } = await supabase.from("event_categories").select("event_id,category_id").in("event_id", eventIds.slice(offset, offset + 100));
-      if (error) return NextResponse.json({ error: "De activiteitcategorieën konden niet worden geladen." }, { status: 502 });
-      for (const link of links ?? []) categoryByEvent.set(link.event_id, [...(categoryByEvent.get(link.event_id) ?? []), link.category_id]);
-    }
-  }
-
-  const upcoming = rows.map((event) => ({ ...event, start_at:event.start_at??'', category_id: categoryByEvent.get(event.id)?.[0] ?? null, category_ids: categoryByEvent.get(event.id) ?? [] }))
+  const upcoming = uniqueEventRecords(rows).map(({event_categories, ...event}) => {
+    const category_ids = (event_categories ?? []).map(link => link.category_id);
+    return { ...event, start_at:event.start_at??'', category_id: category_ids[0] ?? null, category_ids };
+  })
     .filter((event) => isUpcoming(event, now) && (!category || category==='all' || event.category_ids.includes(category)));
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
@@ -156,7 +160,7 @@ export async function GET(request: NextRequest) {
       }
       const key = `${normalizePlaceName(event.city)}:${event.postcode ?? ""}`;
       if (!communeCenters.has(key)) {
-        communeCenters.set(key, getCommuneCenter(event.city, event.postcode ?? null));
+        communeCenters.set(key, getCommuneCenter(event.city, event.postcode ?? null).catch(() => null));
       }
       const center = await communeCenters.get(key);
       if (!center) {
