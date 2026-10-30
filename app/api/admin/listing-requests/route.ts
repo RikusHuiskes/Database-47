@@ -14,7 +14,10 @@ export async function GET(request:Request) {
   if(status!=='all')query=query.eq('status',status);
   const [result,claims,corrections]=await Promise.all([query.order('created_at',{ascending:status==='pending'}).range((page-1)*10,page*10-1),client.from('listing_requests').select('id',{count:'exact',head:true}).eq('status','pending').eq('kind','claim'),client.from('listing_requests').select('id',{count:'exact',head:true}).eq('status','pending').eq('kind','correction')]);
   if(result.error)return Response.json({error:'Aanvragen konden niet worden geladen.'},{status:502});
-  return Response.json({items:result.data?.map(item=>({...item,triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
+  const accessResult=result.data?.length?await client.from('event_owner_access').select('event_id').in('event_id',result.data.map(item=>item.event_id)):{data:[],error:null};
+  if(accessResult.error)return Response.json({error:'Bestaande beheerrechten konden niet worden gecontroleerd.'},{status:502});
+  const managedIds=new Set(accessResult.data?.map(row=>row.event_id));
+  return Response.json({items:result.data?.map(item=>({...item,hasExistingAccess:managedIds.has(item.event_id),triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request) {
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
