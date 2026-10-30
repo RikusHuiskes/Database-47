@@ -1589,6 +1589,7 @@ export default function Home() {
             <a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a>
             <a href="#gezondheid">Gezondheid</a>
             <a href="/mijn-vermelding">Mijn vermelding</a>
+            <a href="/handleiding">Handleiding</a>
           </nav>
           <a className="region-note" href="/de-streek-beleven"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
         </div>
@@ -2132,7 +2133,7 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 44"><path d="M3 34 18 19l10 8 12-17 21 24H3Z"/><path d="M7 37h50M15 31h35"/><path d="M30 26v-9l5-5 5 5v9"/></svg></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong><small>Evenementen en informatie binnen 50 kilometer</small></span>
         </a>
-        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="/disclaimer">Disclaimer</a><a href="/contact">Contactgegevens</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
+        <div><a href="#agenda">Agenda</a><a href="#gemeenten">Gemeenten</a><a href="/disclaimer">Disclaimer</a><a href="/contact">Contactgegevens</a><a href="/handleiding">Handleiding</a><a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}>Beheerderslogin</button></div>
         <span className="footer-note">Een streek vol verhalen, ontmoetingen en kleine ontdekkingen.</span>
       </footer>
 
