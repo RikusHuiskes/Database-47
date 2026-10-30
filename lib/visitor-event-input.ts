@@ -17,7 +17,7 @@ export function visitorEventInput(value:unknown,updating=false){
   if(event.start_at&&event.end_at&&Date.parse(String(event.end_at))<Date.parse(String(event.start_at)))throw Error('De einddatum ligt voor de begindatum.');
   for(const key of ['website_url','booking_url','source_url']){
     event[key]=normalizeWebAddress(typeof input[key]==='string'?input[key] as string:'');
-    if(!event[key])throw Error('Vul een geldig website-, reserverings- en bronadres in.');
+    if(!event[key]&&(!updating||key==='source_url'))throw Error('Vul een geldig website-, reserverings- en bronadres in.');
   }
   event.is_free=input.is_free===true;
   for(const key of ['price_from','price_to']){

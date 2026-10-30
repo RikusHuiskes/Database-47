@@ -8,6 +8,8 @@ import FloatingPromotions from './components/FloatingPromotions';
 import AdvertiserFields from "./components/AdvertiserFields";
 import {emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
 import AnalyticsConsent from "./components/AnalyticsConsent";
+import ListingRequestForm from './components/ListingRequestForm';
+import ListingRequestsAdmin from './components/ListingRequestsAdmin';
 import AdvertisingRequests from "./components/AdvertisingRequests";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
@@ -2165,7 +2167,7 @@ export default function Home() {
 
       {isAdmin && <>
       <AnalyticsDashboard client={supabase} />
-      <AdvertisingRequests client={supabase}/>
+      <AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/>
       <div
         style={{
           display: "grid",
@@ -2858,7 +2860,7 @@ export default function Home() {
               </div>
               <p className="event-detail-note">Externe pagina’s openen in een nieuw tabblad. Je kunt hierna direct terug naar de agenda.</p>
               {selectedVisitorEvent.source_url && <p className="activity-source">Bron: {sourceLabel(selectedVisitorEvent.source_url)}</p>}
-              <button className="event-detail-back event-detail-back-bottom" type="button" onClick={closeVisitorEvent}><span aria-hidden="true">←</span> Terug naar de agenda</button>
+              <ListingRequestForm key={selectedVisitorEvent.id} eventId={selectedVisitorEvent.id} title={selectedVisitorEvent.title}/><button className="event-detail-back event-detail-back-bottom" type="button" onClick={closeVisitorEvent}><span aria-hidden="true">←</span> Terug naar de agenda</button>
             </div>
           </section>
         </div>,
