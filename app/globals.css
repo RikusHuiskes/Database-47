@@ -907,7 +907,11 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .region-introduction { max-width: 900px; margin: 32px auto 70px; padding: 32px; background: #fffefa; border: 1px solid #dce2d7; border-radius: 20px; color: #25483f; line-height: 1.8; }
 .region-introduction nav { display: flex; flex-wrap: wrap; gap: 14px 24px; margin-bottom: 36px; }
 .region-introduction a { color: #24614f; text-underline-offset: 3px; }
-.region-introduction .region-landscape { display: block; width: 100%; height: auto; margin: 26px 0 30px; border-radius: 14px; }
+.region-banner { position: relative; isolation: isolate; display: grid; align-items: end; min-height: 240px; margin: 26px 0 30px; overflow: hidden; border-radius: 14px; background: #25483f; }
+.region-introduction .region-landscape { object-fit: cover; object-position: center 60%; z-index: -2; }
+.region-banner::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #102b2310, #102b23d9); }
+.region-banner figcaption { display: grid; gap: 5px; padding: clamp(20px, 4vw, 32px); color: #fff; font-size: clamp(17px, 2.5vw, 21px); line-height: 1.4; text-shadow: 0 1px 4px #0008; }
+.region-banner figcaption strong { font-family: Georgia, serif; font-size: clamp(23px, 3.8vw, 32px); }
 .region-introduction a.button-dark { background: #315c4b; color: #fff; }
 .region-introduction a.button-dark:hover { background: #244b3d; color: #fff; }
 .region-introduction a.button-dark:focus-visible { outline: 3px solid #a65f17; outline-offset: 4px; }
