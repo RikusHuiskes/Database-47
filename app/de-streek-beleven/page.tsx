@@ -1,8 +1,10 @@
 import type {Metadata} from 'next';
+import Image from 'next/image';
 export const metadata:Metadata={title:'De streek beleven | Côte de Duras'};
 export default function RegionIntroduction(){return <main className="region-introduction">
-  <nav aria-label="Navigatie"><a href="/">Côte de Duras</a><a href="/#agenda">Naar de agenda →</a><a href="/mijn-vermelding">Mijn vermelding wijzigen</a></nav>
+  <nav aria-label="Navigatie"><a href="/">Côte de Duras</a><a href="/#agenda">Naar de agenda →</a></nav>
   <p className="section-kicker">De streek beleven</p><h1>Ontdek alles rond Duras op één plek</h1>
+  <Image className="region-landscape" src="/streek-duras.jpg" width={1920} height={1440} sizes="(max-width: 680px) calc(100vw - 68px), (max-width: 964px) calc(100vw - 64px), 834px" preload alt="Zomers landschap met hooibalen op een geoogst veld, groene bomen en een blauwe lucht" />
   <p className="intro-lead"><strong>Wat is er vandaag te doen? Waar kun je lekker eten? Welke markt is er morgen? Waar vind je een mooie gîte, een bijzonder château, een wijnproeverij of een evenement in de buurt? En waar is de dichtstbijzijnde huisarts, supermarkt of laadpaal?</strong></p>
   <p>Côte de Duras brengt het allemaal samen.</p>
   <p>Wij verzamelen activiteiten, evenementen, restaurants, markten, winkels, bezienswaardigheden, accommodaties, praktische voorzieningen en andere interessante adressen binnen een straal van <strong>50 kilometer rond Duras</strong>.</p>

@@ -1684,7 +1684,7 @@ export default function Home() {
         </div>
         {displayedNearbyEvents.length < standardNearbyEvents.length && <button className="show-more-events" type="button" onClick={() => setVisibleEventCount((count) => Math.min(count + 18, standardNearbyEvents.length))}>Toon meer activiteiten ({standardNearbyEvents.length - displayedNearbyEvents.length} resterend)</button>}
         <div className="tip-invitation" id="tip-activiteit">
-          <div><p className="section-kicker">Ken jij de streek?</p><strong>Staat jouw favoriete activiteit er nog niet bij?</strong><p>Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien.</p></div>
+          <div><p className="section-kicker">Ken jij de streek?</p><strong>Staat jouw favoriete activiteit er nog niet bij?</strong><p>Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien.</p><p>Al een vermelding ingestuurd? <a href="/mijn-vermelding">Beheer je vermelding →</a></p></div>
           <button className="button button-dark" type="button" onClick={openEventEntryForm} aria-controls="activity-tip-form">
             Een nieuw evenement/vermelding<span aria-hidden="true">→</span>
           </button>
@@ -1862,6 +1862,7 @@ export default function Home() {
           }}
         >
           <h2>Een nieuw evenement/vermelding</h2>
+          <p className="listing-management-entry">Al een vermelding ingestuurd? <a href="/mijn-vermelding">Beheer je vermelding →</a></p>
           <button type="button" onClick={() => setShowForm(false)} disabled={saving} style={{ justifySelf: "end" }}>Formulier sluiten</button>
           <p style={{ marginTop: 0, color: "#64748b" }}>
             Je tip komt eerst bij de beheerder ter controle. Een link naar de organisator of informatiebron helpt ons de gegevens te verifiëren.
@@ -2119,7 +2120,7 @@ export default function Home() {
       )}
 
       {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
-      {managementLink && <aside className="management-link-notice"><h3>Bewaar je persoonlijke beheerlink</h3><p>Via deze link kun je later zelf je evenement/vermelding en foto wijzigen. Deel hem niet met anderen.</p><a href={managementLink}>Mijn vermelding wijzigen →</a><label>Persoonlijke link<input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}>Beheerlink kopiëren</button></aside>}
+      {managementLink && <aside className="management-link-notice" aria-labelledby="management-confirmation-title"><h3 id="management-confirmation-title">Je vermelding is ingestuurd — bewaar je beheerlink</h3><p>Met deze persoonlijke link kun je zelf de tekst, datum, contactgegevens en foto wijzigen, zonder account. Bewaar de link als een wachtwoord en deel hem niet met anderen.</p><a className="button button-dark" href={managementLink}>Mijn vermelding beheren →</a><label>Persoonlijke link<input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><div className="management-link-actions"><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}>Beheerlink kopiëren</button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent('Persoonlijke beheerlink Côte de Duras\n\n'+managementLink+'\n\nBewaar deze link als een wachtwoord. Iedereen met deze link kan je vermelding wijzigen.\n')}>Beheerlink bewaren als bestand</a></div><p>Ook terug te vinden onder ‘Beheer je vermelding’ op dit apparaat, zolang de browsergegevens bewaard blijven. Er wordt nog geen automatische e-mail verstuurd.</p></aside>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
       <AnalyticsConsent disabled={isAdmin || authLoading} />
