@@ -22,7 +22,8 @@ export async function POST(request:Request){
     }
     const capacity=await client.rpc('assert_advertising_capacity',{p_event_id:eventId,p_placement:order.placement,p_starts_on:order.starts_on,p_ends_on:order.ends_on});
     if(capacity.error)return Response.json({error:capacity.error.message},{status:409});
-    const base=new URL(process.env.PUBLIC_SITE_URL??request.url).origin;
+    // Keep preview returns on the same origin as the owner's session.
+    const base=new URL(process.env.VERCEL_ENV==='preview'?request.url:(process.env.PUBLIC_SITE_URL??request.url)).origin;
     if(!base.startsWith('https://'))throw Error('De publieke betaalomgeving is nog niet ingesteld.');
     const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':order.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(order.amount_cents/100).toFixed(2)},description:`Côte de Duras – ${order.placement} – ${order.months} maand(en)`,redirectUrl:base+'/mijn-vermelding?betaling=terug',webhookUrl:base+'/api/mollie/webhook',metadata:{requestId:order.id},billingAddress:{givenName:order.details.name,familyName:order.details.company||order.details.name,streetAndNumber:order.details.address,postalCode:order.details.postcode,city:order.details.city,country:order.details.country.toUpperCase()},billingEmail:order.details.email})});
     if(!payment.id||!payment._links?.checkout?.href||!/^https:\/\/([a-z0-9-]+\.)*mollie\.com\//i.test(payment._links.checkout.href))throw Error('Ongeldige betaalverwijzing.');
