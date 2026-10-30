@@ -1632,7 +1632,7 @@ export default function Home() {
             <h2 id="nearby-heading">Vind jouw volgende uitje</h2>
             <p>Zoek eenvoudig op afstand, plaats, activiteit en categorie.</p>
           </div>
-          <div className="search-count" aria-live="polite"><strong>{nearbyLoading ? "…" : nearbyEvents.length}</strong><span>activiteiten<br />in de buurt</span></div>
+          <div className="search-count" aria-live="polite"><strong>{nearbyLoading ? "…" : visibleNearbyEvents.length}</strong><span>activiteiten<br />in de buurt</span></div>
         </div>
         <div className="search-controls search-controls-primary">
           <label className="field-label" style={labelStyle}>
