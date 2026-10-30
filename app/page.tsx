@@ -1650,11 +1650,19 @@ export default function Home() {
         {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
       </section>
 
-      <section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
-        {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
-        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results">Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
-        {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results">Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
-        {locationlessCount > 0 && <p className="location-note">{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
+      {categoryFilter === 'all' && (
+      <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
+        <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
+        {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
+          {homepagePromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="homepage" className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
+            <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event, "homepage")} aria-label={`Bekijk ${event.title}`}>
+              {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
+            </button>
+            <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event, "homepage")}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
+          </article>)}
+        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setPromotionType("homepage"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
+      </section>
+      )}
         {categoryFilter !== "all" && <section className="category-promotion-slot" aria-labelledby="category-promotion-heading">
           <div className="category-promotion-heading"><div><p className="section-kicker">Lokale partner</p><h3 id="category-promotion-heading">Uitgelicht in {categories.find((category) => category.id === categoryFilter)?.name ?? "deze categorie"}</h3></div><span aria-hidden="true">✦</span></div>
           {categoryPromotionEvents.length > 0 ? <div className="category-promotion-grid">{categoryPromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="category" className="category-promotion-card" key={`category-promotion-${event.id}`}>
@@ -1662,6 +1670,13 @@ export default function Home() {
             <div><span className="sponsored-label">Categoriepartner</span><h4><button type="button" onClick={() => openVisitorEvent(event, "category")}>{event.title}</button></h4><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p><button className="category-promotion-link" type="button" onClick={() => openVisitorEvent(event, "category")}>Bekijk evenement <span aria-hidden="true">→</span></button></div>
           </article>)}</div> : <div className="category-promotion-empty"><p>Hier is plek voor een uitgelicht evenement uit deze categorie.</p><button type="button" onClick={() => { setShowForm(true); setPromotionType("category"); setCategoryId(categoryFilter); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Vraag categoriepromotie aan <span aria-hidden="true">→</span></button></div>}
         </section>}
+
+      <section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
+        {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
+        {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results">Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
+        {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results">Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
+        {locationlessCount > 0 && <p className="location-note">{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
+
         <div className="event-grid" aria-label="Aankomende activiteiten">
           {displayedNearbyEvents.map((event) => (
             <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard"} className={`activity-card${event.promotion_type === "highlight" && event.promotion_status === "active" ? " activity-card-highlighted" : ""}`} key={event.id}>
@@ -1710,17 +1725,6 @@ export default function Home() {
         <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true">⌖</span><span><strong>Gemeentegids</strong><small>Lokale diensten & adressen</small></span><span className="discovery-arrow" aria-hidden="true">→</span></a>
       </section>
 
-      <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
-        <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
-        {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
-          {homepagePromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="homepage" className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
-            <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event, "homepage")} aria-label={`Bekijk ${event.title}`}>
-              {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
-            </button>
-            <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event, "homepage")}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
-          </article>)}
-        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setPromotionType("homepage"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
-      </section>
 
       <section className="featured-section" aria-labelledby="featured-heading">
         <div className="content-heading"><div><p className="section-kicker">Ideeën voor binnenkort</p><h2 id="featured-heading">Binnenkort in de buurt</h2></div><a className="text-arrow-link" href="#agenda-resultaten">Naar de agenda <span aria-hidden="true">→</span></a></div>
@@ -1918,8 +1922,8 @@ export default function Home() {
             <div className="promotion-options">
               {([
                 ["none", "Gratis vermelding (standaard)", "Je evenement komt na goedkeuring gewoon in de agenda, zonder advertentiekosten."],
-                ["homepage", "Op de homepage · €149 per maand", "Maximaal 8 advertenties zichtbaar bij ‘Uitgelicht op de homepage’."],
-                ["category", "Bovenaan de categorie · €79 per maand", "Maximaal 8 advertenties zichtbaar per gekozen categorie."],
+                ["homepage", "Op de homepage · €149 per maand", "Maximaal 9 advertenties zichtbaar bij ‘Uitgelicht op de homepage’."],
+                ["category", "Bovenaan de categorie · €79 per maand", "Maximaal 9 advertenties zichtbaar per gekozen categorie."],
                 ["highlight", "Vetomrand in resultaten · €15 per maand", "Een opvallend kader in de resultaten. Geen limiet aan het aantal vermeldingen."],
               ] as const).map(([value, heading, copy]) => <label className={`promotion-option${promotionType === value ? " promotion-option-selected" : ""}`} key={value}>
                 <input type="radio" name="promotion-type" value={value} checked={promotionType === value} aria-controls={value==='none'?undefined:'advertiser-details'} onChange={() => {setPromotionType(value);if(value!=='none')requestAnimationFrame(()=>document.getElementById('advertiser-details')?.scrollIntoView({behavior:'smooth',block:'center'}));}} />

@@ -181,8 +181,8 @@ export async function GET(request: NextRequest) {
 
   const events = results.filter((event): event is NonNullable<typeof event> => event !== null)
     .sort((a, b) => a.distance_km - b.distance_km || a.start_at.localeCompare(b.start_at));
-  const homepage_promotions = events.filter((event) => event.promotion_type === "homepage" && promotionIsActive(event, now)).slice(0, 8);
+  const homepage_promotions = events.filter((event) => event.promotion_type === "homepage" && promotionIsActive(event, now)).slice(0, 9);
   const categoryAds = events.filter((event) => event.promotion_type === "category" && promotionIsActive(event, now));
-  const category_promotions = category && category !== "all" ? categoryAds.slice(0, 8) : categoryAds;
+  const category_promotions = category && category !== "all" ? categoryAds.slice(0, 9) : categoryAds;
   return NextResponse.json({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount });
 }

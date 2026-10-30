@@ -26,8 +26,8 @@ export function upcomingHighlights<T extends PresentedEvent>(events: T[]) {
 export function promotionPlacements<T extends PresentedEvent>(events: T[], category: string) {
   const eligible = events.filter(event => category === 'all' || event.category_ids?.includes(category));
   return {
-    homepage: eligible.filter(event => event.promotion_type === 'homepage' && promotionIsActive(event)).slice(0, 8),
-    category: category === 'all' ? [] : eligible.filter(event => event.promotion_type === 'category' && promotionIsActive(event)).slice(0, 8),
+    homepage: eligible.filter(event => event.promotion_type === 'homepage' && promotionIsActive(event)).slice(0, 9),
+    category: category === 'all' ? [] : eligible.filter(event => event.promotion_type === 'category' && promotionIsActive(event)).slice(0, 9),
   };
 }
 
