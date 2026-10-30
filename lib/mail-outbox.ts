@@ -9,7 +9,9 @@ export async function processMailOutbox(limit=3){
  for(const row of data??[]){
   try{
    const message=listingMail(row.template,row.payload),config=mailConfiguration();
-   const info=await mailTransport().sendMail({from:config.from,to:row.recipient,replyTo:config.user,...message,messageId:`<listing-${row.id}@cotededuras.com>`});
+   const recipient=config.previewMode||row.payload?.audience==='admin'?config.user:row.recipient;
+   const outgoing=config.previewMode?{subject:'[TEST PREVIEW] '+message.subject,text:'TESTBERICHT — uitsluitend naar de eigen Strato-mailbox.\nOorspronkelijke ontvanger: '+row.recipient+'\n\n'+message.text}:message;
+   const info=await mailTransport().sendMail({from:config.from,to:recipient,replyTo:config.user,...outgoing,messageId:`<listing-${row.id}@cotededuras.com>`});
    if(!info.accepted?.length)throw Error('Geen ontvanger geaccepteerd.');
    const update=await client.from('listing_mail_outbox').update({state:'accepted',accepted_at:new Date().toISOString(),last_error:null,lease_token:null}).eq('id',row.id).eq('lease_token',row.lease_token);
    if(update.error)throw Error('Verzendstatus kon niet worden opgeslagen.');

@@ -15,6 +15,6 @@ export async function POST(request: Request) {
     const {data,error} = await client.rpc('submit_listing_request',{p_request:input});
     if (error) throw Error(error.message);
     after(async()=>{await processMailOutbox().catch(()=>{});});
-    return Response.json({reference:data,emailEnabled:mailConfiguration().deliveryEnabled},{status:201,headers:{'Cache-Control':'no-store'}});
+    return Response.json({reference:data,emailEnabled:mailConfiguration().deliveryEnabled,emailPreview:mailConfiguration().previewMode},{status:201,headers:{'Cache-Control':'no-store'}});
   } catch (e) { return Response.json({error:e instanceof Error?e.message:'Aanvragen mislukt.'},{status:400}); }
 }

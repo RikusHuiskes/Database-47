@@ -5,7 +5,7 @@ export function mailConfiguration(env:NodeJS.ProcessEnv=process.env){
  const missing=required.filter(key=>!env[key]?.trim());
  const host=env.SMTP_HOST?.trim().toLowerCase()??'',port=Number(env.SMTP_PORT),user=env.SMTP_USER?.trim()??'',from=env.MAIL_FROM?.trim()??'';
  const valid=missing.length===0&&['smtp.strato.de','smtp.strato.com'].includes(host)&&port===465&&/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(user)&&!/[\r\n]/.test(from)&&from.includes(`<${user}>`);
- return {configured:valid,missing,host,port,user,from,deliveryEnabled:valid&&env.VERCEL_ENV==='production'&&env.MAIL_DELIVERY_ENABLED==='true'};
+ return {configured:valid,missing,host,port,user,from,previewMode:env.VERCEL_ENV==='preview',deliveryEnabled:valid&&(env.VERCEL_ENV==='preview'||(env.VERCEL_ENV==='production'&&env.MAIL_DELIVERY_ENABLED==='true'))};
 }
 export function mailTransport(){
  const config=mailConfiguration();if(!config.configured)throw Error('Controleer de Strato-mailinstellingen.');
@@ -17,9 +17,10 @@ export function safeMailError(error:unknown){
  if(['ETIMEDOUT','ECONNECTION','ESOCKET','EDNS'].includes(code))return 'De beveiligde verbinding met Strato kon niet worden gemaakt. Controleer de server en probeer later opnieuw.';
  return 'De e-mail kon niet worden verzonden. Controleer de mailinstellingen of probeer later opnieuw.';
 }
-type Payload={kind?:string;status?:string;title?:string;reference?:string};
+type Payload={audience?:string;kind?:string;status?:string;title?:string;reference?:string};
 export function listingMail(template:string,payload:Payload){
  const title=String(payload.title??'Je vermelding').slice(0,250),reference=String(payload.reference??'');
+ if(payload.audience==='admin')return {subject:'Côte de Duras — nieuw verzoek om te beoordelen',text:`Er staat een nieuwe ${payload.kind==='claim'?'beheeraanvraag':'correctiemelding'} klaar.\n\nVermelding: ${title}\nReferentie: ${reference}\n\nOpen de website, log in als beheerder en open Beheeraanvragen & correctiemeldingen. Controleer de bevoegdheid onafhankelijk. Deze melding verleent geen beheerrechten.`};
  if(template==='received')return {subject:'Côte de Duras — je verzoek is ontvangen',text:`Beste bezoeker,\n\nJe ${payload.kind==='claim'?'beheeraanvraag':'correctiemelding'} voor “${title}” is ontvangen.\nReferentie: ${reference}\n\nWe controleren je verzoek. Deze bevestiging geeft geen beheerrechten en verandert niets aan de vermelding. Voor beheer controleren we eerst of je namens de organisatie mag handelen.\n\nMet vriendelijke groet,\nCôte de Duras\ninfo@cotededuras.com`};
  const outcomes:Record<string,string>={approved:'Je beheeraanvraag is na controle goedgekeurd. De beheerder verstrekt de persoonlijke beheerlink afzonderlijk via het onafhankelijk geverifieerde contactkanaal.',rejected:'Je verzoek is beoordeeld en niet goedgekeurd. Voor toelichting kun je op deze e-mail reageren.',resolved:'Je correctiemelding is door de beheerder afgehandeld. Voor vragen kun je op deze e-mail reageren.',revoked:'De eerder verleende beheerrechten zijn ingetrokken. De bijbehorende beheerlink geeft geen toegang meer.'};
  if(!outcomes[String(payload.status)])throw Error('Onbekend berichttype.');
