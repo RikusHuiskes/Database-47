@@ -1900,19 +1900,19 @@ export default function Home() {
 
           <fieldset className="promotion-fieldset">
             <legend>Extra bereik voor je evenement (optioneel)</legend>
-            <p>Kies een betaalde promotieplek. De beheerder controleert eerst je evenement. Daarna nemen we contact op over prijs en betaling; de advertentie wordt pas geplaatst na goedkeuring en betaling.</p>
+            <p>Kies je vermelding. Bij een betaalde optie verschijnen hieronder de advertentieperiode en factuurgegevens. Sla daarna je vermelding op en open ‘Mijn vermelding beheren’ om via Mollie te betalen. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.</p>
             <div className="promotion-options">
               {([
                 ["none", "Gratis vermelding (standaard)", "Je evenement komt na goedkeuring gewoon in de agenda, zonder advertentiekosten."],
-                ["homepage", "Op de homepage", "Een eigen advertentieplek bij ‘Uitgelicht op de homepage’."],
-                ["category", "Bovenaan de categorie", "Uitgelicht wanneer bezoekers jouw categorie kiezen."],
-                ["highlight", "Omkaderd in resultaten", "Een opvallend kader in de lijst met activiteiten."],
+                ["homepage", "Op de homepage · €149 per maand", "Maximaal 8 advertenties zichtbaar bij ‘Uitgelicht op de homepage’."],
+                ["category", "Bovenaan de categorie · €79 per maand", "Maximaal 8 advertenties zichtbaar per gekozen categorie."],
+                ["highlight", "Vetomrand in resultaten · €15 per maand", "Een opvallend kader in de resultaten. Geen limiet aan het aantal vermeldingen."],
               ] as const).map(([value, heading, copy]) => <label className={`promotion-option${promotionType === value ? " promotion-option-selected" : ""}`} key={value}>
-                <input type="radio" name="promotion-type" value={value} checked={promotionType === value} onChange={() => setPromotionType(value)} />
+                <input type="radio" name="promotion-type" value={value} checked={promotionType === value} aria-controls={value==='none'?undefined:'advertiser-details'} onChange={() => {setPromotionType(value);if(value!=='none')requestAnimationFrame(()=>document.getElementById('advertiser-details')?.scrollIntoView({behavior:'smooth',block:'center'}));}} />
                 <span><strong>{heading}</strong><small>{copy}</small></span>
               </label>)}
             </div>
-            {promotionType !== "none" && <AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/>}
+            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {promotionType==='homepage'?'homepagevermelding':promotionType==='category'?'categorievermelding':'vetomrande vermelding'}.</strong> Vul hieronder je periode en factuurgegevens in en sla vervolgens het formulier op.</p><AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/></section>}
           </fieldset>
 
           <label style={labelStyle}>Wat wil je invoeren?<select style={inputStyle} value={entryKind} onChange={e=>setEntryKind(e.target.value)}><option value="event">Evenement met datum</option><option value="directory">Vaste vermelding / bedrijf / accommodatie</option></select></label>
