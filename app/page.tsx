@@ -1651,26 +1651,7 @@ export default function Home() {
         {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
       </section>
 
-      {categoryFilter === 'all' && (
-      <section className="homepage-promotion-section" aria-labelledby="homepage-promotion-heading">
-        <div className="promotion-section-heading"><div><p className="section-kicker">Lokale partners</p><h2 id="homepage-promotion-heading">Uitgelicht op de homepage</h2><p>Evenementen van organisatoren uit de streek.</p></div><span className="promotion-section-mark" aria-hidden="true">✦</span></div>
-        {homepagePromotionEvents.length > 0 ? <div className="promotion-placement-grid">
-          {homepagePromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="homepage" className="promotion-placement-card" key={`homepage-promotion-${event.id}`}>
-            <button className="promotion-placement-image" type="button" onClick={() => openVisitorEvent(event, "homepage")} aria-label={`Bekijk ${event.title}`}>
-              {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span aria-hidden="true">47</span>}
-            </button>
-            <div className="promotion-placement-copy"><span className="sponsored-label">Homepagepartner</span><h3><button type="button" onClick={() => openVisitorEvent(event, "homepage")}>{event.title}</button></h3><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p></div>
-          </article>)}
-        </div> : <div className="promotion-placement-empty"><span aria-hidden="true">✦</span><div><strong>Promoot een evenement op de homepage</strong><p>Organisatoren kunnen bij het doorgeven van een evenement een betaalde homepagevermelding aanvragen.</p></div><button type="button" onClick={() => { setShowForm(true); setPromotionType("homepage"); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Een evenement aanmelden <span aria-hidden="true">→</span></button></div>}
-      </section>
-      )}
-        {categoryFilter !== "all" && <section className="category-promotion-slot" aria-labelledby="category-promotion-heading">
-          <div className="category-promotion-heading"><div><p className="section-kicker">Lokale partner</p><h3 id="category-promotion-heading">Uitgelicht in {categories.find((category) => category.id === categoryFilter)?.name ?? "deze categorie"}</h3></div><span aria-hidden="true">✦</span></div>
-          {categoryPromotionEvents.length > 0 ? <div className="category-promotion-grid">{categoryPromotionEvents.map((event) => <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement="category" className="category-promotion-card" key={`category-promotion-${event.id}`}>
-            {safeHttpUrl(event.image_url) && <button className="category-promotion-image" type="button" onClick={() => openVisitorEvent(event, "category")} aria-label={`Bekijk ${event.title}`}><img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></button>}
-            <div><span className="sponsored-label">Categoriepartner</span><h4><button type="button" onClick={() => openVisitorEvent(event, "category")}>{event.title}</button></h4><p>{formatDate(event.start_at)} · {event.city || event.venue_name || "Lot-et-Garonne"}</p><button className="category-promotion-link" type="button" onClick={() => openVisitorEvent(event, "category")}>Bekijk evenement <span aria-hidden="true">→</span></button></div>
-          </article>)}</div> : <div className="category-promotion-empty"><p>Hier is plek voor een uitgelicht evenement uit deze categorie.</p><button type="button" onClick={() => { setShowForm(true); setPromotionType("category"); setCategoryId(categoryFilter); setTimeout(() => document.getElementById("activity-tip-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Vraag categoriepromotie aan <span aria-hidden="true">→</span></button></div>}
-        </section>}
+      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||isAdmin||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
 
       <section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
@@ -2142,7 +2123,6 @@ export default function Home() {
       {managementLink && <aside className="management-link-notice" aria-labelledby="management-confirmation-title"><h3 id="management-confirmation-title">Je vermelding is ingestuurd — bewaar je beheerlink</h3><p>Met deze persoonlijke link kun je zelf de tekst, datum, contactgegevens en foto wijzigen, zonder account. Bewaar de link als een wachtwoord en deel hem niet met anderen.</p><a className="button button-dark" href={managementLink}>Mijn vermelding beheren →</a><label>Persoonlijke link<input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><div className="management-link-actions"><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}>Beheerlink kopiëren</button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent('Persoonlijke beheerlink Côte de Duras\n\n'+managementLink+'\n\nBewaar deze link als een wachtwoord. Iedereen met deze link kan je vermelding wijzigen.\n')}>Beheerlink bewaren als bestand</a></div><p>Ook terug te vinden onder ‘Beheer je vermelding’ op dit apparaat, zolang de browsergegevens bewaard blijven. Er wordt nog geen automatische e-mail verstuurd.</p></aside>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
-      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||isAdmin||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
       <AnalyticsConsent disabled={isAdmin || authLoading} />
       <footer className="site-footer">
         <a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
