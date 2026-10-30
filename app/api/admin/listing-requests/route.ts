@@ -1,12 +1,17 @@
+import {listingTriage} from '../../../../lib/listing-triage';
 import {adminService} from '../../../../lib/admin-service';
 import {managedToken,tokenHash} from '../../../../lib/managed-events';
 export async function GET(request:Request) {
   const client=await adminService(request);
   if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
   const page=Math.max(1,Math.min(10000,Number(new URL(request.url).searchParams.get('page'))||1));
-  const result=await client.from('listing_requests').select('*,events(title,source_url,website_url,contact_phone),listing_review_history(action,note,contact,created_at)',{count:'exact'}).order('created_at',{ascending:false}).range((page-1)*10,page*10-1);
+  const status=new URL(request.url).searchParams.get('status')??'pending';
+  if(!['pending','approved','rejected','resolved','revoked','all'].includes(status))return Response.json({error:'Ongeldige selectie.'},{status:400});
+  let query=client.from('listing_requests').select('*,events(title,source_url,website_url,contact_phone),listing_review_history(action,note,contact,created_at)',{count:'exact'});
+  if(status!=='all')query=query.eq('status',status);
+  const [result,claims,corrections]=await Promise.all([query.order('created_at',{ascending:status==='pending'}).range((page-1)*10,page*10-1),client.from('listing_requests').select('id',{count:'exact',head:true}).eq('status','pending').eq('kind','claim'),client.from('listing_requests').select('id',{count:'exact',head:true}).eq('status','pending').eq('kind','correction')]);
   if(result.error)return Response.json({error:'Aanvragen konden niet worden geladen.'},{status:502});
-  return Response.json({items:result.data,total:result.count},{headers:{'Cache-Control':'no-store'}});
+  return Response.json({items:result.data?.map(item=>({...item,triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request) {
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
