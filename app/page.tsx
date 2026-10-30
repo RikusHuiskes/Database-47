@@ -562,7 +562,7 @@ export default function Home() {
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
     });
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
-  const placements = useMemo(() => promotionPlacements([...visibleNearbyEvents,...homepagePromotions.filter(event=>event.reserved_homepage),...categoryPromotions.filter(event=>event.reserved_category_id===categoryFilter)], categoryFilter), [visibleNearbyEvents, categoryFilter,homepagePromotions,categoryPromotions]);
+  const placements = useMemo(() => promotionPlacements([...homepagePromotions,...categoryPromotions], categoryFilter), [categoryFilter,homepagePromotions,categoryPromotions,promotionClock]);
   const categoryPromotionEvents = placements.category;
   // Advertising adds visibility without removing a listing from normal search results.
   const standardNearbyEvents = visibleNearbyEvents;
@@ -609,8 +609,6 @@ export default function Home() {
           return;
         }
         setNearbyEvents(result.events ?? []);
-        setHomepagePromotions(result.homepage_promotions ?? []);
-        setCategoryPromotions(result.category_promotions ?? []);
         setLocationlessCount(Number(result.locationless_count ?? 0));
       })
       .catch((cause) => {
@@ -619,6 +617,21 @@ export default function Home() {
       .finally(() => { if (active) setNearbyLoading(false); });
     return () => { active = false; controller.abort(); };
   }, [localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision]);
+
+  // Paid placements load independently of ordinary search and geocoding.
+  useEffect(() => {
+    const controller=new AbortController();
+    let active=true;
+    void fetch('/api/promotions?'+new URLSearchParams({category:categoryFilter}),{signal:controller.signal})
+      .then(async response=>{
+        const result=await readApiJson<{homepage_promotions?:EventRow[];category_promotions?:EventRow[];error?:string}>(response);
+        if(!response.ok)throw new Error(result.error??'Advertenties konden niet worden geladen.');
+        return result;
+      })
+      .then(result=>{if(active){setHomepagePromotions(result.homepage_promotions??[]);setCategoryPromotions(result.category_promotions??[]);}})
+      .catch(()=>{ /* Preserve loaded placements during a temporary connection failure. */ });
+    return()=>{active=false;controller.abort();};
+  },[categoryFilter,dataRevision]);
 
   function useCurrentLocation() {
     const request=++locationRequest.current;
