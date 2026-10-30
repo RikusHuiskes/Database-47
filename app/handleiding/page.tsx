@@ -13,7 +13,7 @@ export default function VisitorGuide(){return <main className="region-introducti
     <li>Klik bovenaan in het menu op <strong>Agenda</strong>. Je komt bij het zoekscherm <strong>Vind jouw volgende uitje</strong>.</li>
     <li>Kies bij <strong>Plaats</strong> de gemeente van waaruit je wilt zoeken.</li>
     <li>Kies bij <strong>Zoek binnen</strong> een afstand van <strong>10, 25 of 50 kilometer</strong>.</li>
-    <li>Wil je rond je huidige locatie zoeken? Klik dan op <strong>Gebruik mijn locatie</strong> en geef je browser toestemming. Je kunt ook gewoon een gemeente blijven gebruiken.</li>
+    <li>Wil je rond je huidige locatie zoeken? Klik dan op <strong>Gebruik mijn locatie</strong> en geef je browser toestemming. Je kunt ook gewoon een gemeente blijven gebruiken. Ligt je browserlocatie buiten het gebied van de streekgids of worden daar geen vermeldingen gevonden? Dan zoekt de website rond de gekozen plaats en verschijnt daarover een melding. Je afstand en categorie blijven behouden.</li>
     <li>Vul eventueel bij <strong>Zoek op activiteit</strong> een zoekwoord in, bijvoorbeeld ‘markt’ of ‘concert’.</li>
     <li>Kies bij <strong>Soort activiteit</strong> een categorie, bijvoorbeeld <strong>Restaurants &amp; Gastronomie</strong>, <strong>Wijnhuizen</strong> of <strong>Hotels &amp; Chambres d’hôtes &amp; Gîtes</strong>.</li>
     <li>Vink <strong>Alleen gratis activiteiten</strong> aan als je uitsluitend activiteiten zonder toegangsprijs wilt zien.</li>

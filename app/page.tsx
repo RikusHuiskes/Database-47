@@ -16,6 +16,7 @@ import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
 import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive} from "../lib/event-presentation";
 import {normalizeWebAddress} from "../lib/web-address";
+import {visitorLocationDecision,shouldUseTownFallback} from '../lib/visitor-location';
 import {loadAdminEvents} from "../lib/admin-event-loader";
 import {alphabeticalPlaces} from "../lib/place-order";
 import {searchAdminEvents} from "../lib/admin-event-search";
@@ -310,6 +311,9 @@ export default function Home() {
   const [selectedAreaId, setSelectedAreaId] = useState("duras");
   const deferredSelectedAreaId = useDeferredValue(selectedAreaId);
   const [visitorLocation, setVisitorLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationNotice,setLocationNotice]=useState('');
+  const [locating,setLocating]=useState(false);
+  const locationRequest=useRef(0);
   const deferredVisitorLocation = useDeferredValue(visitorLocation);
   const [radiusKm, setRadiusKm] = useState(25);
   const [eventSearch, setEventSearch] = useState("");
@@ -598,6 +602,13 @@ export default function Home() {
       })
       .then((result) => {
         if (!active) return;
+        const categoryAdIds=new Set((result.category_promotions??[]).map(event=>event.id));
+        const ordinaryCount=(result.events??[]).filter(event=>categoryFilter==='all'||!categoryAdIds.has(event.id)).length;
+        if(shouldUseTownFallback(!!deferredVisitorLocation,ordinaryCount)){
+          setVisitorLocation(null);
+          setLocationNotice(`Binnen ${radiusKm} km van je huidige locatie zijn geen vermeldingen gevonden voor deze categorie. We zoeken daarom rond ${searchArea?.name??'Duras'}, met dezelfde afstand en categorie.`);
+          return;
+        }
         setNearbyEvents(result.events ?? []);
         setHomepagePromotions(result.homepage_promotions ?? []);
         setCategoryPromotions(result.category_promotions ?? []);
@@ -611,21 +622,30 @@ export default function Home() {
   }, [localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision]);
 
   function useCurrentLocation() {
+    const request=++locationRequest.current;
+    setLocationNotice('');
     if (!navigator.geolocation) {
-      setNearbyError("Deze browser kan je locatie niet bepalen. Kies een plaats uit de lijst.");
+      setVisitorLocation(null);
+      setLocationNotice(`Deze browser kan je locatie niet bepalen. Je zoekt daarom rond ${selectedArea?.name??'Duras'}.`);
       return;
     }
     setNearbyError("");
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setVisitorLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+        if(request!==locationRequest.current)return;
+        setLocating(false);
+        const decision=visitorLocationDecision(position.coords,areaOptions);
+        setVisitorLocation(decision.location);
+        if(decision.reason)setLocationNotice(`${decision.reason==='outside'?'Je browserlocatie ligt buiten het gebied van deze streekgids.':'Je browserlocatie kon niet nauwkeurig genoeg worden bepaald.'} We tonen daarom vermeldingen rond ${selectedArea?.name??'Duras'}, met dezelfde afstand en categorie.`);
       },
-      () => setNearbyError("Je locatie is niet gedeeld. Kies een plaats uit de lijst of probeer het opnieuw."),
+      () => {if(request!==locationRequest.current)return;setLocating(false);setVisitorLocation(null);setLocationNotice(`Je locatie is niet beschikbaar of niet gedeeld. Je zoekt daarom rond ${selectedArea?.name??'Duras'}.`);},
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
   }
 
   function selectArea(areaId: string) {
+    locationRequest.current++;setLocating(false);setLocationNotice('');
     setVisitorLocation(null);
     setSelectedAreaId(areaId);
     setRadiusKm(["agen", "bergerac"].includes(areaId) ? 10 : 25);
@@ -1622,8 +1642,8 @@ export default function Home() {
               {[10, 25, 50].map((radius) => <option key={radius} value={radius}>{radius} kilometer</option>)}
             </select>
           </label>
-          <button className="location-button" type="button" onClick={useCurrentLocation}>
-            <span aria-hidden="true">⌖</span> Gebruik mijn locatie
+          <button className="location-button" type="button" disabled={locating} onClick={useCurrentLocation}>
+            <span aria-hidden="true">⌖</span> {locating?'Locatie bepalen…':'Gebruik mijn locatie'}
           </button>
         </div>
         <div className="search-controls search-controls-secondary">
@@ -1655,6 +1675,7 @@ export default function Home() {
           {!nearbyLoading && <span>binnen {radiusKm} km van {searchLabel}{categoryFilter !== "all" || eventSearch || freeOnly ? " met je huidige filters" : ""}</span>}
         </div>
         {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
+        {locationNotice&&<p className="location-fallback-note" role="status">{locationNotice}</p>}
       </section>
 
       <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
@@ -1663,6 +1684,7 @@ export default function Home() {
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
         {!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results">Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats.</p>}
         {!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results">Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan.</p>}
+        {!nearbyLoading&&!nearbyError&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p>Bekijk een groter gebied of verwijder je zoekfilters.</p><button type="button" onClick={()=>setRadiusKm(50)}>Zoek binnen 50 kilometer</button><button type="button" onClick={()=>{setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}>Toon alle soorten activiteiten</button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(25);setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}>Bekijk de streek rond Duras</button></div>}
         {locationlessCount > 0 && <p className="location-note">{locationlessCount} aankomende {locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"} nog geen herkenbare plaats en kan daarom niet op afstand worden getoond.</p>}
 
         <div className="event-grid" aria-label="Aankomende activiteiten">
