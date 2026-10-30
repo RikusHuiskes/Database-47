@@ -1654,7 +1654,7 @@ export default function Home() {
         {visitorLocation && <p className="location-note">Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. <button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}>Zoek weer rond {selectedArea?.name ?? "de gekozen plaats"}</button></p>}
       </section>
 
-      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||isAdmin||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
+      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
 
       <section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
