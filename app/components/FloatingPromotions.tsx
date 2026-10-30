@@ -5,7 +5,7 @@ type Promotion={id:string;title:string;image_url?:string|null;city?:string|null;
 export default function FloatingPromotions<T extends Promotion>({events,headingId,title,onOpen,suppressed=false}:{events:T[];headingId:string;title:string;onOpen:(event:T)=>void;suppressed?:boolean}){
   const [index,setIndex]=useState(0),[count,setCount]=useState(1),[reduced,setReduced]=useState(false);
   useEffect(()=>{
-    const wide=matchMedia('(min-width: 1100px)'),motion=matchMedia('(prefers-reduced-motion: reduce)');
+    const wide=matchMedia('(min-width: 900px)'),motion=matchMedia('(prefers-reduced-motion: reduce)');
     const update=()=>{setCount(wide.matches?2:1);setReduced(motion.matches);};update();
     wide.addEventListener('change',update);motion.addEventListener('change',update);
     return()=>{wide.removeEventListener('change',update);motion.removeEventListener('change',update);};

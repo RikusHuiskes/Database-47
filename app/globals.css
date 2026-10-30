@@ -979,7 +979,8 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .promotion-sidebar .carousel-position { text-align: left; }
 .promotion-sidebar-reopen { padding: 10px 14px; border: 1px solid #ddcfb5; border-radius: 12px; background: #fcfaf3; color: #21483d; cursor: pointer; }
 .promotion-sidebar button:focus-visible { outline: 3px solid #a36d3c; outline-offset: 2px; }
-@media(min-width:1100px) {
+/* Keep the fixed right-hand ad rail visible at common Windows zoom levels. */
+@media(min-width:900px) {
   .visitor-site:has(.promotion-sidebar:not([hidden])) { width: calc(100% - 328px); }
   .promotion-sidebar-slot { width: 0; height: 0; margin: 0; }
   .promotion-sidebar { position: fixed; top: 16px; right: 16px; width: 296px; max-height: calc(100dvh - 32px); overflow-y: auto; z-index: 100; box-shadow: 0 5px 20px #16392c10; }
@@ -991,7 +992,7 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
   .promotion-sidebar-reopen { position: fixed; top: 16px; right: 16px; z-index: 100; }
   .visitor-site:has(.promotion-sidebar:not([hidden])) .event-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
-@media(max-width:1099px) { .promotion-sidebar-slot { width: calc(100% - 24px); }.promotion-sidebar { padding: 12px; }.promotion-sidebar .floating-promotion-heading { display: flex; flex-wrap: wrap; }.promotion-sidebar .floating-promotion-heading h2 { font-size: 20px; }.promotion-sidebar .floating-promotion-card { align-items: center; } }
+@media(max-width:899px) { .promotion-sidebar-slot { width: calc(100% - 24px); }.promotion-sidebar { padding: 12px; }.promotion-sidebar .floating-promotion-heading { display: flex; flex-wrap: wrap; }.promotion-sidebar .floating-promotion-heading h2 { font-size: 20px; }.promotion-sidebar .floating-promotion-card { align-items: center; } }
 /* Navigation wraps within the actual content width, including beside the rail. */
 .visitor-site .site-nav { flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding: 16px clamp(18px,3vw,44px) 12px; }
 .visitor-site .primary-nav { order: 3; flex: 1 1 100%; min-width: 0; max-width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 4px 22px; overflow: visible; }
