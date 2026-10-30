@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { savedCommuneCenter } from "../../../lib/commune-center";
-import { uniqueEventRecords, promotionIsActive } from "../../../lib/event-presentation";
+import { uniqueEventRecords, promotionPlacements } from "../../../lib/event-presentation";
 
 export const revalidate = 0;
 
@@ -33,6 +33,8 @@ type EventRecord = {
   longitude?: number | string | null;
   promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
   promotion_status?: "none" | "requested" | "active" | "ended" | null;
+  reserved_homepage?: boolean;
+  reserved_category_id?: string|null;
   promotion_start_at?: string | null;
   promotion_end_at?: string | null;
 };
@@ -126,7 +128,7 @@ export async function GET(request: NextRequest) {
   for (let offset = 0; ; offset += pageSize) {
     let query = supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status,promotion_start_at,promotion_end_at,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
+      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
       .eq("status", "approved")
       .eq("verified", true)
       // Latitude is a conservative coarse bound. Missing/invalid coordinates
@@ -181,8 +183,14 @@ export async function GET(request: NextRequest) {
 
   const events = results.filter((event): event is NonNullable<typeof event> => event !== null)
     .sort((a, b) => a.distance_km - b.distance_km || a.start_at.localeCompare(b.start_at));
-  const homepage_promotions = events.filter((event) => event.promotion_type === "homepage" && promotionIsActive(event, now)).slice(0, 9);
-  const categoryAds = events.filter((event) => event.promotion_type === "category" && promotionIsActive(event, now));
-  const category_promotions = category && category !== "all" ? categoryAds.slice(0, 9) : categoryAds;
+  // House placements belong to the advertising frame, independently of the
+  // visitor's distance filters. Unapproved records can never occupy this slot.
+  let reservedQuery=supabase.from('events').select('id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)').eq('status','approved').eq('verified',true);
+  reservedQuery=category&&category!=='all'?reservedQuery.eq('reserved_category_id',category):reservedQuery.eq('reserved_homepage',true);
+  const reservedResult=await reservedQuery.limit(1);
+  if(reservedResult.error)return NextResponse.json({error:'Advertentieplaatsen konden niet worden geladen.'},{status:502});
+  const reserved=(reservedResult.data??[]).map((record:EventRecord)=>{const {event_categories,...event}=record;const category_ids=(event_categories??[]).map(link=>link.category_id);return {...event,start_at:event.start_at??'',category_ids,category_id:category_ids[0]??null};});
+  const placements=promotionPlacements([...events,...reserved],category??'all');
+  const homepage_promotions=placements.homepage,category_promotions=placements.category;
   return NextResponse.json({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount });
 }

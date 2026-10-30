@@ -68,6 +68,8 @@ type EventRow = {
   promotion_start_at?:string|null;
   promotion_end_at?:string|null;
   advertiser_email?: string | null;
+  reserved_homepage?:boolean;
+  reserved_category_id?:string|null;
 };
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
@@ -553,7 +555,7 @@ export default function Home() {
     return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
     });
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
-  const placements = useMemo(() => promotionPlacements(visibleNearbyEvents, categoryFilter), [visibleNearbyEvents, categoryFilter]);
+  const placements = useMemo(() => promotionPlacements([...visibleNearbyEvents,...homepagePromotions.filter(event=>event.reserved_homepage),...categoryPromotions.filter(event=>event.reserved_category_id===categoryFilter)], categoryFilter), [visibleNearbyEvents, categoryFilter,homepagePromotions,categoryPromotions]);
   const categoryPromotionEvents = placements.category;
   const categoryPromotionIds = useMemo(() => new Set(categoryPromotionEvents.map((event) => event.id)), [categoryPromotionEvents]);
   const standardNearbyEvents = useMemo(

@@ -7,6 +7,8 @@ type PresentedEvent = {
   promotion_start_at?: string | null;
   promotion_end_at?: string | null;
   category_ids?: string[];
+  reserved_homepage?: boolean;
+  reserved_category_id?: string | null;
 };
 
 export function promotionIsActive(event:Pick<PresentedEvent,'promotion_status'|'promotion_start_at'|'promotion_end_at'>,now=new Date()){
@@ -25,9 +27,12 @@ export function upcomingHighlights<T extends PresentedEvent>(events: T[]) {
 
 export function promotionPlacements<T extends PresentedEvent>(events: T[], category: string) {
   const eligible = events.filter(event => category === 'all' || event.category_ids?.includes(category));
+  const home = events.find(event=>event.reserved_homepage);
+  const categorySlot = category==='all'?undefined:events.find(event=>event.reserved_category_id===category);
+  const order = (paid:T[],reserved:T|undefined) => [...(reserved?[reserved]:[]),...uniqueEventRecords(paid).filter(event=>!reserved||event.id!==reserved.id).slice(0,reserved?8:9)];
   return {
-    homepage: eligible.filter(event => event.promotion_type === 'homepage' && promotionIsActive(event)).slice(0, 9),
-    category: category === 'all' ? [] : eligible.filter(event => event.promotion_type === 'category' && promotionIsActive(event)).slice(0, 9),
+    homepage: order(eligible.filter(event => event.promotion_type === 'homepage' && promotionIsActive(event)),home),
+    category: category === 'all' ? [] : order(eligible.filter(event => event.promotion_type === 'category' && promotionIsActive(event)),categorySlot),
   };
 }
 
