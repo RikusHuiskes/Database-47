@@ -561,11 +561,8 @@ export default function Home() {
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
   const placements = useMemo(() => promotionPlacements([...visibleNearbyEvents,...homepagePromotions.filter(event=>event.reserved_homepage),...categoryPromotions.filter(event=>event.reserved_category_id===categoryFilter)], categoryFilter), [visibleNearbyEvents, categoryFilter,homepagePromotions,categoryPromotions]);
   const categoryPromotionEvents = placements.category;
-  const categoryPromotionIds = useMemo(() => new Set(categoryPromotionEvents.map((event) => event.id)), [categoryPromotionEvents]);
-  const standardNearbyEvents = useMemo(
-    () => visibleNearbyEvents.filter((event) => !categoryPromotionIds.has(event.id)),
-    [visibleNearbyEvents, categoryPromotionIds]
-  );
+  // Advertising adds visibility without removing a listing from normal search results.
+  const standardNearbyEvents = visibleNearbyEvents;
   const displayedNearbyEvents = useMemo(
     () => standardNearbyEvents.slice(0, visibleEventCount),
     [standardNearbyEvents, visibleEventCount]
@@ -602,8 +599,7 @@ export default function Home() {
       })
       .then((result) => {
         if (!active) return;
-        const categoryAdIds=new Set((result.category_promotions??[]).map(event=>event.id));
-        const ordinaryCount=(result.events??[]).filter(event=>categoryFilter==='all'||!categoryAdIds.has(event.id)).length;
+        const ordinaryCount=(result.events??[]).length;
         if(shouldUseTownFallback(!!deferredVisitorLocation,ordinaryCount)){
           setVisitorLocation(null);
           setLocationNotice(`Binnen ${radiusKm} km van je huidige locatie zijn geen vermeldingen gevonden voor deze categorie. We zoeken daarom rond ${searchArea?.name??'Duras'}, met dezelfde afstand en categorie.`);

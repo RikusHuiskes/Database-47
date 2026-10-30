@@ -1,6 +1,6 @@
 import {createServiceClient} from './supabase-server';
 import {listingMail,mailConfiguration,mailTransport,safeMailError} from './mail';
-export async function processMailOutbox(limit=3){
+export async function processMailOutbox(limit=10){
  if(!mailConfiguration().deliveryEnabled)return {enabled:false,accepted:0,failed:0};
  const client=createServiceClient();if(!client)throw Error('Serververbinding ontbreekt.');
  const {data,error}=await client.rpc('claim_listing_mail',{p_limit:Math.min(10,Math.max(1,limit))});
