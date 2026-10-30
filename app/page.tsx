@@ -467,7 +467,10 @@ export default function Home() {
   }
 
   function closeVisitorEvent() {
-    if (window.location.hash.startsWith("#activiteit/")) window.history.back();
+    if (window.location.hash.startsWith("#activiteit/")) {
+      if (window.history.state?.visitorEventId) window.history.back();
+      else window.history.replaceState(window.history.state, "", "#agenda");
+    }
     setSelectedVisitorEvent(null);
     window.requestAnimationFrame(() => document.getElementById("agenda")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
@@ -1941,8 +1944,8 @@ export default function Home() {
 
           <label style={labelStyle}>Wat wil je invoeren?<select style={inputStyle} value={entryKind} onChange={e=>setEntryKind(e.target.value)}><option value="event">Evenement met datum</option><option value="directory">Vaste vermelding / bedrijf / accommodatie</option></select></label>
           <div>
-            <label style={labelStyle}>Titel *</label>
-            <input
+            <label htmlFor="event-entry-field-1" style={labelStyle}>Titel *</label>
+            <input id="event-entry-field-1"
               style={inputStyle}
               maxLength={180}
               required
@@ -1953,8 +1956,8 @@ export default function Home() {
           </div>
 
           <div>
-            <label style={labelStyle}>Categorie{promotionType === "category" ? " * (verplicht voor categoriepromotie)" : ""}</label>
-            <select
+            <label htmlFor="event-entry-field-2" style={labelStyle}>Categorie{promotionType === "category" ? " * (verplicht voor categoriepromotie)" : ""}</label>
+            <select id="event-entry-field-2"
               style={inputStyle}
               required={promotionType === "category"}
               value={categoryId}
@@ -1970,8 +1973,8 @@ export default function Home() {
           </div>
 
           <div>
-            <label style={labelStyle}>Korte beschrijving</label>
-            <input
+            <label htmlFor="event-entry-field-3" style={labelStyle}>Korte beschrijving</label>
+            <input id="event-entry-field-3"
               style={inputStyle}
               value={shortDescription}
               onChange={(e) => setShortDescription(e.target.value)}
@@ -1980,8 +1983,8 @@ export default function Home() {
           </div>
 
           <div>
-            <label style={labelStyle}>Uitgebreide beschrijving</label>
-            <textarea
+            <label htmlFor="event-entry-field-4" style={labelStyle}>Uitgebreide beschrijving</label>
+            <textarea id="event-entry-field-4"
               style={{ ...inputStyle, minHeight: 110 }}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -1990,8 +1993,8 @@ export default function Home() {
 
           {entryKind === "event" && <>
           <div>
-            <label style={labelStyle}>Begindatum en -tijd *</label>
-            <input
+            <label htmlFor="event-entry-field-5" style={labelStyle}>Begindatum en -tijd *</label>
+            <input id="event-entry-field-5"
               style={inputStyle}
               type="datetime-local"
               required
@@ -2001,8 +2004,8 @@ export default function Home() {
           </div>
 
           <div>
-            <label style={labelStyle}>Einddatum en -tijd</label>
-            <input
+            <label htmlFor="event-entry-field-6" style={labelStyle}>Einddatum en -tijd</label>
+            <input id="event-entry-field-6"
               style={inputStyle}
               type="datetime-local"
               value={endAt}
@@ -2012,8 +2015,8 @@ export default function Home() {
 
           </>}
           <div>
-            <label style={labelStyle}>Locatie / zaal</label>
-            <input
+            <label htmlFor="event-entry-field-7" style={labelStyle}>Locatie / zaal</label>
+            <input id="event-entry-field-7"
               style={inputStyle}
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
@@ -2021,8 +2024,8 @@ export default function Home() {
           </div>
 
           <div>
-            <label style={labelStyle}>Adres</label>
-            <input
+            <label htmlFor="event-entry-field-8" style={labelStyle}>Adres</label>
+            <input id="event-entry-field-8"
               style={inputStyle}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -2030,8 +2033,8 @@ export default function Home() {
           </div>
 
           <div>
-            <label style={labelStyle}>Postcode</label>
-            <input
+            <label htmlFor="event-entry-field-9" style={labelStyle}>Postcode</label>
+            <input id="event-entry-field-9"
               style={inputStyle}
               value={postcode}
               onChange={(e) => setPostcode(e.target.value)}
@@ -2085,8 +2088,8 @@ export default function Home() {
               }}
             >
               <div>
-               <label style={labelStyle}>Prijs vanaf (&euro;)</label>
-                <input
+               <label htmlFor="event-entry-field-10" style={labelStyle}>Prijs vanaf (&euro;)</label>
+                <input id="event-entry-field-10"
                   style={inputStyle}
                   type="number"
                   min="0"
@@ -2096,8 +2099,8 @@ export default function Home() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Prijs tot (€)</label>
-                <input
+                <label htmlFor="event-entry-field-11" style={labelStyle}>Prijs tot (€)</label>
+                <input id="event-entry-field-11"
                   style={inputStyle}
                   type="number"
                   min="0"
