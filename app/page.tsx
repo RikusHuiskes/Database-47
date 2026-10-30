@@ -1287,7 +1287,7 @@ export default function Home() {
       const photoConfirmation = uploadedImageUrl ? " De foto is meegestuurd en verschijnt na controle bij het evenement." : "";
       setSubmissionNotice(promotionType === "none"
         ? `Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.${photoConfirmation}`
-        : `Dank je voor je tip over “${payload.title}”. De beheerder controleert eerst het evenement en neemt contact op over de gekozen betaalde promotie. De advertentie wordt pas na goedkeuring en betaling geplaatst.${photoConfirmation}`);
+        : `Dank je voor je tip over “${payload.title}”. Open Mijn vermelding beheren om via Mollie te betalen. De beheerder controleert de inhoud. De advertentie verschijnt uitsluitend na goedkeuring en betaalbevestiging, binnen de gekozen periode.${photoConfirmation}`);
     } catch (cause) {
       console.error("[visitor-event] save failed", cause);
       setSubmissionError(cause instanceof Error ? cause.message : "De activiteit kon niet worden opgeslagen. Probeer het opnieuw.");
@@ -2539,10 +2539,10 @@ export default function Home() {
               : event.status ?? "Onbekend"}
           </p>
           {event.promotion_type && event.promotion_type !== "none" && <div className="admin-promotion-request">
-            <p><strong>Promotieaanvraag:</strong> {event.promotion_type === "homepage" ? "Homepage" : event.promotion_type === "category" ? "Categorie" : "Omkaderde vermelding"} · {event.promotion_status === "active" ? "actief" : event.promotion_status === "ended" ? "beëindigd" : "wacht op betaling/controle"}</p>
+            <p><strong>Promotieaanvraag:</strong> {event.promotion_type === "homepage" ? "Homepage" : event.promotion_type === "category" ? "Categorie" : "Omkaderde vermelding"} · {event.promotion_status === "active" ? "actief" : event.promotion_status === "ended" ? "beëindigd" : "in behandeling — controleer de betaalstatus bij Advertentieaanvragen"}</p>
             {event.advertiser_email && <p>Contact adverteerder: <a href={`mailto:${event.advertiser_email}`}>{event.advertiser_email}</a></p>}
             {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && event.status === "approved" && event.verified === true && <button type="button" disabled={bulkApproving || updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "active")}>Activeer na betaalbevestiging</button>}
-            {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && (event.status !== "approved" || event.verified !== true) && <p>Keur het evenement eerst goed en bevestig de betaling voordat je de promotie activeert.</p>}
+            {isAdmin && event.promotion_status !== "active" && event.promotion_status !== "ended" && (event.status !== "approved" || event.verified !== true) && <p>De vermelding wacht op inhoudelijke goedkeuring. De betaalstatus staat apart bij Advertentieaanvragen & factuurgegevens; Mollie bevestigt betalingen automatisch.</p>}
             {isAdmin && event.promotion_status === "active" && <button type="button" disabled={bulkApproving || updatingEventId === event.id} onClick={() => void setPromotionStatus(event, "ended")}>Promotie stoppen</button>}
           </div>}
 
