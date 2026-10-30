@@ -3,6 +3,7 @@
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin-import-sources';
 import AdvertiserFields from "./components/AdvertiserFields";
 import {emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
 import AnalyticsConsent from "./components/AnalyticsConsent";
@@ -351,6 +352,11 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [importLoading, setImportLoading] = useState(false);
+  const [activeImport,setActiveImport]=useState<string|null>(null);
+  const importBusy=useRef(false);
+  const [refreshing,setRefreshing]=useState(false);
+  const refreshBusy=useRef(false);
+  const [dataRevision,setDataRevision]=useState(0);
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<ImportPreviewEvent[]>([]);
   const [importPreviewLimit, setImportPreviewLimit] = useState(60);
@@ -596,7 +602,7 @@ export default function Home() {
       })
       .finally(() => { if (active) setNearbyLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter]);
+  }, [localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision]);
 
   function useCurrentLocation() {
     if (!navigator.geolocation) {
@@ -694,6 +700,15 @@ export default function Home() {
     }
 
     setLoading(false);
+    return !categoryResult.error&&!eventResult.error;
+  }
+
+  async function refreshStoredData() {
+    if(refreshBusy.current)return;
+    refreshBusy.current=true;setRefreshing(true);setMessage('Opgeslagen gegevens worden opnieuw geladen…');
+    try { const ok=await loadData(isAdmin);if(!ok){setMessage('');return;}setDataRevision(value=>value+1);setMessage('Opgeslagen gegevens vernieuwd om '+new Date().toLocaleTimeString('nl-NL')+'. Externe imports zijn niet gestart.'); }
+    catch(cause){setError(cause instanceof Error?cause.message:'Vernieuwen mislukt. Probeer opnieuw.');setMessage('');}
+    finally{refreshBusy.current=false;setRefreshing(false);}
   }
 
   async function removeExpiredEvents() {
@@ -1264,7 +1279,8 @@ export default function Home() {
   }
 
   async function previewEventSource(endpoint: string, sourceName: string) {
-    if (!isAdmin) return;
+    if (!isAdmin || importBusy.current || importing) return;
+    importBusy.current=true;setActiveImport(endpoint);
     setError("");
     setMessage("");
     setImportNotice("");
@@ -1272,10 +1288,8 @@ export default function Home() {
     setImportPreview([]);
     setImportSourceName(sourceName);
     try {
-      const response = await fetch(endpoint, { cache: "no-store" });
-      const result = await readApiJson<{ events?: ImportedEvent[]; error?: string }>(response);
-      if (!response.ok) throw new Error(result.error ?? "De agenda kon niet worden ingelezen.");
-      const importedEvents = result.events ?? [];
+      const sources=endpoint==='all'?ALL_IMPORT_SOURCES:[{endpoint,name:sourceName}];
+      const importedEvents=await fetchImportPreview<ImportedEvent>(sources,fetch,name=>setImportNotice(name+' ophalen…'));
       const preview = importedEvents.map((event) => ({
         ...event,
         category_id: suggestedCategoryId(event, categories),
@@ -1287,7 +1301,7 @@ export default function Home() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import voorbereiden is mislukt.");
     } finally {
-      setImportLoading(false);
+      setImportLoading(false);setActiveImport(null);importBusy.current=false;
     }
   }
 
@@ -2261,7 +2275,9 @@ export default function Home() {
 
         <button
           type="button"
-          onClick={() => void loadData()}
+          onClick={() => void refreshStoredData()}
+          disabled={refreshing||importLoading||importing}
+          aria-busy={refreshing}
           style={{
             padding: "12px 18px",
             border: "1px solid #cbd5e1",
@@ -2271,39 +2287,13 @@ export default function Home() {
             fontSize: 15,
           }}
         >
-          Vernieuwen
+          {refreshing?'Gegevens vernieuwen…':'Vernieuwen'}
         </button>
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => void previewTourismeDuras()}
-            disabled={importLoading || importing}
-            style={{
-              padding: "12px 18px",
-              border: "1px solid #cbd5e1",
-              borderRadius: 8,
-              background: "white",
-              cursor: importLoading || importing ? "wait" : "pointer",
-              fontSize: 15,
-            }}
-          >
-            {importLoading ? "Agenda ophalen..." : "Tourisme Duras importeren"}
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => void previewEventSource("/api/import-eymet", "Commune d’Eymet — agenda cultureel officieel")}
-            disabled={importLoading || importing}
-            style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", cursor: importLoading || importing ? "wait" : "pointer", fontSize: 15 }}
-          >
-            {importLoading ? "Agenda ophalen..." : "Eymet-agenda importeren"}
-          </button>
-        )}
-        {isAdmin && <button type="button" onClick={() => void previewEventSource("/api/import-sirtaqui", "SIRTAQUI — officiële streekagenda’s")} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>Alle streekagenda’s aanvullen</button>}
-        {isAdmin && <button type="button" onClick={() => void previewEventSource("/api/import-openagenda", "OpenAgenda — nationale evenementenkalender")} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>Nationale agenda importeren</button>}
-        {isAdmin && [["marmande", "Marmande"], ["miramont", "Miramont-de-Guyenne"], ["pineuilh", "Pineuilh"], ["sainte-foy", "Sainte-Foy-la-Grande"]].map(([source, label]) => <button key={source} type="button" onClick={() => void previewEventSource(`/api/import-regional-agendas?source=${source}`, `Gemeentelijke agenda — ${label}`)} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>{label} importeren</button>)}
-        {isAdmin && [["24", "Dordogne"], ["33", "Gironde"], ["47", "Lot-et-Garonne"]].map(([department, label]) => <button key={department} type="button" onClick={() => void previewEventSource(`/api/import-sirtaqui?department=${department}`, `SIRTAQUI — ${label}`)} disabled={importLoading || importing} style={{ padding: "12px 18px", border: "1px solid #cbd5e1", borderRadius: 8, background: "white", fontSize: 15 }}>{label} importeren</button>)}
+        {isAdmin && <>
+          <button type="button" onClick={()=>void previewEventSource('all','Alle agendabronnen')} disabled={importLoading||importing} aria-busy={activeImport==='all'} style={{padding:'12px 18px',border:'1px solid #315c4b',borderRadius:8,background:'#315c4b',color:'white',fontSize:15}}>{activeImport==='all'?'Alle bronnen ophalen…':'Alles verversen'}</button>
+          {IMPORT_SOURCES.map(source=><button key={source.endpoint} type="button" onClick={()=>void previewEventSource(source.endpoint,source.name)} disabled={importLoading||importing} aria-busy={activeImport===source.endpoint} style={{padding:'12px 18px',border:'1px solid #cbd5e1',borderRadius:8,background:'white',fontSize:15}}>{activeImport===source.endpoint?source.name+' ophalen…':source.name+' importeren'}</button>)}
+          <p style={{width:'100%',margin:0}}>Vernieuwen laadt de opgeslagen gegevens opnieuw. Kies één import om alleen die bron op te halen. Alles verversen haalt alle agendabronnen op. Controleer daarna de voorvertoning voordat je de import opslaat.</p>
+        </>}
         {isAdmin && (
           <button
             type="button"
