@@ -8,6 +8,7 @@ import FloatingPromotions from './components/FloatingPromotions';
 import AdvertiserFields from "./components/AdvertiserFields";
 import {emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
 import AnalyticsConsent from "./components/AnalyticsConsent";
+import MailSettings from './components/MailSettings';
 import ListingRequestForm from './components/ListingRequestForm';
 import ListingRequestsAdmin from './components/ListingRequestsAdmin';
 import AdvertisingRequests from "./components/AdvertisingRequests";
@@ -2167,7 +2168,7 @@ export default function Home() {
 
       {isAdmin && <>
       <AnalyticsDashboard client={supabase} />
-      <AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/>
+      <AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/><MailSettings client={supabase}/>
       <div
         style={{
           display: "grid",

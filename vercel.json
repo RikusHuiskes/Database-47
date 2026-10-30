@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/import-directory",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/listing-mail",
+      "schedule": "0 12 * * *"
     }
   ]
 }

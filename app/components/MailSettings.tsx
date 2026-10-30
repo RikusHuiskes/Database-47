@@ -1,0 +1,13 @@
+"use client";
+import {useEffect,useState} from 'react';
+import type {SupabaseClient} from '@supabase/supabase-js';
+type Config={configured:boolean;missing:string[];deliveryEnabled:boolean;testRecipient:string;queue:Record<string,number>|null};
+export default function MailSettings({client}:{client:SupabaseClient|null}){
+ const [open,setOpen]=useState(false),[config,setConfig]=useState<Config|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ useEffect(()=>{if(!open||!client)return;let active=true;void(async()=>{try{const session=await client.auth.getSession();const response=await fetch('/api/admin/mail',{headers:{Authorization:'Bearer '+session.data.session?.access_token},cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error);if(active)setConfig(data);}catch(e){if(active)setMessage(e instanceof Error?e.message:'Laden mislukt.');}})();return()=>{active=false;};},[open,client]);
+ async function test(action:'verify'|'test'){
+  if(!client)return;setBusy(true);setMessage('');
+  try{const session=await client.auth.getSession();const response=await fetch('/api/admin/mail',{method:'POST',headers:{Authorization:'Bearer '+session.data.session?.access_token,'Content-Type':'application/json'},body:JSON.stringify({action})});const data=await response.json();if(!response.ok)throw Error(data.error);setMessage(data.message);}catch(e){setMessage(e instanceof Error?e.message:'Test mislukt.');}finally{setBusy(false);}
+ }
+ return <details className="advertising-admin" onToggle={e=>setOpen(e.currentTarget.open)}><summary>Strato-mailverbinding</summary><p>Verzendinstellingen en wachtwoord staan uitsluitend op de server. Een testmail gaat alleen naar het ingestelde eigen mailboxadres.</p>{config&&<><p><strong>{config.configured?'Alle vijf mailinstellingen zijn aanwezig en geldig.':'De mailinstellingen ontbreken of zijn ongeldig.'}</strong>{config.missing.length>0&&' Ontbreekt: '+config.missing.join(', ')}</p><p>{config.deliveryEnabled?'Automatische verzending is ingeschakeld.':'Automatische verzending naar bezoekers is uitgeschakeld. Je kunt de verbinding en een mail naar je eigen adres testen.'}</p><button type="button" disabled={busy||!config.configured} onClick={()=>void test('verify')}>Verbinding controleren</button>{' '}<button type="button" disabled={busy||!config.configured} onClick={()=>void test('test')}>Testmail naar {config.testRecipient||'eigen adres'}</button>{config.queue&&<p>E-mailwachtrij: {config.queue.pending??0} wachtend · {config.queue.accepted??0} door mailserver geaccepteerd · {config.queue.failed??0} mislukt.</p>}</>}{busy&&<p role="status">De beveiligde verbinding met Strato wordt gecontroleerd…</p>}{message&&<p role="status">{message}</p>}</details>;
+}

@@ -1,3 +1,6 @@
+export const maxDuration=300;
+import {after} from 'next/server';
+import {processMailOutbox} from '../../../../lib/mail-outbox';
 import {listingTriage} from '../../../../lib/listing-triage';
 import {adminService} from '../../../../lib/admin-service';
 import {managedToken,tokenHash} from '../../../../lib/managed-events';
@@ -25,6 +28,7 @@ export async function POST(request:Request) {
     if(!reviewer.data.user)return Response.json({error:'Log opnieuw in.'},{status:403});
     const {data,error}=await client.rpc('review_listing_request',{p_id:body.id,p_action:body.action,p_note:body.note??'',p_contact:body.contact??'',p_token_hash:tokenHash(token),p_reviewer:reviewer.data.user.id});
     if(error)throw Error(error.message);
+    after(async()=>{await processMailOutbox().catch(()=>{});});
     return Response.json({ok:true,manageFragment:body.action==='approved'?`${data}:${token}`:undefined},{headers:{'Cache-Control':'no-store'}});
   }catch(e){return Response.json({error:e instanceof Error?e.message:'Verwerken mislukt.'},{status:400});}
 }
