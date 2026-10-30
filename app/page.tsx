@@ -4,6 +4,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin-import-sources';
+import FloatingPromotions from './components/FloatingPromotions';
 import AdvertiserFields from "./components/AdvertiserFields";
 import {emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
 import AnalyticsConsent from "./components/AnalyticsConsent";
@@ -2141,6 +2142,7 @@ export default function Home() {
       {managementLink && <aside className="management-link-notice" aria-labelledby="management-confirmation-title"><h3 id="management-confirmation-title">Je vermelding is ingestuurd — bewaar je beheerlink</h3><p>Met deze persoonlijke link kun je zelf de tekst, datum, contactgegevens en foto wijzigen, zonder account. Bewaar de link als een wachtwoord en deel hem niet met anderen.</p><a className="button button-dark" href={managementLink}>Mijn vermelding beheren →</a><label>Persoonlijke link<input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><div className="management-link-actions"><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}>Beheerlink kopiëren</button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent('Persoonlijke beheerlink Côte de Duras\n\n'+managementLink+'\n\nBewaar deze link als een wachtwoord. Iedereen met deze link kan je vermelding wijzigen.\n')}>Beheerlink bewaren als bestand</a></div><p>Ook terug te vinden onder ‘Beheer je vermelding’ op dit apparaat, zolang de browsergegevens bewaard blijven. Er wordt nog geen automatische e-mail verstuurd.</p></aside>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
+      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||isAdmin||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
       <AnalyticsConsent disabled={isAdmin || authLoading} />
       <footer className="site-footer">
         <a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
