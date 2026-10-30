@@ -992,3 +992,9 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
   .visitor-site:has(.promotion-sidebar:not([hidden])) .event-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:1099px) { .promotion-sidebar-slot { width: calc(100% - 24px); }.promotion-sidebar { padding: 12px; }.promotion-sidebar .floating-promotion-heading { display: flex; flex-wrap: wrap; }.promotion-sidebar .floating-promotion-heading h2 { font-size: 20px; }.promotion-sidebar .floating-promotion-card { align-items: center; } }
+/* Navigation wraps within the actual content width, including beside the rail. */
+.visitor-site .site-nav { flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding: 16px clamp(18px,3vw,44px) 12px; }
+.visitor-site .primary-nav { order: 3; flex: 1 1 100%; min-width: 0; max-width: 100%; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 4px 22px; overflow: visible; }
+.visitor-site .primary-nav a { display: inline-block; padding: 7px 0; font-size: 13px; line-height: 1.4; }
+.visitor-site .primary-nav a:focus-visible { outline: 2px solid #a36d3c; outline-offset: 3px; border-radius: 3px; }
+@media(max-width:680px) { .visitor-site .site-nav { padding: 12px 16px 10px; gap: 7px; }.visitor-site .primary-nav { gap: 2px 15px; }.visitor-site .primary-nav a { font-size: 12px; padding: 6px 0; } }
