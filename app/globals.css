@@ -1000,3 +1000,7 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 @media(max-width:680px) { .visitor-site .site-nav { padding: 12px 16px 10px; gap: 7px; }.visitor-site .primary-nav { gap: 2px 15px; }.visitor-site .primary-nav a { font-size: 12px; padding: 6px 0; } }
 
 .listing-request { margin-top: 28px; padding: 20px; border: 1px solid #cbd8cb; border-radius: 12px; background: #f3f5ed; }.listing-request button { background: #285442; color: white; border: 1px solid #285442; border-radius: 8px; padding: 10px 16px; cursor: pointer; }.request-honeypot { display:none!important; }.request-message { white-space: pre-wrap; }.listing-requests-admin pre { max-height: 400px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }.listing-requests-admin input { width: 100%; box-sizing: border-box; }
+.owner-photo-preview { margin: 0; display: grid; justify-items: start; gap: 12px; }
+.owner-photo-preview .owner-photo { display: block; width: min(100%, 520px); max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 10px; background: #eef3e9; }
+.owner-photo-preview figcaption { color: #285442; font-size: 15px; line-height: 1.5; }
+.owner-save-message { margin: 0; padding: 16px 18px; border: 1px solid #b7cdbd; border-radius: 10px; background: #eef3e9; color: #173f35; font-weight: 600; line-height: 1.5; }
