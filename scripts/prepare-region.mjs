@@ -1,0 +1,24 @@
+import fs from 'node:fs/promises';
+const root=new URL('../',import.meta.url),key=process.env.NEXT_PUBLIC_SITE_REGION;
+if(!['libourne','sarlat'].includes(key))throw Error('NEXT_PUBLIC_SITE_REGION must identify libourne or sarlat. Duras is not a deployment target of this branch.');
+const data=JSON.parse(await fs.readFile(new URL(`lib/regions/${key}.json`,root),'utf8'));
+const {municipalElements,shopPoints,officialRecords,...publicCatalog}=data;
+await fs.writeFile(new URL('lib/regions/active.json',root),JSON.stringify(publicCatalog));
+await fs.writeFile(new URL('lib/site-region.ts',root),`export const REGIONAL_DEMO=true;\nexport const REGION=${JSON.stringify({key,brand:data.brand,city:data.city,radius:50})};\n`);
+const local=new URL('lib/local-area.ts',root),previous=await fs.readFile(local,'utf8'),tail=previous.slice(previous.indexOf('export function normalizePlaceName'));
+await fs.writeFile(local,`export type LocalAreaTown={id:string;name:string;postcode:string;latitude:number;longitude:number;code_insee?:string};\nexport const LOCAL_AREA_TOWNS:LocalAreaTown[]=${JSON.stringify(data.areas)};\nexport const VISITOR_EVENT_CITY_GROUPS=[{label:${JSON.stringify('Binnen 50 km van '+data.city)},cities:${JSON.stringify(data.areas.map(a=>a.name))}}];\n${tail}`);
+await fs.writeFile(new URL('lib/data/area-catalog.json',root),JSON.stringify({updatedAt:data.updatedAt,source:'https://geo.api.gouv.fr/communes',areas:data.areas}));
+await fs.writeFile(new URL('lib/data/commune-centres.json',root),JSON.stringify(data.areas.map(a=>({...a,code:a.code_insee}))));
+for(const file of ['municipal-osm','municipal-mobility'])await fs.writeFile(new URL(`lib/data/${file}.json`,root),JSON.stringify({updatedAt:data.updatedAt,elements:data.municipalElements}));
+await fs.writeFile(new URL('lib/data/municipal-shops.json',root),JSON.stringify({updatedAt:data.updatedAt,points:data.shopPoints}));
+await fs.writeFile(new URL('lib/data/municipal-official.json',root),JSON.stringify({updatedAt:data.updatedAt,records:data.officialRecords||[]}));
+await fs.writeFile(new URL('lib/data/mayors.json',root),JSON.stringify(data.mayorData||{sourceUrl:'https://www.data.gouv.fr/fr/datasets/repertoire-national-des-elus-1/',sourceName:'Répertoire national des élus',sourceUpdatedAt:data.updatedAt,mayors:[]}));
+await fs.writeFile(new URL('lib/data/municipal-supplements.json',root),JSON.stringify({updatedAt:data.updatedAt,points:[]}));
+for(const file of ['municipality-health.ts','municipality-local-services.ts']){
+ const p=new URL('lib/'+file,root),s=await fs.readFile(p,'utf8');const start=s.indexOf(' = [');if(start>=0)await fs.writeFile(p,s.slice(0,start)+' = [];\n');
+}
+async function walk(url){for(const entry of await fs.readdir(url,{withFileTypes:true})){const p=new URL(entry.name+(entry.isDirectory()?'/':''),url);if(entry.isDirectory())await walk(p);else if(/\.(tsx|ts)$/.test(entry.name)){let s=await fs.readFile(p,'utf8');s=s.replaceAll('Côte de Duras',data.brand).replaceAll('Cote-de-Duras',`Cote-de-${key}`).replaceAll('rond Duras','rond '+data.city).replaceAll('voor Duras en omgeving','voor '+data.city+' en omgeving').replaceAll('Agenda voor Duras','Agenda voor '+data.city).replaceAll('vanaf Duras','vanaf '+data.city);if(p.pathname.endsWith('/app/page.tsx'))s=s.replaceAll('"duras"',JSON.stringify(key)).replaceAll("'duras'",JSON.stringify(key)).replaceAll('"Duras"',JSON.stringify(data.city)).replaceAll("'Duras'",JSON.stringify(data.city)).replace('useState(25)','useState(50)').replace('setRadiusKm(["agen", "bergerac"].includes(areaId) ? 10 : 25)','setRadiusKm(50)').replaceAll('setRadiusKm(25)','setRadiusKm(50)').replace(/<img src="\/duras-landschapskaart.webp"[^>]*\/>/g,'<div className="regional-landscape-art" aria-hidden="true" />');await fs.writeFile(p,s);}}}
+await walk(new URL('app/',root));
+const home=new URL('app/page.tsx',root);let page=await fs.readFile(home,'utf8');page=page.replaceAll('CÔTE DE DURAS',data.brand.toLocaleUpperCase('fr-FR')).replaceAll('Duras en omgeving',data.city+' en omgeving').replaceAll('Lot-et-Garonne',key==='sarlat'?'Périgord Noir':'Libournais');await fs.writeFile(home,page);
+await fs.writeFile(new URL('app/contact/page.tsx',root),`export default function Contact(){return <main className="region-introduction"><a href="/">← ${data.brand}</a><h1>Contact en beheer</h1><p>Dit is het kosteloze voorbeeld van ${data.brand}. Contactgegevens en de factuuridentiteit worden bij de productiestart apart ingesteld.</p><p>Geef opdrachten voor deze website expliciet onder de naam <strong>${data.brand}</strong>.</p></main>}`);
+console.log(JSON.stringify({region:key,brand:data.brand,events:data.events.length,municipalities:data.areas.length,demo:true}));

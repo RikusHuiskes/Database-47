@@ -1,0 +1,6 @@
+import fs from 'node:fs/promises';
+import {parseSirtaquiCsv} from '../lib/sirtaqui.ts';
+const metadata=await fetch('https://www.data.gouv.fr/api/1/datasets/repertoire-national-des-elus-1/').then(r=>r.json());
+const resource=metadata.resources.find(r=>/maires?/i.test(r.title)&&r.format==='csv');if(!resource)throw Error('Mayor source not found');
+const r=await fetch(resource.url,{signal:AbortSignal.timeout(60000)});if(!r.ok)throw Error('Mayor register HTTP '+r.status);const rows=parseSirtaquiCsv(await r.text());
+for(const key of ['libourne','sarlat']){const file=new URL(`../lib/regions/${key}.json`,import.meta.url),d=JSON.parse(await fs.readFile(file,'utf8')),codes=new Set(d.areas.map(a=>a.code_insee));const mayors=rows.filter(row=>codes.has(row['Code de la commune'])).map(row=>({code:row['Code de la commune'],city:row['Libellé de la commune'],name:[row["Prénom de l'élu"],row["Nom de l'élu"]].filter(Boolean).join(' '),mandateStart:row['Date de début du mandat'],functionStart:row['Date de début de la fonction']}));d.mayorData={sourceUrl:resource.url,sourceName:'Répertoire national des élus — Ministère de l’Intérieur',sourceUpdatedAt:resource.last_modified,mayors};await fs.writeFile(file,JSON.stringify(d));console.log(key,mayors.length,'mayors',d.areas.length-mayors.length,'not in published register');}

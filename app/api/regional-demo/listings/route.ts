@@ -1,0 +1,2 @@
+import {regionalCatalog} from '../../../../lib/regional-demo';
+export function GET(request:Request){const ids=new Set<string>();const selected=new URL(request.url).searchParams.get('eventId');const events=regionalCatalog.events.filter(e=>{const category=e.category_ids[0];if(e.id===selected)return true;if(ids.has(category))return false;ids.add(category);return true;});return Response.json({events,demo:true});}

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import {REGIONAL_DEMO} from '../../../lib/site-region';
+import {regionalCatalog} from '../../../lib/regional-demo';
 import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import catalog from "../../../lib/data/area-catalog.json";
 
@@ -22,6 +24,7 @@ type ResolvedArea = {
 };
 
 export async function GET() {
+  if(REGIONAL_DEMO)return NextResponse.json({areas:regionalCatalog.areas});
   const duras = LOCAL_AREA_TOWNS.find((town) => town.id === "duras")!;
   const departments = ["24", "33", "47"];
   const departmentFeatures = await Promise.all(departments.map(async (department) => {

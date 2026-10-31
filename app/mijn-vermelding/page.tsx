@@ -3,6 +3,8 @@ import {useEffect,useRef,useState} from 'react';
 import {prepareEventPhoto} from '../../lib/event-photo-browser';
 import {eventPhotoType} from '../../lib/event-photo';
 import AdvertisingUpgrade from './AdvertisingUpgrade';
+import {REGIONAL_DEMO} from '../../lib/site-region';
+import RegionalDemoManager from '../components/RegionalDemoManager';
 import {managementFragment,matchingManagementLink} from '../../lib/management-navigation';
 type Access={id:string;token:string};
 type SavedLink={title:string;fragment:string};
@@ -10,7 +12,8 @@ async function checkedPaymentStatus(access:Access){
  const response=await fetch('/api/mollie/status',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id}),cache:'no-store'});
  const data=await response.json();if(!response.ok)throw Error(data.error);return String(data.paymentStatus);
 }
-export default function MyListing(){
+export default function MyListing(){return REGIONAL_DEMO?<RegionalDemoManager/>:<ProductionMyListing/>;}
+function ProductionMyListing(){
   const [access,setAccess]=useState<Access|null>(null),[event,setEvent]=useState<Record<string,unknown>|null>(null),[category,setCategory]=useState(''),[categories,setCategories]=useState<{id:string;name:string}[]>([]),[savedLinks,setSavedLinks]=useState<SavedLink[]>([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[link,setLink]=useState(''),[photo,setPhoto]=useState<File|null>(null),[ad,setAd]=useState<{amount_cents:number;payment_status:string;starts_on:string;ends_on:string}|null>(null);
   const [paymentReady,setPaymentReady]=useState(false);
   const [saving,setSaving]=useState(false);

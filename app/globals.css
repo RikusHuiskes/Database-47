@@ -1099,3 +1099,11 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .listing-upgrade-link { display: inline-flex; align-items: center; min-height: 44px; padding: 12px 18px; background: #285442; color: #fff !important; border-radius: 8px; text-decoration: none; font-weight: 700; }
 .listing-upgrade-invitation p { line-height: 1.6; }
 #listing-upgrade { scroll-margin-top: 24px; }
+.regional-site-identity { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding: 12px clamp(16px,4vw,44px); background: #214f40; color: #fff; font-size: 13px; }
+.regional-site-identity a { color: #fff; text-decoration: underline; }
+.regional-demo-notice { margin: 16px 0; padding: 16px; background: #fff8df; color: #3b4b3e; border: 1px solid #dac78b; border-radius: 10px; font-size: 14px; line-height: 1.6; }
+.regional-demo-notice p { margin: 5px 0; }
+.regional-demo-notice a { color: #214f40; text-decoration: underline; }
+.regional-landscape-art { height: 100%; background: radial-gradient(ellipse at 20% 80%,#88a78c 0,transparent 55%),linear-gradient(145deg,#e9eedb,#d6dec5 45%,#dcb581); }
+.regional-coverage { width: 100%; border-collapse: collapse; margin-top: 24px; }
+.regional-coverage th,.regional-coverage td { padding: 12px; border-bottom: 1px solid #dae1d6; text-align: left; }

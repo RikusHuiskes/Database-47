@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import {REGIONAL_DEMO} from '../../../lib/site-region';
+import {regionalResults} from '../../../lib/regional-demo';
 import { createClient } from "@supabase/supabase-js";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { savedCommuneCenter } from "../../../lib/commune-center";
@@ -97,6 +99,7 @@ async function getCommuneCenter(city: string, postcode: string | null) {
 }
 
 export async function GET(request: NextRequest) {
+  if(REGIONAL_DEMO){try{return NextResponse.json(regionalResults(request.nextUrl.searchParams));}catch{return NextResponse.json({error:'Kies een geldige zoekplaats.'},{status:400});}}
   const latitude = Number(request.nextUrl.searchParams.get("lat") || Number.NaN);
   const longitude = Number(request.nextUrl.searchParams.get("lon") || Number.NaN);
   const requestedRadius = Number(request.nextUrl.searchParams.get("radius") || Number.NaN);

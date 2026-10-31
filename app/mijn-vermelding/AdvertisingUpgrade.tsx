@@ -1,13 +1,14 @@
 "use client";
 import {useState} from 'react';
+import {REGIONAL_DEMO} from '../../lib/site-region';
 import {advertisingQuote,emptyAdvertiser,MONTHLY_PRICES,type AdvertiserDetails,type AdvertisingType} from '../../lib/advertising';
 
 export type OwnerAdvertisement={amount_cents:number;payment_status:string;starts_on:string;ends_on:string;placement?:string;details?:AdvertiserDetails};
-type Props={access:{id:string;token:string};event:Record<string,unknown>;advertising:OwnerAdvertisement|null;paymentReady:boolean;busy:boolean;onCreated:(ad:OwnerAdvertisement)=>void;onCheckout:()=>Promise<void>};
+type Props={access:{id:string;token:string};event:Record<string,unknown>;advertising:OwnerAdvertisement|null;paymentReady:boolean;busy:boolean;onCreated:(ad:OwnerAdvertisement)=>void;onCheckout:(placement?:AdvertisingType)=>Promise<void>};
 const labels={highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'};
 const euro=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(cents/100);
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-function ListingPreview({event,highlighted}:{event:Record<string,unknown>;highlighted:boolean}){
+export function ListingPreview({event,highlighted}:{event:Record<string,unknown>;highlighted:boolean}){
  const image=typeof event.image_url==='string'&&/^https?:\/\//i.test(event.image_url)?event.image_url:null;
  const date=event.start_at?new Date(String(event.start_at)):null;
  return <figure className="owner-listing-example">
@@ -27,7 +28,7 @@ function ListingPreview({event,highlighted}:{event:Record<string,unknown>;highli
 }
 export default function AdvertisingUpgrade({access,event,advertising,paymentReady,busy,onCreated,onCheckout}:Props){
  const [placement,setPlacement]=useState<AdvertisingType>('highlight');
- const [details,setDetails]=useState<AdvertiserDetails>(()=>({...emptyAdvertiser,...advertising?.details,startDate:today(),months:1}));
+ const [details,setDetails]=useState<AdvertiserDetails>(()=>({...emptyAdvertiser,...(REGIONAL_DEMO?{name:'Voorbeeld adverteerder',address:'Voorbeeldstraat 1',postcode:'00000',city:'Voorbeeldplaats',email:'demo@example.invalid',phone:'0000000000'}:{}),...advertising?.details,startDate:today(),months:1}));
  const [submitting,setSubmitting]=useState(false),[error,setError]=useState('');
  let quote:ReturnType<typeof advertisingQuote>|null=null;try{quote=advertisingQuote(placement,details);}catch{}
  const pending=advertising&&['requested','open','paid'].includes(advertising.payment_status)&&advertising.ends_on>today();
@@ -35,6 +36,7 @@ export default function AdvertisingUpgrade({access,event,advertising,paymentRead
  async function submit(e:React.FormEvent){
   e.preventDefault();setSubmitting(true);setError('');
   try{
+   if(REGIONAL_DEMO){const q=advertisingQuote(placement,details);onCreated({amount_cents:q.amountCents,payment_status:'demo',starts_on:q.startDate,ends_on:q.endDate,placement});await onCheckout(placement);return;}
    const response=await fetch('/api/managed-event/advertising',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id,placement,advertiser:details})});
    const data=await response.json();if(!response.ok)throw Error(data.error);
    onCreated(data.advertising);await onCheckout();
@@ -59,7 +61,7 @@ export default function AdvertisingUpgrade({access,event,advertising,paymentRead
     <label>Land<select value={details.country} onChange={e=>change('country',e.target.value)}><option value="FR">Frankrijk</option><option value="NL">Nederland</option><option value="BE">België</option><option value="DE">Duitsland</option><option value="GB">Verenigd Koninkrijk</option><option value="ES">Spanje</option><option value="LU">Luxemburg</option><option value="CH">Zwitserland</option></select></label>
     {quote&&<div className="owner-advertising-total" aria-live="polite"><strong>Totaal te betalen: {euro(quote.amountCents)}</strong><p>{labels[placement]} · {quote.months} maand(en) · van {quote.startDate} tot {quote.endDate} (einddatum exclusief).</p></div>}
     <p>Je kiest je betaalmethode in de beveiligde omgeving van Mollie. Na goedkeuring en betaalbevestiging verschijnt de advertentie binnen de gekozen periode. Voor homepage- en categorieadvertenties wordt eerst de beschikbaarheid gecontroleerd.</p>
-    <button type="submit" disabled={!paymentReady||!quote}>{submitting?'Aanvraag wordt opgeslagen…':`Verder naar Mollie${quote?' · '+euro(quote.amountCents):''}`}</button>
+    <button type="submit" disabled={!paymentReady||!quote}>{submitting?'Aanvraag wordt opgeslagen…':`${REGIONAL_DEMO?'Demobetaling simuleren — geen afschrijving':'Verder naar Mollie'}${quote?' · '+euro(quote.amountCents):''}`}</button>
     {!paymentReady&&<p>Online betalen is momenteel niet beschikbaar. Probeer het later opnieuw.</p>}
    </fieldset>
   </form>}

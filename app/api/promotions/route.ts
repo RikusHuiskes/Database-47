@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
+import {REGIONAL_DEMO} from '../../../lib/site-region';
 import {createClient} from '@supabase/supabase-js';
 import {promotionPlacements} from '../../../lib/event-presentation';
 
@@ -7,6 +8,7 @@ type PromotionRecord={id:string;start_at:string|null;event_categories?:{category
 
 /** Public advertising only: no ordinary results or geocoding on this path. */
 export async function GET(request:NextRequest){
+  if(REGIONAL_DEMO)return NextResponse.json({homepage_promotions:[],category_promotions:[],demo:true});
   const category=request.nextUrl.searchParams.get('category')??'all';
   if(category!=='all'&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(category))return NextResponse.json({error:'Kies een geldige categorie.'},{status:400});
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

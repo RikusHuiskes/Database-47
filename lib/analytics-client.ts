@@ -1,3 +1,4 @@
+import {REGIONAL_DEMO} from './site-region';
 let enabled=false;
 const key='cdd-statistics-v1';
 export function analyticsChoice(): {accepted:boolean;at:string}|null {
@@ -11,6 +12,7 @@ export function setAnalyticsChoice(accepted:boolean){
 }
 export function enableAnalytics(value:boolean){enabled=value;}
 export function trackAnalytics(action:string,detail:Record<string,string|undefined>={}) {
+  if(REGIONAL_DEMO)return;
   if(!enabled||navigator.doNotTrack==='1'||!analyticsChoice()?.accepted)return;
   try {
     let visitorId=localStorage.getItem('cdd-visitor');if(!visitorId){visitorId=crypto.randomUUID();localStorage.setItem('cdd-visitor',visitorId);}

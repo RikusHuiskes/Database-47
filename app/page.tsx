@@ -1,4 +1,6 @@
 "use client";
+import {REGIONAL_DEMO,REGION} from '../lib/site-region';
+import {demoListings,saveDemoListing} from '../lib/regional-demo-browser';
 import {SHOP_TYPES} from "../lib/municipal-shops";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -27,7 +29,7 @@ import { parseFrenchEventDate, type ImportedEvent } from "../lib/tourisme-duras"
 import { inferEventCategorySlug } from "../lib/import-sources";
 import {prepareEventPhoto} from "../lib/event-photo-browser";
 import { eventPhotoType } from "../lib/event-photo";
-import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, type LocalAreaTown } from "../lib/local-area";
+import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, distanceInKm, type LocalAreaTown } from "../lib/local-area";
 type Category = {
   id: string;
   name?: string;
@@ -636,7 +638,8 @@ export default function Home() {
           setLocationNotice(`Binnen ${radiusKm} km van je huidige locatie zijn geen vermeldingen gevonden voor deze categorie. We zoeken daarom rond ${searchArea?.name??'Duras'}, met dezelfde afstand en categorie.`);
           return;
         }
-        setNearbyEvents(result.events ?? []);
+        const local=REGIONAL_DEMO?demoListings().filter(e=>typeof e.latitude==='number'&&typeof e.longitude==='number'&&(categoryFilter==='all'||(e.category_ids as string[]||[]).includes(categoryFilter))).map(e=>({...e,distance_km:Math.round(distanceInKm(searchLatitude!,searchLongitude!,Number(e.latitude),Number(e.longitude))*10)/10,distance_is_approximate:true})).filter(e=>e.distance_km<=radiusKm) as unknown as NearbyEvent[]:[];
+        setNearbyEvents([...local,...(result.events ?? [])]);
         setLocationlessCount(Number(result.locationless_count ?? 0));
       })
       .catch((cause) => {
@@ -793,7 +796,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!supabase) {
-      setError("Supabase-instellingen ontbreken. Controleer Vercel.");
+      if(REGIONAL_DEMO){void fetch('/api/regional-demo').then(r=>r.json()).then(data=>setCategories(data.categories)).catch(()=>setError('De voorbeeldgegevens konden niet worden geladen.'));}
+      else setError("Supabase-instellingen ontbreken. Controleer Vercel.");
       setLoading(false);
       setAuthLoading(false);
       return;
@@ -1261,6 +1265,15 @@ export default function Home() {
   async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (saving || checkoutInFlight.current) return;
+    if(REGIONAL_DEMO){
+      if(!title.trim()||(entryKind==='event'&&!startAt)){setSubmissionError('Vul een titel en evenementdatum in.');return;}
+      const chosenCity=(cityChoice==='__other__'?customCity:cityChoice).trim()||REGION.city;
+      const area=areaOptions.find(a=>normalizePlaceName(a.name)===normalizePlaceName(chosenCity));
+      const id=crypto.randomUUID();
+      let image_url:string|null=null;
+      if(visitorPhoto){try{const photo=await prepareEventPhoto(visitorPhoto);image_url=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(photo);});}catch{setSubmissionError('De demofoto kon niet worden gelezen.');return;}}
+      try{saveDemoListing({id,title:'DEMO — '+title.trim(),short_description:shortDescription,description,city:chosenCity,address,postcode,latitude:area?.latitude,longitude:area?.longitude,start_at:entryKind==='directory'?'':new Date(startAt).toISOString(),end_at:endAt?new Date(endAt).toISOString():null,is_directory_entry:entryKind==='directory',is_free:isFree,website_url:websiteUrl,source_url:sourceUrl,image_url,category_ids:categoryId?[categoryId]:[],category_id:categoryId||null,promotion_type:promotionType,promotion_status:promotionType==='none'?'none':'active',status:'approved',verified:true});setManagementLink(window.location.origin+'/mijn-vermelding?demoId='+id);setSubmissionNotice('Demovermelding bewaard in deze browser. Niet openbaar gepubliceerd; er vindt geen betaling plaats.');setSubmissionError('');setDataRevision(v=>v+1);}catch{setSubmissionError('De browseropslag is vol. Probeer zonder foto.');}return;
+    }
     setMessage("");
     setError("");
     setSubmissionNotice("");
@@ -1708,6 +1721,7 @@ export default function Home() {
           <div className="hero-copy">
             <p className="hero-kicker"><span aria-hidden="true" /> Leven, beleven en ontdekken in het zuidwesten</p>
             <h1>Côte de Duras</h1>
+            {REGIONAL_DEMO&&<div className="regional-demo-notice"><strong>Voorbeeldsite · {REGION.brand} · 50 km</strong><p>Eigen regionale gegevens. Dit is een kosteloze demonstratie: geen echte betaling, publicatie of gedeelde beheerdatabase. <a href="/demo-beheer">Bekijk beheer en advertentievoorbeelden →</a> · <a href="/regio-overzicht">Kies je website →</a></p></div>}
             <p className="hero-intro">Evenementen en informatie voor elke dag binnen een straal van 50 kilometer</p>
           </div>
         </div>

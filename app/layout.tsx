@@ -1,6 +1,7 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
+import {REGION} from '../lib/site-region';
 
 export const metadata: Metadata = {
   title: "Côte de Duras | Evenementen en informatie",
@@ -26,6 +27,7 @@ export default function RootLayout({
           color: "#172033",
         }}
       >
+        <aside className="regional-site-identity"><strong>{REGION.brand}</strong><span>Afzonderlijke demo-omgeving · {REGION.radius} km</span><a href="/regio-overzicht">Website-overzicht voor de beheerder →</a></aside>
         {children}
       </body>
     </html>

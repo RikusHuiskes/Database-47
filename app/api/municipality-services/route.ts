@@ -1,4 +1,5 @@
 import {SHOP_TYPES} from "../../../lib/municipal-shops";
+import {REGIONAL_DEMO} from '../../../lib/site-region';
 import { NextRequest, NextResponse } from "next/server";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { CURATED_HEALTH_SERVICES } from "../../../lib/municipality-health";
@@ -664,6 +665,7 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = municipalCatalog(city, latitude, longitude, service, suppliedCodeInsee);
+  if(REGIONAL_DEMO)return NextResponse.json(catalog);
   if (catalog.missingTypes.length === 0 || SHOP_TYPES.includes(service) || service === "all" && catalog.missingTypes.every(type=>SHOP_TYPES.includes(type))) return NextResponse.json(catalog);
   const codeInsee = await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude);
 
