@@ -19,6 +19,6 @@ export async function POST(request:Request){
     const token=managedToken();
     const {data,error}=await service.rpc('submit_managed_event',{p_event:event,p_category_id:category,p_token_hash:tokenHash(token),p_ad:ad});
     if(error)throw Error('De vermelding kon niet worden opgeslagen. '+error.message);
-    return Response.json({eventId:data,manageFragment:`${data}:${token}`},{status:201,headers:{'Cache-Control':'no-store'}});
+    return Response.json({eventId:data,manageFragment:`${data}:${token}`,advertising:ad?{placement:event.promotion_type,amountCents:ad.amountCents,startDate:ad.startDate,endDate:ad.endDate,months:ad.months}:null},{status:201,headers:{'Cache-Control':'no-store'}});
   }catch(error){return Response.json({error:error instanceof Error?error.message:'Opslaan mislukt.'},{status:400});}
 }

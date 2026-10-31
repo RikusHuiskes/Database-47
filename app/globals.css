@@ -1032,6 +1032,22 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .location-fallback-note { padding: 14px 18px; border-left: 4px solid #a36d3c; border-radius: 0 8px 8px 0; background: #f4f0e6; color: #25483f; line-height: 1.6; }.empty-search-actions { margin: 18px 0; display: flex; flex-wrap: wrap; gap: 12px; }.empty-search-actions p { flex-basis: 100%; margin: 0; }.empty-search-actions button { padding: 11px 16px; border: 1px solid #285442; border-radius: 8px; background: #f3f5ed; color: #25483f; font: inherit; font-weight: 600; cursor: pointer; }.empty-search-actions button:focus-visible { outline: 3px solid #a36d3c; outline-offset: 3px; }
 
 /* Keep long decision labels and select options inside narrow request cards. */
+.advertising-checkout-summary { padding: 18px 20px; border: 1px solid #c7d7c7; border-radius: 12px; background: #eef3e9; color: #21483d; }
+.advertising-checkout-summary p { margin: 8px 0 0; line-height: 1.6; }
+.submission-payment { width: min(calc(100% - 48px), 900px); box-sizing: border-box; margin: 26px auto; padding: clamp(20px, 4vw, 32px); border: 1px solid #c8af7d; border-radius: 18px; background: #fffdf5; color: #21483d; box-shadow: 0 12px 30px #213c3510; scroll-margin-top: 24px; }
+.submission-payment h2 { margin: 0 0 16px; font-family: Georgia, serif; font-size: clamp(25px, 4vw, 34px); font-weight: 500; }
+.submission-payment p { line-height: 1.6; }
+.submission-payment dl { margin: 20px 0; }
+.submission-payment dl > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; padding: 12px 0; border-bottom: 1px solid #e4e4d5; }
+.submission-payment dt { color: #64766b; }
+.submission-payment dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.submission-payment .submission-payment-total { align-items: center; font-size: 21px; }
+.submission-payment .button { box-sizing: border-box; max-width: 100%; min-height: 48px; white-space: normal; }
+.submission-payment .button:disabled { cursor: wait; opacity: .7; }
+.submission-payment .button:focus-visible { outline: 3px solid #a36d3c; outline-offset: 4px; }
+.submission-payment-error { padding: 14px; border-radius: 10px; background: #fff0e8; color: #853c24; }
+.submission-payment-note { margin-bottom: 0; color: #64766b; font-size: 13px; }
+@media (max-width: 680px) { .submission-payment { width: calc(100% - 24px); } .submission-payment .button { width: 100%; } }
 .owner-form { min-width: 0; grid-template-columns: minmax(0,1fr); }
 .owner-form label { min-width: 0; overflow-wrap: anywhere; }
 .owner-form input:not([type="checkbox"]),.owner-form select,.owner-form textarea { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; padding: 11px; border: 1px solid #cbd5c7; border-radius: 7px; background: white; font: inherit; }

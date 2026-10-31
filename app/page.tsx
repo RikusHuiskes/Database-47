@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin-import-sources';
 import FloatingPromotions from './components/FloatingPromotions';
 import AdvertiserFields from "./components/AdvertiserFields";
-import {emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
+import {MONTHLY_PRICES,advertisingQuote,emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
+import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 import MailSettings from './components/MailSettings';
 import ListingRequestForm from './components/ListingRequestForm';
@@ -332,6 +333,20 @@ export default function Home() {
   const [locationlessCount, setLocationlessCount] = useState(0);
   const [submissionNotice, setSubmissionNotice] = useState("");
   const [submissionError, setSubmissionError] = useState("");
+  const [submissionPayment, setSubmissionPayment] = useState<(ListingPaymentSummary & { title: string; manageFragment: string }) | null>(null);
+  const [checkoutStarting, setCheckoutStarting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+  const checkoutInFlight = useRef(false);
+  useEffect(() => {
+    const restoreCheckout = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        checkoutInFlight.current = false;
+        setCheckoutStarting(false);
+      }
+    };
+    window.addEventListener('pageshow', restoreCheckout);
+    return () => window.removeEventListener('pageshow', restoreCheckout);
+  }, []);
   const [categories, setCategories] = useState<Category[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1206,8 +1221,33 @@ export default function Home() {
     setEntryKind("event");
   }
 
+  async function payForSubmittedListing(fragment: string) {
+    if (checkoutInFlight.current) return;
+    checkoutInFlight.current = true;
+    setCheckoutStarting(true);
+    setCheckoutError("");
+    let leavingForMollie = false;
+    try {
+      // Mollie returns to this same origin. Retain access before leaving so
+      // the advertiser can see the payment result without another login.
+      try { sessionStorage.setItem('cdd-management-session', fragment); }
+      catch { throw Error('Je browser kan de toegang na het betalen niet bewaren. Sta tijdelijke browseropslag toe en probeer opnieuw. Je beheerlink blijft hieronder beschikbaar.'); }
+      const checkoutUrl = await requestListingCheckout(fragment);
+      window.location.assign(checkoutUrl);
+      leavingForMollie = true;
+    } catch (cause) {
+      setCheckoutError(cause instanceof Error ? cause.message : "Mollie kon niet worden geopend. Probeer opnieuw; je aanvraag blijft bewaard.");
+    } finally {
+      if (!leavingForMollie) {
+        checkoutInFlight.current = false;
+        setCheckoutStarting(false);
+      }
+    }
+  }
+
   async function saveEvent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (saving || checkoutInFlight.current) return;
     setMessage("");
     setError("");
     setSubmissionNotice("");
@@ -1282,25 +1322,35 @@ export default function Home() {
       };
 
       const response = await fetch("/api/visitor-events", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:payload,categoryId:categoryId||null,advertiser:promotionType==='none'?null:advertiser})});
-      const result = await readApiJson<{error?:string;manageFragment?:string}>(response);
+      const result = await readApiJson<{error?:string;manageFragment?:string;advertising?:ListingPaymentSummary|null}>(response);
       if(!response.ok||!result.manageFragment)throw new Error(result.error||"De vermelding kon niet worden opgeslagen.");
       const privateLink=window.location.origin+"/mijn-vermelding#"+result.manageFragment;
       setManagementLink(privateLink);
       try {const links=JSON.parse(localStorage.getItem('cdd-managed-links')||'[]');links.push({title:payload.title,fragment:result.manageFragment});localStorage.setItem('cdd-managed-links',JSON.stringify(links));}catch{}
 
       eventSaved = true;
+      const payment = promotionType === "none" ? null : {
+        ...(result.advertising ?? {placement:promotionType,...advertisingQuote(promotionType,advertiser)}),
+        title:payload.title,
+        manageFragment:result.manageFragment,
+      };
+      setSubmissionPayment(payment);
+      setCheckoutError("");
       resetForm();
       setShowForm(false);
 
-      try {
-        await loadData();
-      } catch (cause) {
+      // Refreshing the agenda must not hold up the advertiser's checkout.
+      void loadData().catch((cause) => {
         console.error("[visitor-event] refresh after submission failed", cause);
-      }
+      });
       const photoConfirmation = uploadedImageUrl ? " De foto is meegestuurd en verschijnt na controle bij het evenement." : "";
       setSubmissionNotice(promotionType === "none"
         ? `Dank je voor je tip over “${payload.title}”. De beheerder controleert de gegevens voordat het evenement in de agenda verschijnt.${photoConfirmation}`
-        : `Dank je voor je tip over “${payload.title}”. Open Mijn vermelding beheren om via Mollie te betalen. De beheerder controleert de inhoud. De advertentie verschijnt uitsluitend na goedkeuring en betaalbevestiging, binnen de gekozen periode.${photoConfirmation}`);
+        : `Je vermelding “${payload.title}” en advertentieaanvraag zijn opgeslagen. Je gaat direct door naar Mollie. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.${photoConfirmation}`);
+      if (payment) {
+        requestAnimationFrame(() => document.getElementById('submission-payment')?.scrollIntoView({behavior:'smooth',block:'center'}));
+        void payForSubmittedListing(payment.manageFragment);
+      }
     } catch (cause) {
       console.error("[visitor-event] save failed", cause);
       setSubmissionError(cause instanceof Error ? cause.message : "De activiteit kon niet worden opgeslagen. Probeer het opnieuw.");
@@ -1943,7 +1993,7 @@ export default function Home() {
 
           <fieldset className="promotion-fieldset">
             <legend>Extra bereik voor je evenement (optioneel)</legend>
-            <p>Kies je vermelding. Bij een betaalde optie verschijnen hieronder de advertentieperiode en factuurgegevens. Sla daarna je vermelding op en open ‘Mijn vermelding beheren’ om via Mollie te betalen. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.</p>
+            <p>Kies je vermelding. Bij een betaalde optie zie je direct de periode, factuurgegevens en het totaalbedrag. Met ‘Opslaan en betalen via Mollie’ ga je rechtstreeks naar de beveiligde betaalomgeving, zonder opnieuw in te loggen. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.</p>
             <div className="promotion-options">
               {([
                 ["none", "Gratis vermelding (standaard)", "Je evenement komt na goedkeuring gewoon in de agenda, zonder advertentiekosten."],
@@ -1955,7 +2005,7 @@ export default function Home() {
                 <span><strong>{heading}</strong><small>{copy}</small></span>
               </label>)}
             </div>
-            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {promotionType==='homepage'?'homepagevermelding':promotionType==='category'?'categorievermelding':'vetomrande vermelding'}.</strong> Vul hieronder je periode en factuurgegevens in en sla vervolgens het formulier op.</p><AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/></section>}
+            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {advertisingPlacementName(promotionType)}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/></section>}
           </fieldset>
 
           <label style={labelStyle}>Wat wil je invoeren?<select style={inputStyle} value={entryKind} onChange={e=>setEntryKind(e.target.value)}><option value="event">Evenement met datum</option><option value="directory">Vaste vermelding / bedrijf / accommodatie</option></select></label>
@@ -2144,9 +2194,10 @@ export default function Home() {
           </div>
 
           <p>Je kunt ook www.voorbeeld.fr invoeren; https:// wordt automatisch toegevoegd. Gebruik dezelfde website als er geen aparte reserveringspagina of bronpagina is.</p>
+          {promotionType !== 'none' && <div className="advertising-checkout-summary"><strong>{advertisingPlacementName(promotionType)} · {formatAdvertisingAmount(MONTHLY_PRICES[promotionType] * advertiser.months)} totaal</strong><p>Voor {advertiser.months} {advertiser.months === 1 ? 'maand' : 'maanden'}{advertiser.startDate ? ` vanaf ${advertiser.startDate}` : ''}. Je slaat je vermelding op en gaat direct naar Mollie om je betaalmethode te kiezen. Je hoeft niet opnieuw in te loggen.</p></div>}
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || checkoutStarting}
             style={{
               padding: 14,
               border: 0,
@@ -2157,12 +2208,23 @@ export default function Home() {
               fontSize: 16,
             }}
           >
-            {saving ? "Opslaan..." : "Evenement/vermelding opslaan"}
+            {saving ? (promotionType === 'none' ? 'Opslaan…' : 'Opslaan en betaling voorbereiden…') : promotionType === 'none' ? 'Evenement/vermelding opslaan' : `Opslaan en betalen via Mollie · ${formatAdvertisingAmount(MONTHLY_PRICES[promotionType] * advertiser.months)}`}
           </button>
         </form>
       )}
 
       {submissionError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{submissionError}</p>}
+      {submissionPayment && <section id="submission-payment" className="submission-payment" aria-labelledby="submission-payment-heading" aria-busy={checkoutStarting}>
+        <p className="section-kicker">Je aanvraag is opgeslagen</p>
+        <h2 id="submission-payment-heading">{checkoutStarting ? 'Je gaat naar Mollie' : 'Betaal je advertentie via Mollie'}</h2>
+        <p><strong>{submissionPayment.title}</strong></p>
+        <dl><div><dt>Advertentie</dt><dd>{advertisingPlacementName(submissionPayment.placement)}</dd></div><div><dt>Periode</dt><dd>{submissionPayment.startDate} tot {submissionPayment.endDate} · {submissionPayment.months} {submissionPayment.months === 1 ? 'maand' : 'maanden'}</dd></div><div className="submission-payment-total"><dt>Totaal te betalen</dt><dd>{formatAdvertisingAmount(submissionPayment.amountCents)}</dd></div></dl>
+        <p>Je kiest je betaalmethode in de beveiligde omgeving van Mollie. Opnieuw inloggen is niet nodig.</p>
+        {checkoutStarting && <p role="status">De betaalomgeving wordt geopend…</p>}
+        {checkoutError && <p className="submission-payment-error" role="alert">Je vermelding en advertentieaanvraag blijven bewaard. {checkoutError}</p>}
+        <button className="button button-dark" type="button" disabled={checkoutStarting} onClick={() => void payForSubmittedListing(submissionPayment.manageFragment)}>{checkoutStarting ? 'Mollie wordt geopend…' : `Verder naar Mollie · ${formatAdvertisingAmount(submissionPayment.amountCents)}`} <span aria-hidden="true">→</span></button>
+        <p className="submission-payment-note">De advertentie verschijnt na goedkeuring en betaalbevestiging, uitsluitend binnen de gekozen periode. De beheerlink hieronder is voor latere wijzigingen.</p>
+      </section>}
       {managementLink && <aside className="management-link-notice" aria-labelledby="management-confirmation-title"><h3 id="management-confirmation-title">Je vermelding is ingestuurd — bewaar je beheerlink</h3><p>Met deze persoonlijke link kun je zelf de tekst, datum, contactgegevens en foto wijzigen, zonder account. Bewaar de link als een wachtwoord en deel hem niet met anderen.</p><a className="button button-dark" href={managementLink}>Mijn vermelding beheren →</a><label>Persoonlijke link<input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><div className="management-link-actions"><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}>Beheerlink kopiëren</button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent('Persoonlijke beheerlink Côte de Duras\n\n'+managementLink+'\n\nBewaar deze link als een wachtwoord. Iedereen met deze link kan je vermelding wijzigen.\n')}>Beheerlink bewaren als bestand</a></div><p>Ook terug te vinden onder ‘Beheer je vermelding’ op dit apparaat, zolang de browsergegevens bewaard blijven. Er wordt nog geen automatische e-mail verstuurd.</p></aside>}
       {submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}>{submissionNotice}</p>}
 
