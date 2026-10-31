@@ -1777,6 +1777,7 @@ export default function Home() {
         <div className="event-grid" aria-label="Aankomende activiteiten">
           {displayedNearbyEvents.map((event) => (
             <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard"} className={`activity-card${event.promotion_type === "highlight" && event.promotion_status === "active" ? " activity-card-highlighted" : ""}`} key={event.id}>
+              {event.promotion_type === "highlight" && event.promotion_status === "active" && <div className="activity-highlight-banner">Uitgelichte advertentie</div>}
               <div className="activity-media">
                 <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
                   {safeHttpUrl(event.image_url)
