@@ -1,4 +1,5 @@
 "use client";
+import SourcePhoto from './components/SourcePhoto';
 import {REGIONAL_DEMO,REGION} from '../lib/site-region';
 import {demoListings,saveDemoListing} from '../lib/regional-demo-browser';
 import {SHOP_TYPES} from "../lib/municipal-shops";
@@ -1796,9 +1797,7 @@ export default function Home() {
               {event.promotion_type === "highlight" && event.promotion_status === "active" && <div className="activity-highlight-banner">Uitgelichte advertentie</div>}
               <div className="activity-media">
                 <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
-                  {safeHttpUrl(event.image_url)
-                    ? <img className="activity-image" src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" />
-                    : <span className="activity-image-placeholder"><span aria-hidden="true">47</span><small>Ontdek dichtbij</small></span>}
+                  <SourcePhoto className="activity-image" src={safeHttpUrl(event.image_url)} title={event.title}/>
                 </button>
                 <span className="distance-pill">{event.distance_is_approximate ? "ca. " : ""}{event.distance_km} km</span>
               </div>
@@ -2990,7 +2989,7 @@ export default function Home() {
               <button className="event-detail-back" type="button" autoFocus onClick={closeVisitorEvent}><span aria-hidden="true">←</span> Terug naar de agenda</button>
               <button className="event-detail-close" type="button" aria-label="Sluiten" onClick={closeVisitorEvent}>×</button>
             </div>
-            {safeHttpUrl(selectedVisitorEvent.image_url) && <img className="event-detail-image" src={safeHttpUrl(selectedVisitorEvent.image_url)!} alt="" />}
+            <SourcePhoto className="event-detail-image" src={safeHttpUrl(selectedVisitorEvent.image_url)} title={selectedVisitorEvent.title}/>
             <div className="event-detail-content">
               <p className="event-detail-kicker">{categories.find((category) => category.id === selectedVisitorEvent.category_id)?.name ?? "Activiteit in de streek"}</p>
               <h2 id="visitor-event-title">{selectedVisitorEvent.title}</h2>
