@@ -5,6 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Côte de Duras | Evenementen en informatie",
   description: "Evenementen en informatie voor elke dag binnen een straal van 50 kilometer rond Duras.",
+  icons: {
+    icon: [{ url: "/cote-de-duras-icon.png", type: "image/png", sizes: "64x64" }],
+    apple: [{ url: "/cote-de-duras-apple-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({
