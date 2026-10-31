@@ -1,5 +1,5 @@
-
 "use client";
+import {SHOP_TYPES} from "../lib/municipal-shops";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -76,7 +76,7 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
-type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking";
+type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking" | "bakery" | "butcher" | "tobacco" | "souvenirs" | "shoes" | "florist" | "fashion" | "diy" | "jeweller" | "hairdresser";
 type MunicipalityServiceEntry = {
   latitude?: number;
   longitude?: number;
@@ -147,6 +147,16 @@ const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }
   { id: "parking", label: "Parkeren" },
   { id: "disabled_parking", label: "Invalide parkeerplaatsen" },
   { id: "emergency", label: "Noodnummers" },
+  { id: "bakery", label: "Bakkerij" },
+  { id: "butcher", label: "Slagerij" },
+  { id: "tobacco", label: "Tabak / Kiosk" },
+  { id: "souvenirs", label: "Souvenirswinkel" },
+  { id: "shoes", label: "Schoenenwinkel" },
+  { id: "florist", label: "Bloemist" },
+  { id: "fashion", label: "Mode" },
+  { id: "diy", label: "Bouwmarkten" },
+  { id: "jeweller", label: "Juwelier" },
+  { id: "hairdresser", label: "Kapper" },
 ];
 
 const frenchEmergencyNumbers = [
@@ -1616,6 +1626,16 @@ export default function Home() {
     public_transport: 25,
     parking: 25,
     disabled_parking: 25,
+    bakery: 25,
+    butcher: 25,
+    tobacco: 25,
+    souvenirs: 25,
+    shoes: 25,
+    florist: 25,
+    fashion: 25,
+    diy: 25,
+    jeweller: 25,
+    hairdresser: 25,
   };
   const municipalityServiceEntries: MunicipalityServiceEntry[] = !municipalityServiceInfo
     ? []
@@ -1639,6 +1659,7 @@ export default function Home() {
       </div>
       {(groupType === "mairie" || municipalityServiceType === "all" && service.type === "mairie") && <p><strong>Burgemeester:</strong> {service.mayor ?? "Naam niet vermeld in de gemeentelijke contactgegevens."}</p>}
       {service.address && <p><strong>Adres:</strong> {service.address}</p>}
+      {SHOP_TYPES.includes(service.type)&&!service.address&&<p className="municipality-missing-detail">Geen straatadres gepubliceerd in de geraadpleegde bron.</p>}
       {service.phone && <p><strong>Telefoon:</strong> <a href={`tel:${service.phone.replace(/[^\d+]/g, "")}`}>{service.phone}</a></p>}
       {service.email && <p><strong>E-mail:</strong> <a href={`mailto:${service.email}`}>{service.email}</a></p>}
       {service.openingHours && <p><strong>Openingstijden:</strong> {service.openingHours}</p>}
@@ -1671,16 +1692,15 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true"><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} decoding="async" /></span>
             <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
           </a>
+          <a className="my-listing-link" href="/mijn-vermelding">Mijn vermelding <span aria-hidden="true">→</span></a>
           <nav className="primary-nav" aria-label="Hoofdnavigatie">
             <a href="/de-streek-beleven">De streek beleven</a>
             <a href="#agenda">Agenda</a>
             <a href="#ontdekken">Ontdekken</a>
             <a href="#gemeenten">Gemeente informatie</a>
             <a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a>
-            <a href="/mijn-vermelding">Mijn vermelding</a>
             <a href="/handleiding">Handleiding</a>
           </nav>
-          <a className="region-note" href="/de-streek-beleven"><span aria-hidden="true">☀</span><span>De streek beleven</span></a>
         </div>
         <div className="hero-grid" id="top">
           <div className="hero-art" aria-hidden="true"><img src="/lot-et-garonne-hero.png" alt="" /></div>

@@ -1,7 +1,7 @@
 "use client";
 import {useCallback,useEffect,useRef,useState,useMemo} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import type {AnalyticsReport as Report} from '../../lib/analytics-report';
+import {analyticsRows,type AnalyticsReport as Report} from '../../lib/analytics-report';
 const number=(n:number)=>new Intl.NumberFormat('nl-NL').format(n);
 export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}){
   const [days,setDays]=useState(30),[report,setReport]=useState<Report|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
@@ -15,7 +15,7 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
     }catch(cause){if(id===requestId.current)setError(cause instanceof Error?cause.message:'Statistieken zijn tijdelijk niet beschikbaar.');}finally{if(id===requestId.current)setLoading(false);}
   },[client,days]);
   useEffect(()=>{void load();},[load]);
-  async function download(){
+  async function download(format:'csv'|'xlsx'='csv'){
     if(!report||!client)return;
     setError('');
     try {
@@ -27,7 +27,7 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
       frame.onload=()=>{try{const text=frame.contentDocument?.body?.textContent??'';if(text.startsWith('{')){const result=JSON.parse(text);if(result.error)setError(result.error);}}catch{}};
       document.body.appendChild(frame);
       const form=document.createElement('form');form.hidden=true;form.method='POST';form.action='/api/admin/analytics-export';form.target=frame.name;
-      for(const [name,value]of Object.entries({access_token:data.session.access_token,days:String(days)})){const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input);}
+      for(const [name,value]of Object.entries({access_token:data.session.access_token,days:String(days),format})){const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input);}
       document.body.appendChild(form);form.submit();form.remove();
       window.setTimeout(()=>frame.remove(),60000);
     } catch(cause){setError(cause instanceof Error?cause.message:'De CSV-download kon niet worden gestart.');}
@@ -37,9 +37,11 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
   return <section className="analytics-dashboard" aria-labelledby="analytics-title">
     <h2 id="analytics-title">Bezoekers & advertentiebereik</h2>
     <p>Gemeten bezoeken met toestemming. Kies een tabblad voor details. De CSV bevat alle onderdelen voor de gekozen periode.</p>
-    <div className="analytics-controls"><label>Periode <select value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,30,90,365].map(d=><option key={d} value={d}>Laatste {d} dagen</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={loading}>Vernieuwen</button><button type="button" onClick={()=>void download()} disabled={!report||loading}>Volledig rapport (CSV)</button></div>
+    <div className="analytics-controls"><label>Periode <select value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,30,90,365].map(d=><option key={d} value={d}>Laatste {d} dagen</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={loading}>Vernieuwen</button><button type="button" onClick={()=>void download("xlsx")} disabled={!report||loading}>Download Excel (.xlsx)</button><button type="button" onClick={()=>void download("csv")} disabled={!report||loading}>Download CSV (.csv)</button></div>
     {loading&&<p role="status">Statistieken laden…</p>}{error&&<p role="alert">{error}</p>}
+    <p className="form-hint">Opent het CSV-bestand in ChatGPT? Kies Download Excel of Volledig rapport direct bekijken. Je kunt de CSV ook vanuit Excel openen via Bestand → Openen.</p>
     {report&&<>
+      <details className="analytics-export-preview"><summary>Volledig rapport direct bekijken</summary><div className="analytics-export-scroll"><table><caption>Alle rapportonderdelen · laatste {days} dagen</caption><tbody>{analyticsRows(report,days).map((row,index)=><tr key={index}>{row.length?row.map((cell,column)=><td key={column}>{String(cell??"")}</td>):<td colSpan={9} aria-hidden="true">&nbsp;</td>}</tr>)}</tbody></table></div></details>
       <div className="analytics-kpis">{[['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],['Paginaweergaven',report.summary.pageviews],['Evenementen geopend',report.summary.views],['Zichtbare vermeldingen',report.summary.impressions],['Doorklikken',report.summary.clicks]].map(([label,value])=><div key={label}><span>{label}</span><strong>{number(Number(value))}</strong></div>)}</div>
       <div className="analytics-tabs" role="tablist" aria-label="Statistiekonderdelen">{tabs.map(([id,label])=><button type="button" role="tab" id={'analytics-tab-'+id} aria-controls="analytics-panel" aria-selected={tab===id} key={id} onClick={()=>setTab(id)}>{label}</button>)}</div>
       <div id="analytics-panel" role="tabpanel" aria-labelledby={'analytics-tab-'+tab}>
