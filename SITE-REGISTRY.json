@@ -1,0 +1,5 @@
+{
+ "cote-de-duras":{"name":"Côte de Duras","status":"Existing reference; DO NOT MODIFY","workingDirectory":"../Database-47-map","branch":"feature/tourisme-duras-enrichment","preview":"https://database-47-git-feature-tourisme-duras-enrichment-rikushuiskes.vercel.app/"},
+ "cote-de-libourne":{"name":"Côte de Libourne","region":"libourne","vercelProject":"prj_rKDbXgW4wbDKSiZIS3KWYDf1YLNM","configuration":"lib/regions/libourne.json","storageNamespace":"cote-demo:libourne:listings","database":"No remote database in free demonstration","radiusKm":50},
+ "cote-de-sarlat":{"name":"Côte de Sarlat","region":"sarlat","vercelProject":"prj_LoVGuznep2ry2CA0pk0P6NqF6M0J","configuration":"lib/regions/sarlat.json","storageNamespace":"cote-demo:sarlat:listings","database":"No remote database in free demonstration","radiusKm":50}
+}

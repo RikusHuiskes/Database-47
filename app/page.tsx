@@ -2248,7 +2248,7 @@ export default function Home() {
               fontSize: 16,
             }}
           >
-            {saving ? (promotionType === 'none' ? 'Opslaan…' : 'Opslaan en betaling voorbereiden…') : promotionType === 'none' ? 'Evenement/vermelding opslaan' : `Opslaan en betalen via Mollie · ${formatAdvertisingAmount(MONTHLY_PRICES[promotionType] * advertiser.months)}`}
+            {REGIONAL_DEMO?'Demo bewaren in deze browser — geen betaling':saving ? (promotionType === 'none' ? 'Opslaan…' : 'Opslaan en betaling voorbereiden…') : promotionType === 'none' ? 'Evenement/vermelding opslaan' : `Opslaan en betalen via Mollie · ${formatAdvertisingAmount(MONTHLY_PRICES[promotionType] * advertiser.months)}`}
           </button>
         </form>
       )}

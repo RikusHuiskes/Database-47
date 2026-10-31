@@ -1,3 +1,9 @@
+## Regional website boundaries
+
+The owner requires Côte de Duras to remain unchanged. This branch and checkout are ONLY for the separate Libourne and Sarlat demonstrations. Never push this branch to Duras' branch or deploy it to the database-47 project. Never configure Duras credentials or databases on either demonstration.
+
+Read SITE-REGISTRY.json before a site-specific task. An instruction naming Côte de Libourne applies only to Libourne; Côte de Sarlat applies only to Sarlat. Keep regional data and browser storage separate. Shared functional edits need checks for both new sites; Duras is excluded unless explicitly authorized. Do not create further city projects without city names and cost authorization. These are free demonstrations with browser-local edits, not fully provisioned production systems.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
