@@ -6,6 +6,7 @@ const number=(n:number)=>new Intl.NumberFormat('nl-NL').format(n);
 export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}){
   const [days,setDays]=useState(30),[report,setReport]=useState<Report|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
   const [tab,setTab]=useState('overview');
+  const [showFullReport,setShowFullReport]=useState(false);
   const requestId=useRef(0);
   const load=useCallback(async()=>{
     if(!client)return;const id=++requestId.current;setLoading(true);setError('');setReport(null);
@@ -41,7 +42,7 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
     {loading&&<p role="status">Statistieken laden…</p>}{error&&<p role="alert">{error}</p>}
     <p className="form-hint">Opent het CSV-bestand in ChatGPT? Kies Download Excel of Volledig rapport direct bekijken. Je kunt de CSV ook vanuit Excel openen via Bestand → Openen.</p>
     {report&&<>
-      <details className="analytics-export-preview"><summary>Volledig rapport direct bekijken</summary><div className="analytics-export-scroll"><table><caption>Alle rapportonderdelen · laatste {days} dagen</caption><tbody>{analyticsRows(report,days).map((row,index)=><tr key={index}>{row.length?row.map((cell,column)=><td key={column}>{String(cell??"")}</td>):<td colSpan={9} aria-hidden="true">&nbsp;</td>}</tr>)}</tbody></table></div></details>
+      <details className="analytics-export-preview" open={showFullReport} onToggle={event=>setShowFullReport(event.currentTarget.open)}><summary>Volledig rapport direct bekijken</summary>{showFullReport&&<div className="analytics-export-scroll"><table><caption>Alle rapportonderdelen · laatste {days} dagen</caption><tbody>{analyticsRows(report,days).map((row,index)=><tr key={index}>{row.length?row.map((cell,column)=><td key={column}>{String(cell??"")}</td>):<td colSpan={9} aria-hidden="true">&nbsp;</td>}</tr>)}</tbody></table></div>}</details>
       <div className="analytics-kpis">{[['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],['Paginaweergaven',report.summary.pageviews],['Evenementen geopend',report.summary.views],['Zichtbare vermeldingen',report.summary.impressions],['Doorklikken',report.summary.clicks]].map(([label,value])=><div key={label}><span>{label}</span><strong>{number(Number(value))}</strong></div>)}</div>
       <div className="analytics-tabs" role="tablist" aria-label="Statistiekonderdelen">{tabs.map(([id,label])=><button type="button" role="tab" id={'analytics-tab-'+id} aria-controls="analytics-panel" aria-selected={tab===id} key={id} onClick={()=>setTab(id)}>{label}</button>)}</div>
       <div id="analytics-panel" role="tabpanel" aria-labelledby={'analytics-tab-'+tab}>
