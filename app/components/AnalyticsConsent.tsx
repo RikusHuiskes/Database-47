@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from 'react';
+import {REGIONAL_DEMO} from '../../lib/site-region';
 import {analyticsChoice,enableAnalytics,setAnalyticsChoice,trackAnalytics} from '../../lib/analytics-client';
 
 export default function AnalyticsConsent({disabled}:{disabled:boolean}) {
@@ -40,6 +41,7 @@ export default function AnalyticsConsent({disabled}:{disabled:boolean}) {
     document.addEventListener('click',click);
     return()=>{enableAnalytics(false);observer.disconnect();mutations.disconnect();timers.forEach(clearTimeout);document.removeEventListener('click',click);};
   },[disabled,choice]);
+  if(REGIONAL_DEMO)return null;
   return <>
     <button className="analytics-settings" type="button" onClick={()=>setSettings(true)}>Statistiekvoorkeuren</button>
     {ready&&!disabled&&(!choice||settings)&&<aside className="analytics-consent" aria-label="Keuze voor statistieken">

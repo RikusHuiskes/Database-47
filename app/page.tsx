@@ -321,6 +321,7 @@ export default function Home() {
   const [municipalityAreaId, setMunicipalityAreaId] = useState("duras");
   const [municipalityServiceType, setMunicipalityServiceType] = useState<MunicipalityServiceType>("all");
   const [municipalityServiceInfo, setMunicipalityServiceInfo] = useState<MunicipalityServiceResponse | null>(null);
+  const [municipalityVisibleCounts,setMunicipalityVisibleCounts]=useState<Record<string,number>>({});
   const [municipalitySearchComplete, setMunicipalitySearchComplete] = useState(false);
   const [municipalityServicesLoading, setMunicipalityServicesLoading] = useState(false);
   const [municipalityServicesError, setMunicipalityServicesError] = useState("");
@@ -462,7 +463,7 @@ export default function Home() {
     () => new Set<string>(VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities)),
     []
   );
-  const areaOptions = useMemo<LocalAreaOption[]>(() => [
+  const areaOptions = useMemo<LocalAreaOption[]>(() => REGIONAL_DEMO?(localAreas.length>0?localAreas:LOCAL_AREA_TOWNS.map(area=>({...area,distance_group:'Binnen 50 kilometer'}))):[
     ...VISITOR_EVENT_CITY_GROUPS.flatMap((group) => group.cities.map((name) => {
       const normalizedName = normalizePlaceName(name);
       const resolved = localAreas.find((area) => normalizePlaceName(area.name) === normalizedName);
@@ -486,7 +487,7 @@ export default function Home() {
   );
 
   function renderAreaOptions() {
-    return alphabeticalPlaces(areaOptions).map(area => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>);
+    return alphabeticalPlaces(areaOptions).map(area => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}{REGIONAL_DEMO&&area.postcode?' ('+area.postcode+')':''}</option>);
   }
 
   function openVisitorEvent(event: EventRow, placement = "standard") {
@@ -699,6 +700,7 @@ export default function Home() {
     const area = areaOptions.find((candidate) => candidate.id === municipalityAreaId);
     setMunicipalityServicesError("");
     setMunicipalityServiceInfo(null);
+    setMunicipalityVisibleCounts({});
     setMunicipalitySearchComplete(true);
     if (municipalityServiceType === "emergency") return;
     if (!area || area.latitude == null || area.longitude == null) {
@@ -1918,7 +1920,7 @@ export default function Home() {
                   return <section className="municipality-service-group" key={option.id}>
                     <div className="municipality-service-group-heading"><div><p className="section-kicker">Gemeentegids · {municipalityName}</p><h3>{option.label}</h3></div><span>{groupEntries.length} vermeldingen</span></div>
                     {equipmentCount && <p className="municipality-data-note"><strong>INSEE {equipmentCount.year}:</strong> {equipmentCount.basis} De bronnen hieronder tonen {localEntryCount} concrete vermeldingen in {municipalityName}{nearbyEntryCount ? ` en ${nearbyEntryCount} in de omgeving` : ""}.{localEntryCount < equipmentCount.count ? ` Voor ${equipmentCount.count - localEntryCount} voorzieningen kon nog geen afzonderlijk openbaar adres worden bevestigd.` : ""}</p>}
-                    {groupEntries.length ? <div className="municipality-service-group-cards">{groupEntries.map((entry, index) => renderMunicipalityServiceCard(entry, index, option.id))}</div> : <div className="municipality-empty-result">
+                    {groupEntries.length ? <><div className="municipality-service-group-cards">{groupEntries.slice(0,municipalityVisibleCounts[option.id]??8).map((entry, index) => renderMunicipalityServiceCard(entry, index, option.id))}</div>{groupEntries.length>(municipalityVisibleCounts[option.id]??8)&&<button type="button" className="show-more-events" onClick={()=>setMunicipalityVisibleCounts(previous=>({...previous,[option.id]:(previous[option.id]??8)+12}))}>Toon meer {option.label.toLocaleLowerCase('nl-NL')} ({groupEntries.length-(municipalityVisibleCounts[option.id]??8)} resterend)</button>}</> : <div className="municipality-empty-result">
                       <strong>{equipmentCount?.count ? `INSEE registreert ${equipmentCount.count} ${option.label.toLocaleLowerCase("nl-NL")} in ${municipalityName}, maar de gekoppelde openbare adresbronnen geven op dit moment geen individuele vermeldingen terug.` : `Geen controleerbaar adres gevonden voor ${option.label.toLocaleLowerCase("nl-NL")} ${radius > 0 ? `in ${municipalityName} of binnen ${radius} km` : `in ${municipalityName}`}.`}</strong>
                     {equipmentCount && <p>De officiële telling geeft het aantal voorzieningen. Namen en adressen worden alleen getoond wanneer een openbare bron die per voorziening bevestigt.</p>}
                       <p>We vullen alleen namen en contactgegevens in wanneer een bron ze bevestigt.</p>
@@ -1946,7 +1948,7 @@ export default function Home() {
                 {municipalityServiceInfo.officialEquipmentCount && <p className="municipality-data-note">
                   <strong>Officiële gemeentetelling ({municipalityServiceInfo.officialEquipmentCount.year}):</strong> {municipalityServiceInfo.officialEquipmentCount.basis} De bronnen hieronder tonen {municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality !== false).length} concrete vermeldingen in {municipalityName}{municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality === false).length ? ` en ${municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality === false).length} in de omgeving` : ""}.{municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality !== false).length < municipalityServiceInfo.officialEquipmentCount.count ? ` Voor ${municipalityServiceInfo.officialEquipmentCount.count - municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality !== false).length} voorzieningen kon nog geen afzonderlijk openbaar adres worden bevestigd.` : ""}
                 </p>}
-                {municipalityServiceEntries.length > 0 ? municipalityServiceEntries.map((entry, index) => renderMunicipalityServiceCard(entry, index, municipalityServiceType)) : <div className="municipality-empty-result">
+                {municipalityServiceEntries.length > 0 ? <>{municipalityServiceEntries.slice(0,municipalityVisibleCounts[municipalityServiceType]??12).map((entry, index) => renderMunicipalityServiceCard(entry, index, municipalityServiceType))}{municipalityServiceEntries.length>(municipalityVisibleCounts[municipalityServiceType]??12)&&<button type="button" className="show-more-events" onClick={()=>setMunicipalityVisibleCounts(previous=>({...previous,[municipalityServiceType]:(previous[municipalityServiceType]??12)+12}))}>Toon meer resultaten ({municipalityServiceEntries.length-(municipalityVisibleCounts[municipalityServiceType]??12)} resterend)</button>}</> : <div className="municipality-empty-result">
                   <strong>{municipalityServiceInfo.officialEquipmentCount?.count ? `INSEE registreert ${municipalityServiceInfo.officialEquipmentCount.count} ${municipalityServiceLabel.toLocaleLowerCase("nl-NL")} in ${municipalityName}, maar de gekoppelde openbare adresbronnen geven op dit moment geen individuele vermeldingen terug.` : `Geen ${municipalityServiceLabel.toLocaleLowerCase("nl-NL")} gevonden ${municipalityServiceRadiusKm[municipalityServiceType] > 0 ? `in ${municipalityName} of binnen ${municipalityServiceRadiusKm[municipalityServiceType]} km` : `in ${municipalityName}`} in de beschikbare gegevens.`}</strong>
                   <p>Een lege vermelding betekent niet dat deze dienst niet bestaat. Bekijk de kaart of neem contact op met het gemeentehuis.</p>
                   <div className="municipality-service-links">
