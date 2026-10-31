@@ -2,10 +2,12 @@
 import {useCallback,useEffect,useRef,useState,useMemo} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {analyticsRows,type AnalyticsReport as Report} from '../../lib/analytics-report';
+import {saveReportFile,type ReportFilePicker} from '../../lib/save-report-file';
 const number=(n:number)=>new Intl.NumberFormat('nl-NL').format(n);
 export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}){
   const [days,setDays]=useState(30),[report,setReport]=useState<Report|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
   const [tab,setTab]=useState('overview');
+  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
   const [showFullReport,setShowFullReport]=useState(false);
   const requestId=useRef(0);
   const load=useCallback(async()=>{
@@ -17,30 +19,32 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
   },[client,days]);
   useEffect(()=>{void load();},[load]);
   async function download(format:'csv'|'xlsx'='csv'){
-    if(!report||!client)return;
-    setError('');
+    if(!report||!client||saving)return;
+    setError('');setSaveMessage('');setSaving(true);
     try {
-      const {data}=await client.auth.getSession();
-      if(!data.session?.access_token)throw Error('Log opnieuw in als beheerder om de CSV te downloaden.');
-      // An HTTP attachment avoids blob: links being opened by browser/app
-      // handoff handlers. The access token is sent only in the POST body.
-      const frame=document.createElement('iframe');frame.hidden=true;frame.name='analytics-csv-'+crypto.randomUUID();
-      frame.onload=()=>{try{const text=frame.contentDocument?.body?.textContent??'';if(text.startsWith('{')){const result=JSON.parse(text);if(result.error)setError(result.error);}}catch{}};
-      document.body.appendChild(frame);
-      const form=document.createElement('form');form.hidden=true;form.method='POST';form.action='/api/admin/analytics-export';form.target=frame.name;
-      for(const [name,value]of Object.entries({access_token:data.session.access_token,days:String(days),format})){const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input);}
-      document.body.appendChild(form);form.submit();form.remove();
-      window.setTimeout(()=>frame.remove(),60000);
-    } catch(cause){setError(cause instanceof Error?cause.message:'De CSV-download kon niet worden gestart.');}
+      const picker=(window as Window&{showSaveFilePicker?:ReportFilePicker}).showSaveFilePicker;
+      const filename=await saveReportFile(picker?.bind(window),format,days,async()=>{
+        const {data}=await client.auth.getSession();
+        if(!data.session?.access_token)throw Error('Log opnieuw in als beheerder om het rapport op te slaan.');
+        const response=await fetch('/api/admin/analytics-export',{method:'POST',credentials:'same-origin',headers:{Authorization:'Bearer '+data.session.access_token,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({days:String(days),format})});
+        if(!response.ok){const result=await response.json().catch(()=>null);throw Error(result?.error||'Het rapport kon niet worden opgehaald.');}
+        const type=response.headers.get('Content-Type')??'';
+        if(format==='csv'?!type.startsWith('text/csv'):!type.includes('spreadsheetml.sheet'))throw Error('Er is geen geldig rapport ontvangen. Probeer opnieuw.');
+        return response.blob();
+      });
+      setSaveMessage('Opgeslagen: '+filename);
+    } catch(cause){if(cause instanceof Error&&cause.name==='AbortError')setSaveMessage('Opslaan geannuleerd.');else setError(cause instanceof Error?cause.message:'Het rapport kon niet worden opgeslagen.');}
+    finally{setSaving(false);}
   }
   const tabs=[['overview','Overzicht'],['periods','Dagen & maanden'],['categories','Categorieën'],['places','Plaatsen'],['filters','Zoekfilters'],['advertisers','Adverteerders']];
   const table=(headings:string[],rows:(string|number)[][])=><ReportTable key={tab+headings[0]} headings={headings} rows={rows}/>;
   return <section className="analytics-dashboard" aria-labelledby="analytics-title">
     <h2 id="analytics-title">Bezoekers & advertentiebereik</h2>
     <p>Gemeten bezoeken met toestemming. Kies een tabblad voor details. De CSV bevat alle onderdelen voor de gekozen periode.</p>
-    <div className="analytics-controls"><label>Periode <select value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,30,90,365].map(d=><option key={d} value={d}>Laatste {d} dagen</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={loading}>Vernieuwen</button><button type="button" onClick={()=>void download("xlsx")} disabled={!report||loading}>Download Excel (.xlsx)</button><button type="button" onClick={()=>void download("csv")} disabled={!report||loading}>Download CSV (.csv)</button></div>
+    <div className="analytics-controls"><label>Periode <select value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,30,90,365].map(d=><option key={d} value={d}>Laatste {d} dagen</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={loading}>Vernieuwen</button><button type="button" onClick={()=>void download("xlsx")} disabled={!report||loading||saving}>Excel opslaan als…</button><button type="button" onClick={()=>void download("csv")} disabled={!report||loading||saving}>CSV opslaan als…</button></div>
     {loading&&<p role="status">Statistieken laden…</p>}{error&&<p role="alert">{error}</p>}
-    <p className="form-hint">Opent het CSV-bestand in ChatGPT? Kies Download Excel of Volledig rapport direct bekijken. Je kunt de CSV ook vanuit Excel openen via Bestand → Openen.</p>
+    {saveMessage&&<p role="status">{saveMessage}</p>}
+    <p className="form-hint">Kies waar je het rapport wilt opslaan. Het bestand wordt opgeslagen zonder een nieuwe pagina te openen.</p>
     {report&&<>
       <details className="analytics-export-preview" open={showFullReport} onToggle={event=>setShowFullReport(event.currentTarget.open)}><summary>Volledig rapport direct bekijken</summary>{showFullReport&&<div className="analytics-export-scroll"><table><caption>Alle rapportonderdelen · laatste {days} dagen</caption><tbody>{analyticsRows(report,days).map((row,index)=><tr key={index}>{row.length?row.map((cell,column)=><td key={column}>{String(cell??"")}</td>):<td colSpan={9} aria-hidden="true">&nbsp;</td>}</tr>)}</tbody></table></div>}</details>
       <div className="analytics-kpis">{[['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],['Paginaweergaven',report.summary.pageviews],['Evenementen geopend',report.summary.views],['Zichtbare vermeldingen',report.summary.impressions],['Doorklikken',report.summary.clicks]].map(([label,value])=><div key={label}><span>{label}</span><strong>{number(Number(value))}</strong></div>)}</div>
