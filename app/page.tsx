@@ -1766,6 +1766,9 @@ export default function Home() {
 
 
       <section className="area-explorer municipality-info-panel" id="gemeenten" aria-labelledby="area-heading">
+        <div className="municipality-landscape" aria-hidden="true">
+          <img src="/duras-landschapskaart.webp" alt="" width={1536} height={1024} loading="lazy" decoding="async" />
+        </div>
         <div className="area-explorer-copy municipality-info-copy">
           <p className="section-kicker">Gemeentegids Côte de Duras en omgeving</p>
           <h2 id="area-heading">Praktische informatie per gemeente.</h2>
