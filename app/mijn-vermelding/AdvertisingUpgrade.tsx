@@ -41,7 +41,7 @@ export default function AdvertisingUpgrade({access,event,advertising,paymentRead
   }catch(err){setError(err instanceof Error?err.message:'Aanvragen mislukt.');}finally{setSubmitting(false);}
  }
  const change=(key:keyof AdvertiserDetails,value:string|number)=>setDetails(previous=>({...previous,[key]:value}));
- return <section className="owner-advertising-upgrade" aria-labelledby="upgrade-heading">
+ return <section id="listing-upgrade" className="owner-advertising-upgrade" aria-labelledby="upgrade-heading">
   <h2 id="upgrade-heading">Meer bereik voor deze vermelding</h2>
   <p>Maak van ‘{String(event.title)}’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je hierboven gegevens gewijzigd? Sla die eerst op.</p>
   <div className="owner-listing-comparison" aria-label="Verschil tussen een normale en een vetomrande vermelding">

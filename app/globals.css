@@ -1095,3 +1095,7 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .owner-listing-comparison .activity-highlight-banner { margin: 0; }
 .owner-comparison-note { color: #586d68; font-size: 14px; line-height: 1.6; }
 @media(max-width:620px) { .owner-listing-comparison { grid-template-columns: minmax(0,1fr); } .owner-advertising-upgrade { padding: 16px; } }
+.listing-upgrade-invitation { margin-top: 22px; padding: 20px; background: #fffdf4; border: 2px solid #214f40; border-radius: 12px; }
+.listing-upgrade-link { display: inline-flex; align-items: center; min-height: 44px; padding: 12px 18px; background: #285442; color: #fff !important; border-radius: 8px; text-decoration: none; font-weight: 700; }
+.listing-upgrade-invitation p { line-height: 1.6; }
+#listing-upgrade { scroll-margin-top: 24px; }
