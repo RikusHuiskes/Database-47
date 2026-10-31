@@ -1010,16 +1010,15 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
   body:has(.promotion-sidebar:not([hidden])) .visitor-site .event-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:899px) { .promotion-sidebar-slot { width: calc(100% - 24px); }.promotion-sidebar { padding: 12px; }.promotion-sidebar .floating-promotion-heading { display: flex; flex-wrap: wrap; }.promotion-sidebar .floating-promotion-heading h2 { font-size: 20px; }.promotion-sidebar .floating-promotion-card { align-items: center; } }
-/* Keep every navigation item on one line; narrow viewports can scroll the menu horizontally. */
-.visitor-site .site-nav { flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: clamp(7px,1.1vw,16px); padding: 12px clamp(12px,2vw,32px); }
+/* Give the menu its own full-width row below the brand. */
+.visitor-site .site-nav { flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; padding: 12px clamp(12px,2vw,32px); }
 .visitor-site .brand-lockup { flex: 0 0 auto; }
-.visitor-site .primary-nav { order: 0; flex: 0 1 auto; min-width: 0; max-width: none; display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: clamp(5px,.9vw,14px); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
-.visitor-site .primary-nav::-webkit-scrollbar { display: none; }
-.visitor-site .primary-nav a { display: inline-block; flex: 0 0 auto; padding: 7px 0; font-size: clamp(10px,.9vw,13px); line-height: 1.4; white-space: nowrap; }
+.visitor-site .primary-nav { order: 2; flex: 1 0 100%; min-width: 0; max-width: none; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 4px clamp(16px,2vw,30px); padding-top: 8px; border-top: 1px solid #dedfd3; overflow: visible; white-space: normal; }
+.visitor-site .primary-nav a { display: inline-flex; flex: 0 0 auto; min-height: 36px; align-items: center; padding: 7px 0; font-size: 14px; line-height: 1.4; white-space: nowrap; }
 .visitor-site .primary-nav a:focus-visible { outline: 2px solid #a36d3c; outline-offset: 3px; border-radius: 3px; }
 @media(max-width:1450px) { .visitor-site .region-note { display: none; } }
-@media(max-width:1200px) { .visitor-site .site-nav { gap: 8px; padding-inline: 12px; }.visitor-site .brand-lockup { gap: 6px; }.visitor-site .brand-mark { width: 40px; }.visitor-site .brand-mark svg { width: 40px; }.visitor-site .brand-name strong { font-size: clamp(14px,1.4vw,18px); letter-spacing: .4px; }.visitor-site .primary-nav { gap: clamp(4px,.5vw,8px); } }
-@media(max-width:680px) { .visitor-site .site-nav { padding: 12px; gap: 8px; }.visitor-site .primary-nav { flex: 1 1 auto; max-width: none; justify-content: flex-start; gap: 10px; }.visitor-site .primary-nav a { font-size: 10px; padding: 6px 0; } }
+@media(max-width:1200px) { .visitor-site .site-nav { gap: 8px; padding-inline: 12px; }.visitor-site .brand-lockup { gap: 6px; }.visitor-site .brand-mark { width: 40px; }.visitor-site .brand-mark svg { width: 40px; }.visitor-site .brand-name strong { font-size: clamp(14px,1.4vw,18px); letter-spacing: .4px; }.visitor-site .primary-nav { gap: 4px 18px; } }
+@media(max-width:680px) { .visitor-site .site-nav { padding: 12px; gap: 8px; }.visitor-site .primary-nav { gap: 4px 16px; }.visitor-site .primary-nav a { font-size: 12px; padding: 6px 0; } }
 
 .listing-request { margin-top: 28px; padding: 20px; border: 1px solid #cbd8cb; border-radius: 12px; background: #f3f5ed; }.listing-request button { background: #285442; color: white; border: 1px solid #285442; border-radius: 8px; padding: 10px 16px; cursor: pointer; }.request-honeypot { display:none!important; }.request-message { white-space: pre-wrap; }.listing-requests-admin pre { max-height: 400px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }.listing-requests-admin input { width: 100%; box-sizing: border-box; }
 .owner-photo-preview { margin: 0; display: grid; justify-items: start; gap: 12px; }
