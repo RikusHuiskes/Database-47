@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {prepareEventPhoto} from '../../lib/event-photo-browser';
 import {eventPhotoType} from '../../lib/event-photo';
+import AdvertisingUpgrade from './AdvertisingUpgrade';
 type Access={id:string;token:string};
 type SavedLink={title:string;fragment:string};
 async function checkedPaymentStatus(access:Access){
@@ -74,6 +75,7 @@ export default function MyListing(){
       {photoPreview&&<figure className="owner-photo-preview"><img className="owner-photo" src={photoPreview} alt="Voorbeeld van de gekozen nieuwe foto" onError={()=>setPhotoError('Deze foto kan niet worden getoond. Kies een andere JPG-, PNG- of WebP-foto.')}/><figcaption>Voorbeeld van je nieuwe foto — klik op ‘Wijzigingen opslaan’ om deze te plaatsen.</figcaption><button type="button" disabled={busy} onClick={()=>{setPhoto(null);setPhotoError('');}}>Gekozen foto annuleren</button></figure>}
       <button type="submit" disabled={busy||!!photoError} aria-describedby="owner-save-status">{saving?'Foto en wijzigingen worden opgeslagen…':'Wijzigingen opslaan'}</button>
       <div id="owner-save-status" role="status" aria-live="polite" aria-atomic="true">{saving?<p className="owner-save-message">Bezig met opslaan. Wacht tot de bevestiging verschijnt.</p>:message?<p className="owner-save-message">{message}</p>:null}</div></form>
+      {access&&<AdvertisingUpgrade key={access.id} access={access} event={event} advertising={ad} paymentReady={paymentReady} busy={busy} onCreated={setAd} onCheckout={checkout}/>}
       {ad&&<section><h2>Advertentieaanvraag</h2><p>Periode: {ad.starts_on} tot {ad.ends_on}. Bedrag: €{(ad.amount_cents/100).toFixed(2).replace('.',',')}. Betaalstatus: {ad.payment_status}.</p>{ad.payment_status!=='paid'&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void checkout()}>Betalen via Mollie</button>}{ad.payment_status==='open'&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void refreshPayment()}>Betaalstatus controleren</button>}<p>Côte de Duras · 1049 Route du Nourissat · 47120 Savignac de Duras · SIRET 93451899400025. De getoonde bedragen zijn de te betalen bedragen.</p>{!paymentReady&&<p>Online betalen wordt binnenkort beschikbaar. Je aanvraag is opgeslagen.</p>}<p>Een advertentie verschijnt na goedkeuring en betaalbevestiging, uitsluitend in de afgesproken periode.</p></section>}
       <p><button type="button" onClick={()=>{setAccess(null);setEvent(null);sessionStorage.removeItem('cdd-management-session');}}>Andere vermelding openen</button></p></>}
   </main>;

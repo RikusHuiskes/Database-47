@@ -358,6 +358,12 @@ body { background: var(--paper) !important; color: var(--ink) !important; }
 .activity-card { display: flex !important; min-width: 0; flex-direction: column; gap: 0 !important; overflow: hidden; padding: 0 !important; border: 1px solid #e5e4d8 !important; border-radius: 18px !important; background: #fff !important; box-shadow: 0 8px 24px #1d42320a !important; transition: transform 180ms ease, box-shadow 180ms ease; }
 .activity-card-highlighted { border: 3px solid #214f40 !important; background: #fffdf4 !important; box-shadow: 0 8px 22px #214f401c !important; }
 .activity-card-highlighted .activity-highlight-banner { padding: 10px 17px; background: #214f40; color: #fff; font-size: 11px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
+.owner-advertising-upgrade { margin-top: 32px; padding: 24px; border: 2px solid #214f40; border-radius: 16px; background: #fffdf4; }
+.owner-advertising-upgrade fieldset { display: grid; gap: 16px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.owner-advertising-upgrade .owner-advertising-choice { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid #d6ded6; border-radius: 10px; background: #fff; }
+.owner-advertising-choice:has(input:checked) { border: 2px solid #214f40; }
+.owner-advertising-choice input[type=radio] { width: auto; flex: 0 0 auto; margin-top: 4px; }
+.owner-advertising-total { padding: 16px; border-radius: 10px; background: #eaf0e7; color: #214f40; }
 .activity-card:hover { transform: translateY(-4px); box-shadow: 0 18px 35px #1d42321a !important; }
 .activity-media { position: relative; height: 190px; overflow: hidden; background: linear-gradient(140deg, #f4dcaa, #d88b61 54%, #456d53); }
 .activity-image { display: block; width: 100% !important; height: 100% !important; min-height: 0 !important; max-height: none !important; border-radius: 0 !important; object-fit: cover; transition: transform 260ms ease; }
