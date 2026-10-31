@@ -7,6 +7,24 @@ type Props={access:{id:string;token:string};event:Record<string,unknown>;adverti
 const labels={highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'};
 const euro=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(cents/100);
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+function ListingPreview({event,highlighted}:{event:Record<string,unknown>;highlighted:boolean}){
+ const image=typeof event.image_url==='string'&&/^https?:\/\//i.test(event.image_url)?event.image_url:null;
+ const date=event.start_at?new Date(String(event.start_at)):null;
+ return <figure className="owner-listing-example">
+  <figcaption><strong>{highlighted?'Vetomrande advertentie':'Normale vermelding'}</strong><span>{highlighted?`${euro(MONTHLY_PRICES.highlight)} per maand`:'Gratis'}</span></figcaption>
+  <article className={`activity-card${highlighted?' activity-card-highlighted':''}`}>
+   {highlighted&&<div className="activity-highlight-banner">Uitgelichte advertentie</div>}
+   <div className="activity-media">{image?<img className="activity-image" src={image} alt=""/>:<div className="activity-image-placeholder"><span aria-hidden="true">47</span><small>Ontdek dichtbij</small></div>}</div>
+   <div className="activity-card-content">
+    <h3>{String(event.title||'Je vermelding')}</h3>
+    {date&&Number.isFinite(date.getTime())&&<p className="activity-date">{new Intl.DateTimeFormat('nl-NL',{dateStyle:'long',timeZone:'Europe/Paris'}).format(date)}</p>}
+    <p className="activity-place">{[event.venue_name,event.address,event.postcode,event.city].filter(Boolean).join(', ')}</p>
+    {(event.short_description||event.description)&&<p className="activity-description">{String(event.short_description||event.description)}</p>}
+    <div className="activity-links"><span className="activity-link">Bekijk evenementdetails →</span></div>
+   </div>
+  </article>
+ </figure>;
+}
 export default function AdvertisingUpgrade({access,event,advertising,paymentReady,busy,onCreated,onCheckout}:Props){
  const [placement,setPlacement]=useState<AdvertisingType>('highlight');
  const [details,setDetails]=useState<AdvertiserDetails>(()=>({...emptyAdvertiser,...advertising?.details,startDate:today(),months:1}));
@@ -26,6 +44,10 @@ export default function AdvertisingUpgrade({access,event,advertising,paymentRead
  return <section className="owner-advertising-upgrade" aria-labelledby="upgrade-heading">
   <h2 id="upgrade-heading">Meer bereik voor deze vermelding</h2>
   <p>Maak van ‘{String(event.title)}’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je hierboven gegevens gewijzigd? Sla die eerst op.</p>
+  <div className="owner-listing-comparison" aria-label="Verschil tussen een normale en een vetomrande vermelding">
+   <ListingPreview event={event} highlighted={false}/><ListingPreview event={event} highlighted/>
+  </div>
+  <p className="owner-comparison-note">Dezelfde vermelding, extra opvallend: een dikke donkergroene rand, een lichte crèmeachtergrond en het label ‘Uitgelichte advertentie’. De vetomrande advertentie staat tussen de gewone resultaten; de volgorde verandert hierdoor niet. Dit is een voorbeeld van de weergave, geen bevestiging dat je advertentie al actief is.</p>
   {pending||active?<p>Deze vermelding heeft al een lopende advertentie of aanvraag. Hieronder vind je de betaalstatus en kun je een openstaande betaling afronden. Neem contact op met de beheerder als je de advertentievorm wilt veranderen.</p>:<form className="owner-form" onSubmit={submit}>
    <fieldset disabled={busy||submitting}>
     <legend>Advertentievorm</legend>
