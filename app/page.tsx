@@ -76,7 +76,7 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
-type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging";
+type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking";
 type MunicipalityServiceEntry = {
   latitude?: number;
   longitude?: number;
@@ -143,6 +143,9 @@ const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }
   { id: "supermarket", label: "Supermarkten" },
   { id: "fuel", label: "Tankstations" },
   { id: "charging", label: "Laadpalen voor elektrische voertuigen" },
+  { id: "public_transport", label: "Openbaar vervoer" },
+  { id: "parking", label: "Parkeren" },
+  { id: "disabled_parking", label: "Invalide parkeerplaatsen" },
   { id: "emergency", label: "Noodnummers" },
 ];
 
@@ -1610,6 +1613,9 @@ export default function Home() {
     supermarket: 25,
     fuel: 25,
     charging: 25,
+    public_transport: 25,
+    parking: 25,
+    disabled_parking: 25,
   };
   const municipalityServiceEntries: MunicipalityServiceEntry[] = !municipalityServiceInfo
     ? []
@@ -1671,7 +1677,6 @@ export default function Home() {
             <a href="#ontdekken">Ontdekken</a>
             <a href="#gemeenten">Gemeente informatie</a>
             <a href="#activity-tip-form" onClick={openEventEntryForm}>Nieuw evenement/vermelding</a>
-            <a href="#gezondheid">Gezondheid</a>
             <a href="/mijn-vermelding">Mijn vermelding</a>
             <a href="/handleiding">Handleiding</a>
           </nav>

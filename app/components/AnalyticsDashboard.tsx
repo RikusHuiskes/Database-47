@@ -1,9 +1,7 @@
 "use client";
 import {useCallback,useEffect,useRef,useState,useMemo} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
-type Category={name:string;visitors:number;visits:number;selections:number;views:number;clicks:number};
-type EventStats={event_id:string;name:string;impressions:number;views:number;clicks:number;bookings:number;visitors:number;reached_sessions:number;clicked_sessions:number};
-type Report={generatedAt:string;firstMeasuredAt:string|null;totalMeasuredVisitors:number;summary:{visitors:number;visits:number;pageviews:number;views:number;impressions:number;clicks:number};daily:{day:string;visitors:number;visits:number}[];monthly:{month:string;visitors:number;visits:number;pageviews:number}[];pages:{name:string;views:number;visitors:number}[];filters:{area:string|null;category:string|null;radius_km:number;uses:number}[];categories:Category[];places:{name:string;visitors:number;searches:number}[];events:EventStats[]};
+import type {AnalyticsReport as Report} from '../../lib/analytics-report';
 const number=(n:number)=>new Intl.NumberFormat('nl-NL').format(n);
 export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}){
   const [days,setDays]=useState(30),[report,setReport]=useState<Report|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
@@ -17,27 +15,29 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
     }catch(cause){if(id===requestId.current)setError(cause instanceof Error?cause.message:'Statistieken zijn tijdelijk niet beschikbaar.');}finally{if(id===requestId.current)setLoading(false);}
   },[client,days]);
   useEffect(()=>{void load();},[load]);
-  function download(){
-    if(!report)return;
-    const rows:unknown[][]=[['Côte de Duras — gemeten bereik met toestemming'],['Periode (dagen)',days],['Gegenereerd',report.generatedAt],['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],[],
-      ['Paginaweergaven',report.summary.pageviews],['Maand','Bezoekers','Bezoeken','Paginaweergaven'],...report.monthly.map(m=>[m.month,m.visitors,m.visits,m.pageviews]),[],
-      ['Pagina','Weergaven','Bezoekers'],...report.pages.map(p=>[p.name,p.views,p.visitors]),[],
-      ['Filterplaats','Categorie','Afstand (km)','Toepassingen'],...report.filters.map(f=>[f.area??'Huidige locatie',f.category??'Alle categorieën',f.radius_km,f.uses]),[],
-      ['Dag','Bezoekers','Bezoeken'],...report.daily.map(d=>[d.day,d.visitors,d.visits]),[],
-      ['Plaats','Bezoekers','Keuzes'],...report.places.map(p=>[p.name,p.visitors,p.searches]),[],
-      ['Categorie','Bezoekers','Bezoeken','Categoriekeuzes','Evenementweergaven','Doorklikken'],...report.categories.map(c=>[c.name,c.visitors,c.visits,c.selections,c.views,c.clicks]),[],
-      ['Evenement','Zichtbare vermeldingen','Geopend','Doorklikken','Reserveringsklikken','Bereikte bezoeken','Bezoeken met doorklik na vertoning'],...report.events.map(e=>[e.name,e.impressions,e.views,e.clicks,e.bookings,e.reached_sessions,e.clicked_sessions]),[],
-      ['Toelichting','Uitsluitend gemeten bezoeken met toestemming; geen historische reconstructie, volledige personentelling of bevestigde boekingen.']];
-    const safe=(value:unknown)=>'"'+String(value??'').replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"';
-    const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.map(row=>row.map(safe).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
-    const a=document.createElement('a');a.href=url;a.download=`cote-de-duras-bereik-${days}-dagen.csv`;a.click();URL.revokeObjectURL(url);
+  async function download(){
+    if(!report||!client)return;
+    setError('');
+    try {
+      const {data}=await client.auth.getSession();
+      if(!data.session?.access_token)throw Error('Log opnieuw in als beheerder om de CSV te downloaden.');
+      // An HTTP attachment avoids blob: links being opened by browser/app
+      // handoff handlers. The access token is sent only in the POST body.
+      const frame=document.createElement('iframe');frame.hidden=true;frame.name='analytics-csv-'+crypto.randomUUID();
+      frame.onload=()=>{try{const text=frame.contentDocument?.body?.textContent??'';if(text.startsWith('{')){const result=JSON.parse(text);if(result.error)setError(result.error);}}catch{}};
+      document.body.appendChild(frame);
+      const form=document.createElement('form');form.hidden=true;form.method='POST';form.action='/api/admin/analytics-export';form.target=frame.name;
+      for(const [name,value]of Object.entries({access_token:data.session.access_token,days:String(days)})){const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input);}
+      document.body.appendChild(form);form.submit();form.remove();
+      window.setTimeout(()=>frame.remove(),60000);
+    } catch(cause){setError(cause instanceof Error?cause.message:'De CSV-download kon niet worden gestart.');}
   }
   const tabs=[['overview','Overzicht'],['periods','Dagen & maanden'],['categories','Categorieën'],['places','Plaatsen'],['filters','Zoekfilters'],['advertisers','Adverteerders']];
   const table=(headings:string[],rows:(string|number)[][])=><ReportTable key={tab+headings[0]} headings={headings} rows={rows}/>;
   return <section className="analytics-dashboard" aria-labelledby="analytics-title">
     <h2 id="analytics-title">Bezoekers & advertentiebereik</h2>
-    <p>Gemeten bezoeken met toestemming. Kies een tabblad voor details. Alle metingen blijven bewaard en staan in de volledige CSV-export.</p>
-    <div className="analytics-controls"><label>Periode <select value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,30,90,365].map(d=><option key={d} value={d}>Laatste {d} dagen</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={loading}>Vernieuwen</button><button type="button" onClick={download} disabled={!report||loading}>Volledig rapport (CSV)</button></div>
+    <p>Gemeten bezoeken met toestemming. Kies een tabblad voor details. De CSV bevat alle onderdelen voor de gekozen periode.</p>
+    <div className="analytics-controls"><label>Periode <select value={days} onChange={e=>setDays(Number(e.target.value))}>{[7,30,90,365].map(d=><option key={d} value={d}>Laatste {d} dagen</option>)}</select></label><button type="button" onClick={()=>void load()} disabled={loading}>Vernieuwen</button><button type="button" onClick={()=>void download()} disabled={!report||loading}>Volledig rapport (CSV)</button></div>
     {loading&&<p role="status">Statistieken laden…</p>}{error&&<p role="alert">{error}</p>}
     {report&&<>
       <div className="analytics-kpis">{[['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],['Paginaweergaven',report.summary.pageviews],['Evenementen geopend',report.summary.views],['Zichtbare vermeldingen',report.summary.impressions],['Doorklikken',report.summary.clicks]].map(([label,value])=><div key={label}><span>{label}</span><strong>{number(Number(value))}</strong></div>)}</div>

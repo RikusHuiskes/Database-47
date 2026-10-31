@@ -18,9 +18,10 @@ export function promotionIsActive(event:Pick<PresentedEvent,'promotion_status'|'
   return starts<=now.getTime()&&now.getTime()<ends;
 }
 
-export function upcomingHighlights<T extends PresentedEvent>(events: T[]) {
+export function upcomingHighlights<T extends PresentedEvent>(events: T[], now = new Date()) {
   return events.filter(event => !event.is_directory_entry && Number.isFinite(Date.parse(event.start_at))
-      && !(event.promotion_type === 'homepage' && promotionIsActive(event)))
+      && Date.parse(event.start_at) >= now.getTime()
+      && !(event.promotion_type === 'homepage' && promotionIsActive(event, now)))
     .sort((left, right) => Date.parse(left.start_at) - Date.parse(right.start_at) || left.id.localeCompare(right.id))
     .slice(0, 3);
 }

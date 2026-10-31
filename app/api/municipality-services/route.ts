@@ -3,7 +3,7 @@ import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { CURATED_HEALTH_SERVICES } from "../../../lib/municipality-health";
 import { CURATED_LOCAL_SERVICES } from "../../../lib/municipality-local-services";
 import { municipalCatalog } from "../../../lib/municipal-catalog";
-import { mobilityType, mobilityName, mobilityDetails } from "../../../lib/municipal-mobility";
+import { mobilityType, mobilityTypes, mobilityName, mobilityDetails } from "../../../lib/municipal-mobility";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
@@ -102,6 +102,9 @@ const serviceTypes = new Set([
   "supermarket",
   "fuel",
   "charging",
+  "public_transport",
+  "parking",
+  "disabled_parking",
 ]);
 
 function parseSerialized(value: unknown): unknown {
@@ -668,7 +671,7 @@ export async function GET(request: NextRequest) {
     : Promise.resolve(null);
   const communeBoundaryPromise = fetchCommuneBoundary(codeInsee);
   const requestedServiceTypes = service === "all"
-    ? ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging"]
+    ? ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"]
     : [service];
   const officialCountsPromise = service === "all"
     ? Promise.all(Object.keys(BPE_EQUIPMENT_TYPES).map((type) => fetchOfficialEquipmentCount(codeInsee, type)))
@@ -696,6 +699,9 @@ export async function GET(request: NextRequest) {
     supermarket: 25000,
     fuel: 25000,
     charging: 25000,
+    public_transport: 25000,
+    parking: 25000,
+    disabled_parking: 25000,
   };
   for (const type of Object.keys(searchRadiusMeters)) {
     if (type !== "mairie") searchRadiusMeters[type] = catalog.radiusKm * 1000;
@@ -712,6 +718,9 @@ export async function GET(request: NextRequest) {
     supermarket: ['["shop"="supermarket"]'],
     fuel: ['["amenity"="fuel"]'],
     charging: ['["amenity"="charging_station"]'],
+    public_transport: ['["highway"="bus_stop"]', '["amenity"="bus_station"]', '["railway"~"^(station|halt|tram_stop)$"]', '["public_transport"="platform"]'],
+    parking: ['["amenity"="parking"]'],
+    disabled_parking: ['["amenity"="parking_space"]["parking_space"="disabled"]', '["amenity"="parking"]["capacity:disabled"]'],
   };
   const communeSelector = [
     ...(codeInsee ? [
@@ -731,7 +740,7 @@ export async function GET(request: NextRequest) {
     ? [`[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`]
     : service === "all"
       ? [
-        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging"], 35)});out center tags;`,
+        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"], 35)});out center tags;`,
         `[out:json][timeout:18];(${buildNearbyQuery(["hospital"], 60)});out center tags;`,
         `[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`,
       ]
@@ -880,7 +889,7 @@ export async function GET(request: NextRequest) {
   const osmElements = osmResult.status === "fulfilled" ? osmResult.value.elements ?? [] : [];
   const osmServices = osmElements.flatMap((element) => {
     const tags = element.tags ?? {};
-    const type = osmCategory(tags);
+    const type = service !== 'all' && mobilityTypes(tags).includes(service) ? service : osmCategory(tags);
     if (!type) return [];
     if (service !== "all" && type !== service) return [];
     const distanceKm = osmDistance(latitude, longitude, element);

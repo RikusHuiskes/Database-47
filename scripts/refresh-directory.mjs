@@ -5,7 +5,7 @@ import {distanceInKm,normalizePlaceName} from '../lib/local-area.ts';
 const {areas}=JSON.parse(await readFile(new URL('../lib/data/area-catalog.json',import.meta.url),'utf8'));
 const cache=new URL('../work/directory-sources/',import.meta.url);
 await mkdir(cache,{recursive:true});
-const feeds=[['hotels','hotels-chambres-hotes-gites'],['chambres-hotes','hotels-chambres-hotes-gites'],['meubles-classes','hotels-chambres-hotes-gites'],['meubles-labellises','hotels-chambres-hotes-gites'],['meubles-non-classes-non-labellises','hotels-chambres-hotes-gites'],['sites-viticoles','wijnhuizen'],['sites-sorties','cafes'],['points-restauration','cafes']];
+import {DIRECTORY_FEEDS as feeds} from '../lib/directory-feeds.ts';
 const entries=[],sources=[];
 async function download(name,url,options={}) {
   const path=new URL(name,cache);
@@ -22,6 +22,7 @@ for(const [feed,category_slug] of feeds){
     const rows=parseSirtaquiCsv(new TextDecoder('windows-1252').decode(await download(`${feed}.csv`,url)));
     let selected=0;
     for(const r of rows){
+      if(category_slug==='restaurants-gastronomie'&&!/restaurant|restauration|brasserie|pizzeria|creperie|ferme auberge|bistrot|traiteur/.test(norm(`${r.NOM_OFFRE} ${r.TYPE??''} ${r.CATEGORIE??''}`)))continue;
       if(category_slug==='cafes'&&!/\b(cafe|bar|pub|bistrot|salon de the)\b/.test(norm(`${r.NOM_OFFRE} ${r.TYPE??''} ${r.CATEGORIE??''}`)))continue;
       const lat=r.LATITUDE?Number(r.LATITUDE):NaN,lon=r.LONGITUDE?Number(r.LONGITUDE):NaN;
       if(!r.NOM_OFFRE||!r['IDENTIFIANT SIRTAQUI']||!relevant(lat,lon,r.COMMUNE))continue;
@@ -54,8 +55,8 @@ for(const e of entries){
   const duplicate=unique.find(x=>x.category_slug===e.category_slug&&(x.source_id===e.source_id||norm(x.title)===norm(e.title)&&norm(x.city??'')===norm(e.city??'')&&(!x.latitude||!e.latitude||distanceInKm(x.latitude,x.longitude,e.latitude,e.longitude)<0.3)));
   if(duplicate){if(!duplicate.image_url)duplicate.image_url=e.image_url;continue;}unique.push(e);
 }
-const categories=['hotels-chambres-hotes-gites','wijnhuizen','cafes'];
+const categories=[...new Set(feeds.map(([,category])=>category))];
 const coverage=areas.map(a=>({municipality:a.name,...Object.fromEntries(categories.map(c=>[c,{inMunicipality:unique.filter(e=>e.category_slug===c&&e.city&&norm(e.city)===norm(a.name)).length,withinRadius:unique.filter(e=>e.category_slug===c&&e.latitude!=null&&distanceInKm(a.latitude,a.longitude,e.latitude,e.longitude)<=a.radius_km).length,radiusKm:a.radius_km}]))}));
 await writeFile(new URL('../lib/data/directory-entries.json',import.meta.url),JSON.stringify({updatedAt:new Date().toISOString(),sources,entries:unique}));
 await writeFile(new URL('../work/directory-coverage.json',import.meta.url),JSON.stringify(coverage,null,2));
-console.log(JSON.stringify({total:unique.length,categories:Object.fromEntries(categories.map(c=>[c,unique.filter(e=>e.category_slug===c).length])),coverage}));
+console.log(JSON.stringify({total:unique.length,categories:Object.fromEntries(categories.map(c=>[c,unique.filter(e=>e.category_slug===c).length])),coverage:coverage.filter(a=>norm(a.municipality)==='bergerac')}));

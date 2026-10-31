@@ -1,6 +1,6 @@
 import mapData from "./data/municipal-osm.json";
 import mobilityData from "./data/municipal-mobility.json";
-import { mobilityType, mobilityName, mobilityDetails } from "./municipal-mobility";
+import { mobilityType, mobilityTypes, mobilityName, mobilityDetails } from "./municipal-mobility";
 import officialData from "./data/municipal-official.json";
 import centres from "./data/commune-centres.json";
 import areas from "./data/area-catalog.json";
@@ -18,7 +18,7 @@ export type CatalogService = {
   mayorSourceUrl?: string; mayorSourceName?: string;
   distanceKm?: number; inSelectedMunicipality?: boolean; sourceUrl: string; sourceName: string;
 };
-export const MUNICIPAL_TYPES = ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging"];
+export const MUNICIPAL_TYPES = ["mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"];
 function parsed(value: unknown): unknown { try { return typeof value === "string" ? JSON.parse(value) : value; } catch { return value; } }
 function string(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value.trim() : undefined; }
 function contact(value: unknown): string | undefined {
@@ -58,10 +58,10 @@ const mapped: CatalogService[] = [...mapData.elements, ...mobilityData.elements]
   const tags=entry.tags ?? {}, type=mapType(tags), latitude=entry.lat ?? entry.center?.lat, longitude=entry.lon ?? entry.center?.lon;
   const name = mobilityName(tags) || tags.name;
   if (!type || !name || latitude == null || longitude == null || tags.disused === "yes" || tags.abandoned === "yes") return [];
-  return [{id:`osm-${entry.type}-${entry.id}`,type,name,latitude,longitude,extra:mobilityDetails(tags),
+  return (mobilityTypes(tags).length ? mobilityTypes(tags) : [type]).map(serviceType=>({id:`osm-${entry.type}-${entry.id}-${serviceType}`,type:serviceType,name:serviceType==='disabled_parking'&&type==='parking'?`Invalide parkeerplaatsen · ${name}`:name,latitude,longitude,extra:mobilityDetails(tags),
     municipality:tags["addr:city"] ?? tags["addr:place"],address:[tags["addr:housenumber"],tags["addr:street"],tags["addr:postcode"],tags["addr:city"]].filter(Boolean).join(" ") || undefined,
     phone:tags.phone ?? tags["contact:phone"],email:tags.email ?? tags["contact:email"],website:tags.website ?? tags["contact:website"],
-    openingHours:tags.opening_hours,serviceTimes:tags.service_times,sourceUrl:`https://www.openstreetmap.org/${entry.type}/${entry.id}`,sourceName:"OpenStreetMap contributors (ODbL)"}];
+    openingHours:tags.opening_hours,serviceTimes:tags.service_times,sourceUrl:`https://www.openstreetmap.org/${entry.type}/${entry.id}`,sourceName:"OpenStreetMap contributors (ODbL)"}));
 });
 const official=officialData.records.map(row=>officialService(row as unknown as RecordValue)).filter((row):row is CatalogService=>row!==null);
 const curated: CatalogService[] = [...CURATED_HEALTH_SERVICES,...CURATED_LOCAL_SERVICES].flatMap(entry=>{
@@ -96,7 +96,7 @@ export function municipalCatalog(city:string,latitude:number,longitude:number,se
     if(seen.has(key)) return []; seen.add(key);
     return [{...entry,distanceKm:Math.round(distance*10)/10,inSelectedMunicipality:entry.municipality ? normalizePlaceName(entry.municipality)===normalizePlaceName(city) : undefined}];
   }).sort((a,b)=>Number(b.inSelectedMunicipality===true)-Number(a.inSelectedMunicipality===true)||a.distanceKm-b.distanceKm);
-  return {city,updatedAt:["all","supermarket","fuel","charging"].includes(service) ? mobilityData.updatedAt : mapData.updatedAt,radiusKm,officialDirectoryAvailable:localMairie.length>0,mapDataAvailable:true,curatedDataAvailable:true,
+  return {city,updatedAt:["all","supermarket","fuel","charging","public_transport","parking","disabled_parking"].includes(service) ? mobilityData.updatedAt : mapData.updatedAt,radiusKm,officialDirectoryAvailable:localMairie.length>0,mapDataAvailable:true,curatedDataAvailable:true,
     officialEquipmentCounts:[],mairie:services.find(entry=>entry.type==="mairie") ?? null,services,
     sources:[{name:"OpenStreetMap contributors (ODbL)",url:"https://www.openstreetmap.org/copyright"},{name:"Service-Public.gouv.fr / DILA",url:"https://api-lannuaire.service-public.gouv.fr/explore/dataset/api-lannuaire-administration/"}],
     missingTypes:(service==="all"?MUNICIPAL_TYPES:[service]).filter(type=>!services.some(entry=>entry.type===type))};

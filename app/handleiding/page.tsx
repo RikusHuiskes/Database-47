@@ -30,7 +30,7 @@ export default function VisitorGuide(){return <main className="region-introducti
   <section id="gemeentegids"><h2>2. De gemeentegids gebruiken</h2><ol>
     <li>Klik in het menu op <strong>Gemeente informatie</strong>.</li>
     <li>Kies bij <strong>Gemeente of dorp</strong> de plaats waarover je informatie zoekt.</li>
-    <li>Kies bij <strong>Welke informatie zoek je?</strong> een voorziening, bijvoorbeeld <strong>Gemeentehuis &amp; burgemeester</strong>, <strong>Huisarts / medisch centrum</strong>, <strong>Dichtstbijzijnde ziekenhuis</strong>, <strong>Bibliotheek</strong>, <strong>Apotheek</strong>, <strong>Supermarkten</strong>, <strong>Tankstations</strong> of <strong>Laadpalen voor elektrische voertuigen</strong>.</li>
+    <li>Kies bij <strong>Welke informatie zoek je?</strong> een voorziening, bijvoorbeeld <strong>Gemeentehuis &amp; burgemeester</strong>, <strong>Huisarts / medisch centrum</strong>, <strong>Dichtstbijzijnde ziekenhuis</strong>, <strong>Bibliotheek</strong>, <strong>Apotheek</strong>, <strong>Supermarkten</strong>, <strong>Tankstations</strong> <strong>Laadpalen voor elektrische voertuigen</strong>, <strong>Openbaar vervoer</strong>, <strong>Parkeren</strong> of <strong>Invalide parkeerplaatsen</strong>.</li>
     <li>Wil je het complete overzicht? Kies dan <strong>Alle categorieën — complete gemeentegids</strong>.</li>
     <li>Klik op <strong>Toon informatie</strong>.</li>
     <li>Wacht tot het ophalen klaar is en bekijk de resultaten onder de zoekvelden.</li>
@@ -106,7 +106,6 @@ export default function VisitorGuide(){return <main className="region-introducti
   <section id="hulp"><h2>8. Andere onderdelen en hulp</h2><ul>
     <li><strong>De streek beleven:</strong> uitleg over de website en de regio. Met <strong>Ontdek de agenda</strong> ga je naar het zoekscherm.</li>
     <li><strong>Ontdekken:</strong> snel naar de agenda of gemeentegids.</li>
-    <li><strong>Gezondheid:</strong> het onderdeel over buitenactiviteiten. Voor medische adressen gebruik je <strong>Gemeente informatie</strong>.</li>
     <li><strong>Contactgegevens:</strong> onderaan de website vind je hoe je Côte de Duras kunt bereiken.</li>
     <li><strong>Statistiekvoorkeuren:</strong> onderaan de website kun je je keuze voor het meten van websitegebruik aanpassen.</li>
   </ul><p>Voor hulp kun je mailen naar <a href="mailto:info@cotededuras.com">info@cotededuras.com</a>. Vermeld de titel van de betreffende vermelding en eventueel je aanvraagreferentie. Stuur je persoonlijke beheerlink niet mee in een openbaar bericht.</p></section>
