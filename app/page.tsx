@@ -1,4 +1,5 @@
 "use client";
+import CalendarSiteSwitcher from './components/CalendarSiteSwitcher';
 import {SHOP_TYPES} from "../lib/municipal-shops";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -486,6 +487,17 @@ export default function Home() {
   function renderAreaOptions() {
     return alphabeticalPlaces(areaOptions).map(area => <option key={area.id} value={area.id} disabled={area.latitude == null || area.longitude == null}>{area.name}</option>);
   }
+
+  useEffect(() => {
+    const openAdministration = () => {
+      if (window.location.hash !== '#beheer') return;
+      const panel = document.getElementById('beheer') as HTMLDetailsElement | null;
+      if (panel) { panel.open = true; setAdminContentMounted(true); panel.scrollIntoView({block:'start'}); }
+    };
+    openAdministration();
+    window.addEventListener('hashchange', openAdministration);
+    return () => window.removeEventListener('hashchange', openAdministration);
+  }, []);
 
   function openVisitorEvent(event: EventRow, placement = "standard") {
     setVisitorEventPlacement(placement);
@@ -2267,7 +2279,7 @@ export default function Home() {
       <details id="beheer" onToggle={(event) => { if (event.currentTarget.open) setAdminContentMounted(true); }} style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
       {adminContentMounted && <>
-      <h2>Beheerdersdashboard</h2>
+      <h2>Beheerdersdashboard</h2><CalendarSiteSwitcher currentSite="duras"/>
 
       {authLoading ? (
         <p>Inlogstatus controleren...</p>
