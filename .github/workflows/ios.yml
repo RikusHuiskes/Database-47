@@ -35,5 +35,14 @@ jobs:
         if: failure()
         run: |
           if test -f /tmp/ios-build.log; then rg -n 'error:|failed|Failure' /tmp/ios-build.log | tail -60 || true; fi
+          python3 - <<'PY'
+          import pathlib,re
+          path=pathlib.Path('/tmp/ios-build.log')
+          if path.exists():
+              lines=[line for line in path.read_text(errors='replace').splitlines() if re.search(r'error:|failed|Failure|Testing failed|Test Case', line)]
+              for line in lines[-45:]:
+                  safe=line.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+                  print('::error title=iPhone test diagnostic::'+safe[:3000])
+          PY
       # No artifacts/caches are uploaded: no paid artifact storage is activated.
 
