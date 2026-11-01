@@ -1673,6 +1673,7 @@ export default function Home() {
       {service.serviceTimes && <p><strong>Mis- of diensttijden:</strong> {service.serviceTimes}</p>}
       {(groupType === "church" || municipalityServiceType === "all" && service.type === "church") && !service.serviceTimes && <p className="municipality-missing-detail">Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie.</p>}
       {service.extra && <p>{service.extra}</p>}
+      {SHOP_TYPES.includes(service.type)&&<p><a className="text-arrow-link" href={'/gemeentegids/adverteren?'+new URLSearchParams({name:service.name,city:service.municipality||municipalityName,category:groupLabel,address:service.address||''})}>Is dit jouw bedrijf? Beheer en adverteer →</a></p>}
       <div className="municipality-service-links">
         {safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
         {safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer">Bron: {service.sourceName ?? "gegevens bekijken"} <span aria-hidden="true">↗</span></a>}
@@ -1858,6 +1859,7 @@ export default function Home() {
           <p>Kies een plaats en dienst voor contactgegevens, adressen en waar beschikbaar openingstijden. De lijst gebruikt de officiële Franse overheidsdirectory en actuele kaartgegevens.</p>
         </div>
         <div className="municipality-directory">
+          <p><a className="text-arrow-link" href="/gemeentegids/adverteren">Voor ondernemers: bekijk adverteren in de gemeentegids →</a></p>
           <form className="municipality-service-controls" onSubmit={findMunicipalityServices}>
             <label className="field-label">
               Gemeente of dorp
