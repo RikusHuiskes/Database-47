@@ -1,0 +1,34 @@
+{
+  "events": [
+    {
+      "id": "4ae2d2b9-623d-4c90-9517-9d4da5d9fcc6",
+      "title": "Kerstdiner Le Nourrissat",
+      "start_at": "2026-12-25T19:00:00+01:00",
+      "end_at": "2026-12-26T23:00:00+01:00",
+      "city": "Savignac-de-Duras",
+      "address": "1049 Route de Nourissat",
+      "short_description": "UI-testgegevens — niet de live agenda.",
+      "category_ids": [
+        "9b44ead5-4ff9-4665-8952-62db9817d016"
+      ],
+      "distance_km": 5.1,
+      "advertising_placements": [
+        {
+          "placement": "highlight",
+          "starts_at": "2026-01-01T00:00:00Z",
+          "ends_at": "2027-01-01T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "11111111-2222-4333-8444-555555555555",
+      "title": "UI-test wandeling",
+      "start_at": "2026-11-02",
+      "city": "Duras",
+      "distance_km": 1,
+      "category_ids": [
+        "b6f76728-f811-4927-9c71-794e05538165"
+      ]
+    }
+  ]
+}

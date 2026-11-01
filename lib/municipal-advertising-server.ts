@@ -4,10 +4,10 @@ import {hasAdvertisingPlacement} from './event-presentation';
 import areas from './data/area-catalog.json';
 import {normalizePlaceName} from './local-area';
 export type MunicipalPaidListing={image_source_url?:string;image_credit?:string;image_license?:string;image_license_url?:string;id:string;municipal_key:string;municipal_code:string;municipal_type:string;title:string;city:string;address:string|null;contact_phone:string|null;municipal_email:string|null;municipal_hours:string|null;website_url:string|null;image_url:string|null;short_description:string|null;description:string|null;advertising_placements:{placement:string;starts_at:string;ends_at:string}[]|null;promotion_type:string;promotion_status:string;promotion_start_at:string|null;promotion_end_at:string|null};
-export async function decorateMunicipalDirectory<T extends {city:string;services:{id:string;type:string;name:string;address?:string;phone?:string;email?:string;website?:string;openingHours?:string}[]}>(catalog:T,code:string,service:string){
+export async function decorateMunicipalDirectory<T extends {city:string;services:{id:string;type:string;name:string;address?:string;phone?:string;email?:string;website?:string;openingHours?:string}[]}>(catalog:T,code:string,service:string,publicClient?:ReturnType<typeof createServiceClient>){
  const mairie='mairie' in catalog?catalog.mairie:null;
  catalog={...catalog,services:catalog.services.map(withMunicipalPhoto),...(mairie&&typeof mairie==='object'&&'id' in mairie&&typeof mairie.id==='string'?{mairie:withMunicipalPhoto(mairie as {id:string;type?:string})}:{})};
- const client=createServiceClient();if(!client)return {...catalog,municipalPartners:[],municipalAdvertisingAvailable:false};
+ const client=publicClient??createServiceClient();if(!client)return {...catalog,municipalPartners:[],municipalAdvertisingAvailable:false};
  const actualCode=areas.areas.find(area=>normalizePlaceName(area.name)===normalizePlaceName(catalog.city))?.code_insee||code;
  const columns='id,municipal_key,municipal_code,municipal_type,title,city,address,contact_phone,municipal_email,municipal_hours,website_url,image_url,short_description,description,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at';
  // Fetch only this municipality or known visible keys, never billing or ownership data.

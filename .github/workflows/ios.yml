@@ -1,0 +1,39 @@
+name: iOS visitor app
+on:
+  push:
+    branches: [feature/tourisme-duras-enrichment]
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulator:
+    # The repository is public. Use a standard hosted runner, no paid larger runner.
+    runs-on: macos-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Xcode and project validation
+        run: |
+          xcodebuild -version
+          plutil -lint ios/CoteDeDuras/Info.plist ios/CoteDeDuras/PrivacyInfo.xcprivacy ios/CoteDeDuras.xcodeproj/project.pbxproj
+          xcodebuild -list -project ios/CoteDeDuras.xcodeproj
+      - name: Select an available iPhone simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); phones=[x for devices in d["devices"].values() for x in devices if "iPhone" in x["name"] and x.get("isAvailable")]; print(phones[0]["udid"])')
+          echo "SIMULATOR_ID=$DEVICE" >> "$GITHUB_ENV"
+      - name: Build and test native visitor flows
+        run: |
+          set -o pipefail
+          xcodebuild test -project ios/CoteDeDuras.xcodeproj -scheme CoteDeDuras -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath /tmp/CoteDeDuras.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/ios-build.log
+      - name: Build diagnostics
+        if: failure()
+        run: |
+          if test -f /tmp/ios-build.log; then rg -n 'error:|failed|Failure' /tmp/ios-build.log | tail -60 || true; fi
+      # No artifacts/caches are uploaded: no paid artifact storage is activated.
+
