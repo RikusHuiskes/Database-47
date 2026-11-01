@@ -2,9 +2,9 @@
   "updatedAt": "2026-11-01",
   "summary": {
     "uniqueListings": 14808,
-    "withPhoto": 1418,
-    "missingPhoto": 13390,
-    "sourcePagesChecked": 822,
+    "withPhoto": 1430,
+    "missingPhoto": 13378,
+    "sourcePagesChecked": 853,
     "wikidataLocationsChecked": 1577,
     "communesChecked": 53
   },
@@ -12,7 +12,7 @@
     {
       "city": "Duras",
       "total": 25,
-      "withPhoto": 10
+      "withPhoto": 12
     },
     {
       "city": "Saint-Sernin",
@@ -112,7 +112,7 @@
     {
       "city": "Monségur",
       "total": 23,
-      "withPhoto": 3
+      "withPhoto": 4
     },
     {
       "city": "Miramont-de-Guyenne",
@@ -162,7 +162,7 @@
     {
       "city": "Bergerac",
       "total": 287,
-      "withPhoto": 5
+      "withPhoto": 7
     },
     {
       "city": "Monbazillac",
@@ -192,7 +192,7 @@
     {
       "city": "Libourne",
       "total": 359,
-      "withPhoto": 1
+      "withPhoto": 2
     },
     {
       "city": "Langon",
@@ -242,7 +242,7 @@
     {
       "city": "Monflanquin",
       "total": 31,
-      "withPhoto": 4
+      "withPhoto": 5
     },
     {
       "city": "Monteton",
@@ -267,7 +267,7 @@
     {
       "city": "Villeneuve-sur-Lot",
       "total": 200,
-      "withPhoto": 3
+      "withPhoto": 4
     },
     {
       "city": "Fumel",
@@ -10259,6 +10259,250 @@
       "image_url": "https://aquitaine.media.tourinsoft.eu/upload/033D96A7-20A9-4E6A-969A-15BA71302979/33.-OTEM-Sauveterre.jpg",
       "image_source_url": "https://aquitaine.media.tourinsoft.eu/upload/SIRTAQUI-OD-liste-csv-points-infos-tourisme.csv#ORGAQU033FS0002D",
       "image_credit": "Entre-deux-Mers Tourisme - BIT de Sauveterre-de-Guyenne · SIRTAQUI / CRT Nouvelle-Aquitaine"
+    },
+    "osm-node-7116267609": {
+      "image_url": "https://cdn.chausson.fr/media/agency/408/e34d7ca085c4457ba6b399a02ac230cb",
+      "image_source_url": "https://www.chausson.fr/agences/408",
+      "image_credit": "Chausson Matériaux · Eigen vestigingenpagina"
+    },
+    "osm-node-6201177532": {
+      "image_url": "https://cdn.chausson.fr/media/agency/174/90fa6a3d99174623991aa4bf83f938ce",
+      "image_source_url": "https://www.chausson.fr/agences/174",
+      "image_credit": "Chausson Matériaux · Eigen vestigingenpagina"
+    },
+    "osm-node-6194627733": {
+      "image_url": "https://cdn.chausson.fr/media/agency/24/44ed69e033a548898064d1d57a5ce403",
+      "image_source_url": "https://www.chausson.fr/agences/24",
+      "image_credit": "Chausson Matériaux · Eigen vestigingenpagina"
+    },
+    "osm-way-255056181": {
+      "image_url": "https://cdn.chausson.fr/media/agency/126/8e1b5fd2c207462c818921e52dd99d4e",
+      "image_source_url": "https://www.chausson.fr/agences/126",
+      "image_credit": "Chausson Matériaux · Eigen vestigingenpagina"
+    },
+    "osm-way-162487974": {
+      "image_url": "https://cdn.chausson.fr/media/agency/148/8b287afe17e948bfaa039b49ec9f60ee",
+      "image_source_url": "https://www.chausson.fr/agences/148",
+      "image_credit": "Chausson Matériaux · Eigen vestigingenpagina"
+    },
+    "osm-node-10211795051": {
+      "image_url": "https://www.imajeans.fr/media/wysiwyg/facades/11.jpg",
+      "image_source_url": "https://www.imajeans.fr/mag-bordeaux-st-andre-de-cubzac",
+      "image_credit": "ImaJeans · Eigen vestigingenpagina"
+    },
+    "osm-node-4479408372": {
+      "image_url": "https://cdn.chausson.fr/media/agency/413/7228a6e50f4d4f74b468d51b36d1386f",
+      "image_source_url": "https://www.chausson.fr/agences/413",
+      "image_credit": "Chausson Matériaux · Eigen vestigingenpagina"
+    },
+    "osm-node-14039830298": {
+      "image_url": "https://tourismeduras.com//images/gmapfp/GA8294/boucherie-.jpg",
+      "image_source_url": "https://www.tourismeduras.com/pratique-pour-y-vivre/commerces-services-artisans/8294:maison-chollet-boucherie-charcuterie-evrard",
+      "image_credit": "Maison CHOLLET — Boucherie-Charcuterie (voorheen Evrard) · Office de tourisme du Pays de Duras"
+    },
+    "pharmacy-duras-chateau": {
+      "image_url": "https://tourismeduras.com//images/gmapfp/GA8303/pharmacie.jpeg",
+      "image_source_url": "https://www.tourismeduras.com/pratique-pour-y-vivre/commerces-services-artisans/8303:pharmacie-du-chateau",
+      "image_credit": "Pharmacie du Château · Office de tourisme du Pays de Duras"
+    },
+    "osm-node-12984979401": {
+      "image_url": "https://tabacpressemonsegur.fr/wp-content/uploads/2025/06/IMG-20250406-WA0000.jpg",
+      "image_source_url": "https://tabacpressemonsegur.fr",
+      "image_credit": "Tabac-presse · Eigen vestigingenpagina"
+    },
+    "osm-way-147073306": {
+      "image_url": "https://baguettes-et-sortileges.fr/cdn/shop/files/1000062239.jpg?v=1783766914&width=3840",
+      "image_source_url": "https://www.baguettes-et-sortileges.fr/",
+      "image_credit": "Baguettes & Sortilèges · Eigen vestigingenpagina"
+    },
+    "osm-node-4674708391": {
+      "image_url": "https://www.besson-shoes.com/media/wysiwyg/Bergerac.jpg",
+      "image_source_url": "https://www.besson-shoes.com/fr/retailer/presentation/retailer/urlKey/magasin-besson-chaussures-bergerac/",
+      "image_credit": "Besson Chaussures · Bergerac · Eigen vestigingenpagina"
     }
-  }
+  },
+  "categoryCoverage": [
+    {
+      "type": "pharmacy",
+      "category": "Apotheek",
+      "listings": 267,
+      "photos": 2,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "bakery",
+      "category": "Bakkerij",
+      "listings": 440,
+      "photos": 4,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "library",
+      "category": "Bibliotheek",
+      "listings": 467,
+      "photos": 4,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "florist",
+      "category": "Bloemist",
+      "listings": 98,
+      "photos": 2,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "diy",
+      "category": "Bouwmarkten",
+      "listings": 200,
+      "photos": 7,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "hospital",
+      "category": "Dichtstbijzijnde ziekenhuis",
+      "listings": 42,
+      "photos": 2,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "mairie",
+      "category": "Gemeentehuis & burgemeester",
+      "listings": 51,
+      "photos": 46,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "doctor",
+      "category": "Huisarts / medisch centrum",
+      "listings": 151,
+      "photos": 2,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "disabled_parking",
+      "category": "Invalide parkeerplaatsen",
+      "listings": 424,
+      "photos": 0,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "jeweller",
+      "category": "Juwelier",
+      "listings": 78,
+      "photos": 1,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "hairdresser",
+      "category": "Kapper",
+      "listings": 635,
+      "photos": 2,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "church",
+      "category": "Kerk & mis- of diensttijden",
+      "listings": 1564,
+      "photos": 1169,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "charging",
+      "category": "Laadpalen voor elektrische voertuigen",
+      "listings": 261,
+      "photos": 0,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "estate_agent",
+      "category": "Makelaars",
+      "listings": 471,
+      "photos": 19,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "fashion",
+      "category": "Mode",
+      "listings": 540,
+      "photos": 5,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "emergency",
+      "category": "Noodnummers",
+      "listings": 0,
+      "photos": 0,
+      "status": "Informatierubriek, geen bedrijfslocaties"
+    },
+    {
+      "type": "tourism",
+      "category": "Office de tourisme",
+      "listings": 157,
+      "photos": 65,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "public_transport",
+      "category": "Openbaar vervoer",
+      "listings": 2518,
+      "photos": 67,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "parking",
+      "category": "Parkeren",
+      "listings": 5399,
+      "photos": 0,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "shoes",
+      "category": "Schoenenwinkel",
+      "listings": 79,
+      "photos": 1,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "butcher",
+      "category": "Slagerij",
+      "listings": 177,
+      "photos": 3,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "souvenirs",
+      "category": "Souvenirswinkel",
+      "listings": 26,
+      "photos": 1,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "supermarket",
+      "category": "Supermarkten",
+      "listings": 292,
+      "photos": 26,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "tobacco",
+      "category": "Tabak / Kiosk",
+      "listings": 160,
+      "photos": 1,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "dentist",
+      "category": "Tandarts",
+      "listings": 32,
+      "photos": 1,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    },
+    {
+      "type": "fuel",
+      "category": "Tankstations",
+      "listings": 279,
+      "photos": 0,
+      "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
+    }
+  ]
 }

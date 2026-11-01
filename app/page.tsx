@@ -167,6 +167,8 @@ const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }
   { id: "hairdresser", label: "Kapper" },
 ];
 
+municipalityServiceOptions.sort((a,b)=>a.id==="all"?-1:b.id==="all"?1:a.label.localeCompare(b.label,"nl",{sensitivity:"base"}));
+
 const frenchEmergencyNumbers = [
   { number: "112", name: "Europees noodnummer", note: "Medische nood, politie of brandweer" },
   { number: "15", name: "SAMU", note: "Medische spoed" },
@@ -1662,7 +1664,7 @@ export default function Home() {
         ? [municipalityServiceInfo.mairie]
         : municipalityServiceInfo.services.filter((service) => service.type === "mairie")
       : municipalityServiceInfo.services.filter((service) => service.type === municipalityServiceType);
-  const municipalityServiceGroupTypes = municipalityServiceOptions.filter((option) => option.id !== "all" && option.id !== "emergency");
+  const municipalityServiceGroupTypes = municipalityServiceOptions.filter((option) => option.id !== "all");
   const municipalityMapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`;
   const municipalityLibrarySearchUrl = `https://ccfr.bnf.fr/portailccfr/jsp/query_direct.jsp?query=rnbcd_menu_inst_pub&VILLE=${encodeURIComponent(municipalityName)}`;
   const municipalityDoctolibSearchUrl = `https://www.doctolib.fr/medecin-generaliste/${municipalityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
@@ -1767,7 +1769,7 @@ export default function Home() {
             Soort activiteit
             <select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
               <option value="all">Alle soorten</option>
-              {categories.map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
+              {[...categories].sort((a,b)=>(a.name??a.slug??"").localeCompare(b.name??b.slug??"","nl",{sensitivity:"base"})).map((category) => <option key={category.id} value={category.id}>{category.name ?? category.slug ?? "Activiteit"}</option>)}
             </select>
           </label>
           <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
@@ -1916,13 +1918,24 @@ export default function Home() {
             <div className={`municipality-result-layout${municipalityServiceInfo.municipalPartners?.length?' has-partners':''}`}><div className="municipality-results" aria-live="polite">
               {municipalityServiceType === "all" ? <>
                 {municipalityServiceGroupTypes.map((option) => {
+                  if(option.id==="emergency")return (<section key="emergency" className="municipality-service-group municipality-emergency-group">
+                  <div className="municipality-service-group-heading"><div><p className="section-kicker">Geldt in heel Frankrijk</p><h3>Noodnummers</h3></div></div>
+                  <div className="emergency-number-grid" aria-label={`Franse noodnummers voor ${municipalityName}`}>
+                    {frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
+                      <a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}>{item.number}</a>
+                      <strong>{item.name}</strong>
+                      <span>{item.note}</span>
+                    </article>)}
+                  </div>
+                  <p className="municipality-source-note"><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer">Officiële informatie van Service-Public</a>.</p>
+                </section>);
                   const groupEntries = municipalityServiceEntries.filter((service) => service.type === option.id);
                   const equipmentCount = municipalityServiceInfo.officialEquipmentCounts?.find((item) => item.service === option.id);
                   const radius = municipalityServiceRadiusKm[option.id];
                   const localEntryCount = groupEntries.filter((entry) => entry.inSelectedMunicipality !== false).length;
                   const nearbyEntryCount = groupEntries.filter((entry) => entry.inSelectedMunicipality === false).length;
                   return <section className="municipality-service-group" key={option.id}>
-                    <div className="municipality-service-group-heading"><div><p className="section-kicker">Gemeentegids · {municipalityName}</p><h3>{option.label}</h3></div><span>{groupEntries.length} vermeldingen</span></div>
+                    <div className="municipality-service-group-heading"><div><p className="section-kicker">Gemeentegids · {municipalityName}</p><h3>{option.label}</h3></div><span>{groupEntries.length} vermeldingen · {groupEntries.filter(entry=>entry.image_url).length} met foto</span></div>
                     {equipmentCount && <p className="municipality-data-note"><strong>INSEE {equipmentCount.year}:</strong> {equipmentCount.basis} De bronnen hieronder tonen {localEntryCount} concrete vermeldingen in {municipalityName}{nearbyEntryCount ? ` en ${nearbyEntryCount} in de omgeving` : ""}.{localEntryCount < equipmentCount.count ? ` Voor ${equipmentCount.count - localEntryCount} voorzieningen kon nog geen afzonderlijk openbaar adres worden bevestigd.` : ""}</p>}
                     {groupEntries.length ? <div className="municipality-service-group-cards">{groupEntries.map((entry, index) => renderMunicipalityServiceCard(entry, index, option.id))}</div> : <div className="municipality-empty-result">
                       <strong>{equipmentCount?.count ? `INSEE registreert ${equipmentCount.count} ${option.label.toLocaleLowerCase("nl-NL")} in ${municipalityName}, maar de gekoppelde openbare adresbronnen geven op dit moment geen individuele vermeldingen terug.` : `Geen controleerbaar adres gevonden voor ${option.label.toLocaleLowerCase("nl-NL")} ${radius > 0 ? `in ${municipalityName} of binnen ${radius} km` : `in ${municipalityName}`}.`}</strong>
@@ -1937,17 +1950,7 @@ export default function Home() {
                     </div>}
                   </section>;
                 })}
-                <section className="municipality-service-group municipality-emergency-group">
-                  <div className="municipality-service-group-heading"><div><p className="section-kicker">Geldt in heel Frankrijk</p><h3>Noodnummers</h3></div></div>
-                  <div className="emergency-number-grid" aria-label={`Franse noodnummers voor ${municipalityName}`}>
-                    {frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
-                      <a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}>{item.number}</a>
-                      <strong>{item.name}</strong>
-                      <span>{item.note}</span>
-                    </article>)}
-                  </div>
-                  <p className="municipality-source-note"><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer">Officiële informatie van Service-Public</a>.</p>
-                </section>
+
               </> : <>
                 {municipalityServiceInfo.officialEquipmentCount && <p className="municipality-data-note">
                   <strong>Officiële gemeentetelling ({municipalityServiceInfo.officialEquipmentCount.year}):</strong> {municipalityServiceInfo.officialEquipmentCount.basis} De bronnen hieronder tonen {municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality !== false).length} concrete vermeldingen in {municipalityName}{municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality === false).length ? ` en ${municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality === false).length} in de omgeving` : ""}.{municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality !== false).length < municipalityServiceInfo.officialEquipmentCount.count ? ` Voor ${municipalityServiceInfo.officialEquipmentCount.count - municipalityServiceEntries.filter((entry) => entry.inSelectedMunicipality !== false).length} voorzieningen kon nog geen afzonderlijk openbaar adres worden bevestigd.` : ""}
