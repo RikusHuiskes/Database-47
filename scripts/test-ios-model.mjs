@@ -16,7 +16,7 @@ assert.equal(matchesDate({...base,is_directory_entry:true},'today',sunday),false
 assert.equal(matchesDate({...base,start_at:'2026-11-07'},'week',sunday),true);
 assert.equal(matchesDate({...base,start_at:'2026-11-08'},'week',sunday),false);
 assert.equal(matchesDate({...base,start_at:'2026-10-01',end_at:'2026-11-03'},'today',sunday),true);
-assert.equal(eventDate({...base,start_at:'2022-01-01',end_at:'2026-12-31'},sunday),'Loopt t/m 31 december 2026');
+assert.equal(eventDate({...base,start_at:'2022-01-01',end_at:'2026-12-31'},sunday),'Langlopende activiteit · actuele dagen bij de organisator');
 assert.equal(eventDate({...base,is_directory_entry:true},sunday),'Het hele jaar ontdekken');
 assert.equal(filterEvents([base],{...options,query:'degustation'},sunday).length,1);
 assert.equal(filterEvents([base],{...options,query:'chateau'},sunday).length,1);
@@ -25,4 +25,10 @@ assert.equal(filterEvents([{...base,distance_km:undefined}],{...options,radius:1
 assert.equal(filterEvents([{...base,is_free:null}],{...options,freeOnly:true},sunday).length,0);
 assert.equal(filterEvents([base],{...options,city:'Bergerac'},sunday).length,0);
 assert.equal(filterEvents([base,{...base,id:'b',is_directory_entry:true}],{...options,kind:'events'},sunday).length,1);
-console.log('18 checks passed: France dates, DST, weekend boundaries, date ranges, accents, addresses, price and distance filters.');
+assert.equal(calendarDay('2026-02-31'),'');
+assert.equal(calendarDay('2026-99-99'),'');
+assert.equal(filterEvents([{...base,start_at:'2021-12-25'}],options,sunday).length,0);
+assert.equal(filterEvents([{...base,start_at:'2021-01-01',end_at:'2026-12-31'}],{...options,when:'today'},sunday).length,0);
+assert.equal(filterEvents([{...base,start_at:'2021-01-01',end_at:'2026-12-31'}],options,sunday).length,1);
+assert.equal(eventDate({...base,start_at:'2021-12-25'},sunday),'Afgelopen · 25 december 2021');
+console.log('24 checks passed: France dates, DST, weekend boundaries, date ranges, accents, addresses, price and distance filters.');

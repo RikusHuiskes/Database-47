@@ -10,21 +10,37 @@ export type DateFilter='all'|'today'|'tomorrow'|'weekend'|'week';
 const frenchDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'});
 const frenchDate=new Intl.DateTimeFormat('nl-NL',{timeZone:'Europe/Paris',day:'numeric',month:'long',year:'numeric'});
 export function calendarDay(value:string|Date){
- if(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
+ if(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)){const parsed=new Date(value+'T12:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value?value:'';}
  const parsed=new Date(value);return Number.isFinite(parsed.getTime())?frenchDay.format(parsed):'';
 }
 export function addDays(day:string,count:number){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+count);return d.toISOString().slice(0,10);}
 export const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('nl').trim();
+/** A multi-year source period is not proof of an occurrence on any chosen day. */
+export function isLongRunning(event:Pick<AppEvent,'start_at'|'end_at'|'is_directory_entry'>){
+ if(event.is_directory_entry)return false;
+ const start=calendarDay(event.start_at),end=calendarDay(event.end_at||'');
+ return !!start&&!!end&&(Date.parse(end)-Date.parse(start))/86400000>366;
+}
+export function isCurrentEvent(event:AppEvent,now=new Date()){
+ if(event.is_directory_entry)return true;
+ const start=calendarDay(event.start_at),end=calendarDay(event.end_at||event.start_at);
+ if(!start||!end||end<start)return false;
+ const relevant=event.end_at||event.start_at;
+ return /^\d{4}-\d{2}-\d{2}$/.test(relevant)?end>=calendarDay(now):Date.parse(relevant)>=now.getTime();
+}
 export function eventDate(event:Pick<AppEvent,'start_at'|'end_at'|'is_directory_entry'>,now=new Date()){
  if(event.is_directory_entry)return 'Het hele jaar ontdekken';
  const start=calendarDay(event.start_at),end=calendarDay(event.end_at||event.start_at),today=calendarDay(now);
- if(!start)return 'Datum bij de organisator';
  const format=(d:string)=>frenchDate.format(new Date(d+'T12:00:00Z'));
+ if(!start||!end)return 'Datum bij de organisator';
+ if(end<today)return 'Afgelopen · '+format(end);
+ if(isLongRunning(event))return 'Langlopende activiteit · actuele dagen bij de organisator';
  if(end>start)return `${start<today&&end>=today?'Loopt t/m '+format(end):format(start)+' t/m '+format(end)}`;
  return format(start);
 }
 export function matchesDate(event:AppEvent,filter:DateFilter,now=new Date()){
- if(filter==='all')return true;if(event.is_directory_entry)return false;
+ if(!isCurrentEvent(event,now))return false;
+ if(filter==='all')return true;if(event.is_directory_entry||isLongRunning(event))return false;
  const start=calendarDay(event.start_at),end=calendarDay(event.end_at||event.start_at),today=calendarDay(now);
  if(!start||!end)return false;
  let from=today,to=today;
