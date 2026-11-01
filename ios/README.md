@@ -13,6 +13,7 @@ UI tests launch with `--ui-testing`. That argument enables isolated, clearly mar
 ## Configuration and signing
 
 - Debug and the `CoteDeDuras-TestFlight` scheme's Beta archive use the designated public test API. Verify the final project URL before archiving.
+- The public test API at `https://cote-de-duras-app.vercel.app` was verified without login on 2026-11-01: 15 categories, 7,663 events/address entries within 50 km, and the Duras pharmacy directory. Admin and listing-management routes return 404. `/api/status` remains `releaseReady: false`.
 - The App Store Release API URL is intentionally empty. Do not replace it until the production dataset, public sources, privacy declarations and owner contact details have been reviewed.
 - `com.cotededuras.app` is a proposed bundle identifier, not a registered App ID. Set the user's Apple Team and confirm identifier availability in Xcode/App Store Connect before signing.
 - No signing certificate, provisioning profile, Apple account credential or Supabase server key is committed.
