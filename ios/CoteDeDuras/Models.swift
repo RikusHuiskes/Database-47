@@ -93,20 +93,21 @@ enum AppClock {
     }
 }
 enum FrenchDates {
+    // Formatters are configured once and never mutated after initialization.
+    private static let fractionalISO: ISO8601DateFormatter = { let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]; return f }()
+    private static let plainISO: ISO8601DateFormatter = { let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime]; return f }()
+    private static let dayFormatter: DateFormatter = { let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "Europe/Paris")!; f.dateFormat = "yyyy-MM-dd"; f.isLenient = false; return f }()
     static var calendar: Calendar { var value = Calendar(identifier: .gregorian); value.timeZone = TimeZone(identifier: "Europe/Paris")!; return value }
     static func dateOnly(_ value: String) -> Bool { value.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil }
     static func instant(_ value: String) -> Date? {
-        let formatter = ISO8601DateFormatter(); formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let result = formatter.date(from: value) { return result }
-        formatter.formatOptions = [.withInternetDateTime]; return formatter.date(from: value)
+        fractionalISO.date(from: value) ?? plainISO.date(from: value)
     }
     static func dayString(_ date: Date) -> String {
-        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = calendar.timeZone; formatter.dateFormat = "yyyy-MM-dd"; return formatter.string(from: date)
+        dayFormatter.string(from: date)
     }
     static func day(_ raw: String) -> String? {
         if dateOnly(raw) {
-            let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = calendar.timeZone; formatter.dateFormat = "yyyy-MM-dd"; formatter.isLenient = false
-            guard let parsed = formatter.date(from: raw), formatter.string(from: parsed) == raw else { return nil }; return raw
+            guard let parsed = dayFormatter.date(from: raw), dayFormatter.string(from: parsed) == raw else { return nil }; return raw
         }
         return instant(raw).map(dayString)
     }
