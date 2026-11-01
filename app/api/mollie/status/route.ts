@@ -7,11 +7,13 @@ export const runtime='nodejs';
 export async function POST(request:Request){
  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
  try{
-  const {eventId}=await request.json();
+  const {eventId,requestId}=await request.json();
   const client=await managedAccess(request,eventId);
   if(!client)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
   if(!process.env.MOLLIE_API_KEY)return Response.json({error:'Online betalen is nog niet geactiveerd.'},{status:503});
-  const {data:order,error}=await client.from('advertising_requests').select('id,amount_cents,mollie_payment_id,payment_status').eq('event_id',eventId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+  let orderQuery=client.from('advertising_requests').select('id,amount_cents,mollie_payment_id,payment_status').eq('event_id',eventId).order('created_at',{ascending:false}).limit(1);
+    if(requestId)orderQuery=orderQuery.eq('id',requestId);
+    const {data:initialOrder,error}=await orderQuery.maybeSingle();let order=initialOrder;
   if(error)throw Error('De advertentieaanvraag kon niet worden geladen.');
   if(!order)return Response.json({error:'Advertentieaanvraag niet gevonden.'},{status:404});
   if(!order.mollie_payment_id)return Response.json({paymentStatus:order.payment_status},{headers:{'Cache-Control':'no-store'}});

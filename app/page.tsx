@@ -16,7 +16,7 @@ import ListingRequestsAdmin from './components/ListingRequestsAdmin';
 import AdvertisingRequests from "./components/AdvertisingRequests";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
-import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive} from "../lib/event-presentation";
+import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive,hasAdvertisingPlacement} from "../lib/event-presentation";
 import {normalizeWebAddress} from "../lib/web-address";
 import {visitorLocationDecision,shouldUseTownFallback} from '../lib/visitor-location';
 import {loadAdminEvents} from "../lib/admin-event-loader";
@@ -66,6 +66,7 @@ type EventRow = {
   latitude?: number | null;
   longitude?: number | null;
   source_url?: string | null;
+  advertising_placements?:{placement:string;starts_at:string;ends_at:string}[]|null;
   promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
   promotion_status?: "none" | "requested" | "active" | "ended" | null;
   promotion_start_at?:string|null;
@@ -1788,10 +1789,10 @@ export default function Home() {
 
         <div className="event-grid" aria-label="Aankomende activiteiten">
           {displayedNearbyEvents.map((event) => (
-            <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard"} className={`activity-card${event.promotion_type === "highlight" && event.promotion_status === "active" ? " activity-card-highlighted" : ""}`} key={event.id}>
-              {event.promotion_type === "highlight" && event.promotion_status === "active" && <div className="activity-highlight-banner">Uitgelichte advertentie</div>}
+            <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard"} className={`activity-card${hasAdvertisingPlacement(event,"highlight") ? " activity-card-highlighted" : ""}`} key={event.id}>
+              {hasAdvertisingPlacement(event,"highlight") && <div className="activity-highlight-banner">Uitgelichte advertentie</div>}
               <div className="activity-media">
-                <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
+                <button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
                   {safeHttpUrl(event.image_url)
                     ? <img className="activity-image" src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" />
                     : <span className="activity-image-placeholder"><span aria-hidden="true">47</span><small>Ontdek dichtbij</small></span>}
@@ -1802,15 +1803,15 @@ export default function Home() {
                 <div className="activity-tags">
                   {event.category_ids?.length ? <span className="category-pill">{event.category_ids.map(id => categories.find(category => category.id === id)?.name).filter(Boolean).join(" · ")}</span> : null}
                   {event.is_free && <span className="free-pill">Gratis</span>}
-                  {event.promotion_type === "highlight" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}
-                  {categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && event.promotion_type === "category" && event.promotion_status === "active" && <span className="sponsored-label">Categoriepartner</span>}
+                  {hasAdvertisingPlacement(event,"highlight") && <span className="sponsored-label">Uitgelicht</span>}
+                  {categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && hasAdvertisingPlacement(event,"category") && <span className="sponsored-label">Categoriepartner</span>}
                 </div>
-                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event, event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard")}>{event.title}</button></h3>
+                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}>{event.title}</button></h3>
                 <p className="activity-date">{formatDate(event.start_at)}{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</p>
                 <p className="activity-place"><span aria-hidden="true">⌖</span> {[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</p>
                 {(event.short_description || event.description) && <p className="activity-description">{event.short_description || event.description}</p>}
                 <div className="activity-links">
-                  <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event, event.promotion_status === "active" && event.promotion_type === "highlight" ? "highlight" : "standard")}>Bekijk evenementdetails <span aria-hidden="true">→</span></button>
+                  <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}>Bekijk evenementdetails <span aria-hidden="true">→</span></button>
                   {safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer">Reserveren <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
                   {safeHttpUrl(event.source_url) && <a className="activity-link" data-analytics-channel="source" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer">Meer informatie <span aria-hidden="true">↗</span></a>}
@@ -1841,11 +1842,11 @@ export default function Home() {
         {featuredEvents.length > 0 ? <div className="featured-events-grid">
           {featuredEvents.map((event) => {
             const date = formatCardDate(event.start_at);
-            return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={"standard"} className={`featured-event-card${event.promotion_type === "homepage" && event.promotion_status === "active" ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
+            return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={"standard"} className={`featured-event-card${hasAdvertisingPlacement(event,"homepage") ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
               <button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
                 {safeHttpUrl(event.image_url) ? <img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /> : <span className="featured-image-art" aria-hidden="true">47</span>}
               </button>
-              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div>{event.promotion_type === "homepage" && event.promotion_status === "active" && <span className="sponsored-label">Uitgelicht</span>}<h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
+              <div className="featured-event-body"><span className="date-tile"><strong>{date.day}</strong><small>{date.month}</small></span><div>{hasAdvertisingPlacement(event,"homepage") && <span className="sponsored-label">Uitgelicht</span>}<h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}>{event.title}</button></h3><p><span aria-hidden="true">⌖</span> {event.city || event.venue_name || "Lot-et-Garonne"}</p></div></div>
             </article>;
           })}
         </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true">✦</span><div><strong>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</strong><p>Kies een gemeente of bekijk de agenda voor Duras en omgeving.</p></div><a className="text-arrow-link" href="#agenda">Ontdek de agenda <span aria-hidden="true">→</span></a></div>}

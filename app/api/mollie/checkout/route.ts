@@ -4,10 +4,12 @@ export const runtime='nodejs';
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
   try{
-    const {eventId}=await request.json(),client=await managedAccess(request,eventId);
+    const {eventId,requestId}=await request.json(),client=await managedAccess(request,eventId);
     if(!client)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
     if(!process.env.MOLLIE_API_KEY)return Response.json({error:'Online betalen is nog niet geactiveerd. Je aanvraag blijft bewaard.'},{status:503});
-    let {data:order,error}=await client.from('advertising_requests').select('*').eq('event_id',eventId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    let orderQuery=client.from('advertising_requests').select('*').eq('event_id',eventId).order('created_at',{ascending:false}).limit(1);
+    if(requestId)orderQuery=orderQuery.eq('id',requestId);
+    const {data:initialOrder,error}=await orderQuery.maybeSingle();let order=initialOrder;
     if(error||!order)throw Error('Advertentieaanvraag niet gevonden.');
     if(order.payment_status==='paid')return Response.json({error:'Deze aanvraag is al betaald.'},{status:409});
     if(new Date(order.ends_on+'T00:00:00Z')<=new Date())return Response.json({error:'De advertentieperiode is verstreken. Neem contact op voor een nieuwe periode.'},{status:409});

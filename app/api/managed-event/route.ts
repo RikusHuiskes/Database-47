@@ -8,10 +8,10 @@ export async function GET(request:Request){
     client.from('events').select('id,title,short_description,description,venue_name,address,postcode,city,start_at,end_at,website_url,booking_url,source_url,contact_phone,image_url,is_manual_entry,is_free,price_from,price_to,is_directory_entry,status,promotion_type,promotion_status,promotion_start_at,promotion_end_at').eq('id',id).maybeSingle(),
     client.from('event_categories').select('category_id').eq('event_id',id),
     client.from('categories').select('id,name').eq('active',true).order('name'),
-    client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details').eq('event_id',id).order('created_at',{ascending:false}).limit(1)
+    client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details').eq('event_id',id).order('created_at',{ascending:false})
   ]);
   if(error||!event)return Response.json({error:'Vermelding niet gevonden.'},{status:404});
-  return Response.json({event,categoryId:links?.[0]?.category_id??'',categories,advertising:advertising?.[0]??null},{headers:{'Cache-Control':'no-store'}});
+  return Response.json({event,categoryId:links?.[0]?.category_id??'',categories,advertising:advertising?.[0]??null,advertisements:advertising??[]},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});

@@ -2,8 +2,8 @@
 import {useState} from 'react';
 import {advertisingQuote,emptyAdvertiser,MONTHLY_PRICES,type AdvertiserDetails,type AdvertisingType} from '../../lib/advertising';
 
-export type OwnerAdvertisement={amount_cents:number;payment_status:string;starts_on:string;ends_on:string;placement?:string;details?:AdvertiserDetails};
-type Props={access:{id:string;token:string};event:Record<string,unknown>;advertising:OwnerAdvertisement|null;paymentReady:boolean;busy:boolean;onCreated:(ad:OwnerAdvertisement)=>void;onCheckout:()=>Promise<void>};
+export type OwnerAdvertisement={id?:string;amount_cents:number;payment_status:string;starts_on:string;ends_on:string;placement?:string;details?:AdvertiserDetails};
+type Props={access:{id:string;token:string};event:Record<string,unknown>;advertising:OwnerAdvertisement|null;advertisements?:OwnerAdvertisement[];paymentReady:boolean;busy:boolean;onCreated:(ad:OwnerAdvertisement)=>void;onCheckout:(requestId?:string)=>Promise<void>};
 const labels={highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'};
 const euro=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(cents/100);
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -25,26 +25,28 @@ function ListingPreview({event,highlighted}:{event:Record<string,unknown>;highli
   </article>
  </figure>;
 }
-export default function AdvertisingUpgrade({access,event,advertising,paymentReady,busy,onCreated,onCheckout}:Props){
+export default function AdvertisingUpgrade({access,event,advertising,advertisements,paymentReady,busy,onCreated,onCheckout}:Props){
  const [placement,setPlacement]=useState<AdvertisingType>(advertising?.placement==='homepage'||advertising?.placement==='category'?advertising.placement:'highlight');
  const [details,setDetails]=useState<AdvertiserDetails>(()=>({...emptyAdvertiser,...advertising?.details,startDate:today(),months:1}));
  const [submitting,setSubmitting]=useState(false),[error,setError]=useState('');
  let quote:ReturnType<typeof advertisingQuote>|null=null;try{quote=advertisingQuote(placement,details);}catch{}
- const pending=advertising&&['requested','open','paid'].includes(advertising.payment_status)&&advertising.ends_on>today();
- const active=event.promotion_status==='active'&&(!event.promotion_end_at||String(event.promotion_end_at)>new Date().toISOString());
+ const selectedAdvertisement=(advertisements??(advertising?[advertising]:[])).find(item=>item.placement===placement&&['requested','open','paid'].includes(item.payment_status)&&item.ends_on>today());
+ const pending=selectedAdvertisement&&['requested','open','paid'].includes(selectedAdvertisement.payment_status)&&selectedAdvertisement.ends_on>today();
+ const active=!advertisements&&event.promotion_type===placement&&event.promotion_status==='active'&&(!event.promotion_end_at||String(event.promotion_end_at)>new Date().toISOString());
  async function submit(e:React.FormEvent){
   e.preventDefault();setSubmitting(true);setError('');
   try{
    const response=await fetch('/api/managed-event/advertising',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id,placement,advertiser:details})});
    const data=await response.json();if(!response.ok)throw Error(data.error);
-   onCreated(data.advertising);await onCheckout();
+   onCreated(data.advertising);await onCheckout(data.advertising.id);
   }catch(err){setError(err instanceof Error?err.message:'Aanvragen mislukt.');}finally{setSubmitting(false);}
  }
  const change=(key:keyof AdvertiserDetails,value:string|number)=>setDetails(previous=>({...previous,[key]:value}));
  return <section id="listing-upgrade" className="owner-advertising-upgrade" aria-labelledby="upgrade-heading">
   <h2 id="upgrade-heading">Meer bereik voor deze vermelding</h2>
   <p>Maak van ‘{String(event.title)}’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je hierboven gegevens gewijzigd? Sla die eerst op.</p>
-  <fieldset className="owner-advertising-options">
+  <p>Je kunt alle drie de advertentievormen combineren voor dezelfde vermelding. Voeg elke gewenste vorm apart toe en betaal die via Mollie. Je vermelding blijft ook in de normale resultaten staan; vetomrand maakt die daar extra opvallend.</p>
+  <fieldset className="owner-advertising-options" disabled={busy||submitting}>
    <legend>Kies je advertentievorm en bekijk het voorbeeld</legend>
    <div className="owner-advertising-options-grid">
     {(Object.keys(labels) as AdvertisingType[]).map(type=><label className={`owner-advertising-option${placement===type?' is-selected':''}`} key={type}>
@@ -60,7 +62,7 @@ export default function AdvertisingUpgrade({access,event,advertising,paymentRead
    <ListingPreview event={event} highlighted={false}/>{placement==='highlight'?<ListingPreview event={event} highlighted/>:<figure className="owner-listing-example"><figcaption><strong>{labels[placement]}</strong><span>{euro(MONTHLY_PRICES[placement])} per maand</span></figcaption><div className="owner-partner-preview"><small>Lokale partners · Advertenties</small><h3>{placement==='homepage'?'Uitgelicht op de homepage':'Uitgelicht in je categorie'}</h3><article className="owner-partner-card">{typeof event.image_url==='string'&&/^https?:\/\//i.test(event.image_url)&&<img src={event.image_url} alt=""/>}<small>{placement==='homepage'?'Homepagepartner':'Categoriepartner'} · {String(event.city||'In de buurt')}</small><h4>{String(event.title)}</h4><p>{String(event.short_description||event.description||'Ontdek deze vermelding.')}</p><span className="owner-partner-link">Ontdek →</span></article></div></figure>}
   </div>
   <p className="owner-comparison-note">{placement==='highlight'?'De vetomrande advertentie verschijnt tussen de gewone resultaten; de volgorde verandert hierdoor niet.':placement==='category'?'De categorieadvertentie verschijnt bij de uitgelichte partners binnen de categorie van deze vermelding.':'De homepageadvertentie verschijnt bij de uitgelichte partners op de homepage.'} Dit is een visueel voorbeeld. Plaatsing volgt na goedkeuring, betaalbevestiging en controle van de beschikbaarheid, binnen je gekozen periode.</p>
-  {pending||active?<p>Deze vermelding heeft al een lopende advertentie of aanvraag. Hieronder vind je de betaalstatus en kun je een openstaande betaling afronden. Neem contact op met de beheerder als je de advertentievorm wilt veranderen.</p>:<form className="owner-form" onSubmit={submit}>
+  {pending||active?<p>Voor deze advertentievorm bestaat al een lopende advertentie of aanvraag. Kies hierboven gerust een andere vorm om die daarnaast toe te voegen. Hieronder vind je de betaalstatus en kun je een openstaande betaling afronden. Neem contact op met de beheerder als je de advertentievorm wilt veranderen.</p>:<form className="owner-form" onSubmit={submit}>
    <fieldset disabled={busy||submitting}>
     <legend>Gekozen advertentie: {labels[placement]}</legend>
     <label>Begindatum<input required type="date" min={today()} value={details.startDate} onChange={e=>change('startDate',e.target.value)}/></label>

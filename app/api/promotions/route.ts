@@ -3,7 +3,7 @@ import {createClient} from '@supabase/supabase-js';
 import {promotionPlacements} from '../../../lib/event-presentation';
 
 export const revalidate=0;
-type PromotionRecord={id:string;start_at:string|null;event_categories?:{category_id:string}[];promotion_type?:string|null;promotion_status?:string|null;promotion_start_at?:string|null;promotion_end_at?:string|null;reserved_homepage?:boolean;reserved_category_id?:string|null};
+type PromotionRecord={id:string;start_at:string|null;event_categories?:{category_id:string}[];advertising_placements?:{placement:string;starts_at:string;ends_at:string}[]|null;promotion_type?:string|null;promotion_status?:string|null;promotion_start_at?:string|null;promotion_end_at?:string|null;reserved_homepage?:boolean;reserved_category_id?:string|null};
 
 /** Public advertising only: no ordinary results or geocoding on this path. */
 export async function GET(request:NextRequest){
@@ -15,9 +15,9 @@ export async function GET(request:NextRequest){
   const now=new Date().toISOString();
   const type=category==='all'?'homepage':'category';
   const reserved=category==='all'?'reserved_homepage.eq.true':'reserved_category_id.eq.'+category;
-  const columns='id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories'+(category==='all'?'':'!inner')+'(category_id)';
+  const columns='id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories'+(category==='all'?'':'!inner')+'(category_id)';
   let query=client.from('events').select(columns).eq('status','approved').eq('verified',true)
-    .or(reserved+',and(promotion_type.eq.'+type+',promotion_status.eq.active,or(promotion_start_at.is.null,promotion_start_at.lte.'+now+'),or(promotion_end_at.is.null,promotion_end_at.gt.'+now+'))');
+    .or(reserved+',advertising_placements.cs.[{"placement":"'+type+'"}]'+',and(promotion_type.eq.'+type+',promotion_status.eq.active,or(promotion_start_at.is.null,promotion_start_at.lte.'+now+'),or(promotion_end_at.is.null,promotion_end_at.gt.'+now+'))');
   if(category!=='all')query=query.eq('event_categories.category_id',category);
   const {data,error}=await query.order('id').limit(100);
   if(error)return NextResponse.json({error:'Advertenties konden niet worden geladen.'},{status:502});

@@ -2,6 +2,7 @@ type PresentedEvent = {
   id: string;
   start_at: string;
   is_directory_entry?: boolean;
+  advertising_placements?: {placement:string;starts_at:string;ends_at:string}[] | null;
   promotion_type?: string | null;
   promotion_status?: string | null;
   promotion_start_at?: string | null;
@@ -18,10 +19,17 @@ export function promotionIsActive(event:Pick<PresentedEvent,'promotion_status'|'
   return starts<=now.getTime()&&now.getTime()<ends;
 }
 
+/** Each paid placement has its own lifetime; one purchase cannot replace another. */
+export function hasAdvertisingPlacement(event:PresentedEvent,placement:string,now=new Date()){
+ if(event.promotion_status==='ended')return false;
+ if(event.advertising_placements!=null)return event.advertising_placements.some(ad=>ad.placement===placement&&Date.parse(ad.starts_at)<=now.getTime()&&now.getTime()<Date.parse(ad.ends_at));
+ return event.promotion_type===placement&&promotionIsActive(event,now);
+}
+
 export function upcomingHighlights<T extends PresentedEvent>(events: T[], now = new Date()) {
   return events.filter(event => !event.is_directory_entry && Number.isFinite(Date.parse(event.start_at))
       && Date.parse(event.start_at) >= now.getTime()
-      && !(event.promotion_type === 'homepage' && promotionIsActive(event, now)))
+      )
     .sort((left, right) => Date.parse(left.start_at) - Date.parse(right.start_at) || left.id.localeCompare(right.id))
     .slice(0, 3);
 }
@@ -32,8 +40,8 @@ export function promotionPlacements<T extends PresentedEvent>(events: T[], categ
   const categorySlot = category==='all'?undefined:events.find(event=>event.reserved_category_id===category);
   const order = (paid:T[],reserved:T|undefined) => [...(reserved?[reserved]:[]),...uniqueEventRecords(paid).filter(event=>!reserved||event.id!==reserved.id).slice(0,reserved?8:9)];
   return {
-    homepage: order(eligible.filter(event => event.promotion_type === 'homepage' && promotionIsActive(event)),home),
-    category: category === 'all' ? [] : order(eligible.filter(event => event.promotion_type === 'category' && promotionIsActive(event)),categorySlot),
+    homepage: order(eligible.filter(event => hasAdvertisingPlacement(event,'homepage')),home),
+    category: category === 'all' ? [] : order(eligible.filter(event => hasAdvertisingPlacement(event,'category')),categorySlot),
   };
 }
 

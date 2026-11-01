@@ -31,7 +31,7 @@ type EventRecord = {
   event_categories?: { category_id: string }[];
   latitude?: number | string | null;
   longitude?: number | string | null;
-  promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
+  advertising_placements?:{placement:string;starts_at:string;ends_at:string}[]|null;promotion_type?: "none" | "homepage" | "category" | "highlight" | null;
   promotion_status?: "none" | "requested" | "active" | "ended" | null;
   reserved_homepage?: boolean;
   reserved_category_id?: string|null;
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
   for (let offset = 0; ; offset += pageSize) {
     let query = supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
+      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
       .eq("status", "approved")
       .eq("verified", true)
       // Latitude is a conservative coarse bound. Missing/invalid coordinates
