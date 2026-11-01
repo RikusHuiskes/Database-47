@@ -22,7 +22,7 @@ final class ModelTests: XCTestCase {
         filter.when = .tomorrow; XCTAssertEqual(filter.apply([event("sunday", "2026-11-01"), event("monday", "2026-11-02")], now: now).map(\.id), ["monday"])
     }
     func testCategoryAccentDistanceAndPromotionOrdering() {
-        var far = event("far"); far.title = "Dégustation"; far.distance_km = 20; far.category_ids = ["food", "wine"]
+        var far = EventRecord(id: "far", title: "Dégustation", start_at: "2026-12-25"); far.distance_km = 20; far.category_ids = ["food", "wine"]
         far.advertising_placements = [Placement(placement: "highlight", starts_at: "2026-01-01T00:00:00Z", ends_at: "2027-01-01T00:00:00Z")]
         var near = event("near"); near.distance_km = 0; near.category_ids = ["wine"]
         var filter = EventFilter(); filter.sort = .distance
@@ -55,3 +55,4 @@ final class ModelTests: XCTestCase {
     }
     func testUnsafeLinksAreNotOpened() { XCTAssertNil(webURL("javascript:alert(1)")); XCTAssertNotNil(webURL("https://example.com")) }
 }
+
