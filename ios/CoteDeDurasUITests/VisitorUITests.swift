@@ -5,10 +5,10 @@ final class VisitorUITests: XCTestCase {
     func launch() -> XCUIApplication { let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch(); return app }
     func testAgendaFavouriteAndSearch() {
         let app = launch(); app.tabBars.buttons["Agenda"].tap()
-        let search = app.textFields["agendaSearch"]; XCTAssertTrue(search.waitForExistence(timeout: 15)); search.tap(); search.typeText("Kerstdiner")
+        let search = app.textFields["agendaSearch"]; XCTAssertTrue(search.waitForExistence(timeout: 15)); search.tap(); search.typeText("Kerstdiner\n")
         let heart = app.buttons["favourite-4ae2d2b9-623d-4c90-9517-9d4da5d9fcc6"]
         app.scrollViews.firstMatch.swipeUp(); XCTAssertTrue(heart.waitForExistence(timeout: 10)); heart.tap()
-        app.tabBars.buttons["Bewaard"].tap(); let favourites = app.textFields["favouriteSearch"]; XCTAssertTrue(favourites.waitForExistence(timeout: 10)); favourites.tap(); favourites.typeText("kerstdiner")
+        app.tabBars.buttons["Bewaard"].tap(); let favourites = app.textFields["favouriteSearch"]; XCTAssertTrue(favourites.waitForExistence(timeout: 10), String(app.debugDescription.suffix(10000))); favourites.tap(); favourites.typeText("kerstdiner")
         XCTAssertTrue(app.staticTexts["1 van 1 favorieten"].waitForExistence(timeout: 10))
     }
     func testMunicipalityDirectoryOpensWithoutAccount() {

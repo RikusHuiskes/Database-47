@@ -72,14 +72,15 @@ struct DiscoverView: View {
 struct AgendaView: View {
     @EnvironmentObject var model: AppModel; @Binding var filter: EventFilter
     let showInfo: () -> Void; let select: (SavedRecord) -> Void
-    @State private var limit = 20; @State private var expanded = true
+    @State private var limit = 20; @State private var expanded = false
+    @FocusState private var searchFocused: Bool
     var results: [EventRecord] { filter.apply(model.events) }
     var places: [String] { var seen = Set<String>(); return model.events.compactMap { $0.city }.filter { seen.insert(normalized($0)).inserted }.sorted { $0.localizedStandardCompare($1) == .orderedAscending } }
     var body: some View {
         NavigationStack { ScrollView { LazyVStack(alignment: .leading, spacing: 15) {
             SectionTitle(title: "Agenda")
             DataStatus()
-            TextField("Evenement, adres of plaats", text: $filter.query).textFieldStyle(.roundedBorder).submitLabel(.search).accessibilityIdentifier("agendaSearch")
+            TextField("Evenement, adres of plaats", text: $filter.query).textFieldStyle(.roundedBorder).submitLabel(.search).focused($searchFocused).onSubmit { searchFocused = false }.accessibilityIdentifier("agendaSearch")
             DisclosureGroup("Zoekfilters", isExpanded: $expanded) { VStack(spacing: 12) {
                 Picker("Soort resultaat", selection: $filter.kind) { Text("Alles").tag("all"); Text("Evenementen").tag("events"); Text("Adressen").tag("addresses") }.pickerStyle(.segmented)
                 Picker("Categorie", selection: $filter.category) { Text("Alle categorieën").tag(""); ForEach(model.categories) { Text($0.name).tag($0.id) } }
@@ -97,7 +98,7 @@ struct AgendaView: View {
             else if results.isEmpty && model.error == nil { ContentUnavailableView.search(text: filter.query) }
             ForEach(Array(results.prefix(limit))) { event in ListingCard(record: SavedRecord(event: event), select: select) }
             if results.count > limit { Button("Toon meer") { limit += 20 }.buttonStyle(.bordered).frame(maxWidth: .infinity) }
-        }.padding(18) }.refreshable { await model.load() }.onChange(of: filter) { _, _ in limit = 20 }.navigationTitle("Agenda").modifier(AppToolbar(showInfo: showInfo)) }
+        }.padding(18) }.scrollDismissesKeyboard(.interactively).refreshable { await model.load() }.onChange(of: filter) { _, _ in limit = 20 }.onDisappear { searchFocused = false }.navigationTitle("Agenda").modifier(AppToolbar(showInfo: showInfo)) }
     }
 }
 struct GuideView: View {
