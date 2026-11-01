@@ -12,7 +12,7 @@ concurrency:
 jobs:
   simulator:
     # The repository is public. Use a standard hosted runner, no paid larger runner.
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v6
@@ -30,7 +30,7 @@ jobs:
       - name: Build and test native visitor flows
         run: |
           set -o pipefail
-          xcodebuild test -project ios/CoteDeDuras.xcodeproj -scheme CoteDeDuras -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath /tmp/CoteDeDuras.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/ios-build.log
+          xcodebuild test -project ios/CoteDeDuras.xcodeproj -scheme CoteDeDuras -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 -resultBundlePath /tmp/CoteDeDuras.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/ios-build.log
       - name: Build diagnostics
         if: failure()
         run: |
