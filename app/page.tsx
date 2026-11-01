@@ -1,4 +1,5 @@
 "use client";
+import MunicipalServicePhoto from './components/MunicipalServicePhoto';
 import MunicipalBusinessAdmin from './components/MunicipalBusinessAdmin';
 import MunicipalPartners from './components/MunicipalPartners';
 import CalendarSiteSwitcher from './components/CalendarSiteSwitcher';
@@ -82,7 +83,7 @@ type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitud
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
 type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking" | "bakery" | "butcher" | "tobacco" | "souvenirs" | "shoes" | "florist" | "fashion" | "diy" | "jeweller" | "hairdresser" | "estate_agent";
 type MunicipalityServiceEntry = {
-  highlighted?:boolean; image_url?:string; managedEventId?:string;
+  highlighted?:boolean; image_url?:string; image_source_url?:string; image_credit?:string; image_license?:string; image_license_url?:string; managedEventId?:string;
   latitude?: number;
   longitude?: number;
   id: string;
@@ -1669,7 +1670,7 @@ export default function Home() {
     const groupLabel = municipalityServiceOptions.find((option) => option.id === groupType)?.label ?? municipalityServiceLabel;
     return <article className={`municipality-service-card${service.highlighted?' municipality-service-highlighted':''}`} key={`${groupType}-${service.id}`}>
       {service.highlighted&&<div className="activity-highlight-banner">Advertentie · Uitgelichte vermelding</div>}
-      {service.image_url&&<img className="municipal-business-photo" src={service.image_url} alt=""/>}
+      <MunicipalServicePhoto {...service}/>
       <div className="municipality-service-card-heading">
         <div><p className="section-kicker">{groupLabel}{service.inSelectedMunicipality === false ? ` · omgeving ${municipalityName}` : service.municipality ? ` · ${service.municipality}` : ""}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
         {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}

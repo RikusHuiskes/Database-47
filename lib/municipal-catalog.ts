@@ -1,3 +1,4 @@
+import {withMunicipalPhoto} from './municipal-photos';
 import estateData from "./data/municipal-estate-agents.json";
 import shopData from "./data/municipal-shops.json";
 import {SHOP_TYPES} from "./municipal-shops";
@@ -15,6 +16,7 @@ import { CURATED_LOCAL_SERVICES } from "./municipality-local-services";
 
 type RecordValue = Record<string, unknown>;
 export type CatalogService = {
+  image_url?:string; image_source_url?:string; image_credit?:string; image_license?:string; image_license_url?:string;
   id: string; type: string; codeInsee?: string; name: string; address?: string; municipality?: string;
   latitude?: number; longitude?: number; phone?: string; email?: string; website?: string;
   openingHours?: string; serviceTimes?: string; mayor?: string; extra?: string;
@@ -104,7 +106,7 @@ export function municipalCatalog(city:string,latitude:number,longitude:number,se
     return [{...entry,distanceKm:Math.round(distance*10)/10,inSelectedMunicipality:entry.codeInsee||entry.municipality ? local : undefined}];
   }).sort((a,b)=>Number(b.inSelectedMunicipality===true)-Number(a.inSelectedMunicipality===true)||(SHOP_TYPES.includes(a.type)&&SHOP_TYPES.includes(b.type)?Number(Boolean(b.address))-Number(Boolean(a.address)):0)||(a.distanceKm??Infinity)-(b.distanceKm??Infinity));
   return {city,updatedAt:service==='all'||service==='estate_agent'?estateData.updatedAt:SHOP_TYPES.includes(service) ? shopData.updatedAt : ["all","supermarket","fuel","charging","public_transport","parking","disabled_parking"].includes(service) ? mobilityData.updatedAt : mapData.updatedAt,radiusKm,officialDirectoryAvailable:localMairie.length>0,mapDataAvailable:true,curatedDataAvailable:true,
-    officialEquipmentCounts:[],mairie:services.find(entry=>entry.type==="mairie") ?? null,services,
+    officialEquipmentCounts:[],mairie:services.find(entry=>entry.type==="mairie") ? withMunicipalPhoto(services.find(entry=>entry.type==="mairie")!) : null,services:services.map(withMunicipalPhoto),
     sources:[{name:"Annuaire des Entreprises / INSEE — SIRENE",url:"https://annuaire-entreprises.data.gouv.fr/"},{name:"OpenStreetMap contributors (ODbL)",url:"https://www.openstreetmap.org/copyright"},{name:"Service-Public.gouv.fr / DILA",url:"https://api-lannuaire.service-public.gouv.fr/explore/dataset/api-lannuaire-administration/"}],
     missingTypes:(service==="all"?MUNICIPAL_TYPES:[service]).filter(type=>!services.some(entry=>entry.type===type))};
 }
