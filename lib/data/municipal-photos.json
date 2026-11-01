@@ -2,8 +2,8 @@
   "updatedAt": "2026-11-01",
   "summary": {
     "uniqueListings": 14808,
-    "withPhoto": 1430,
-    "missingPhoto": 13378,
+    "withPhoto": 1431,
+    "missingPhoto": 13377,
     "sourcePagesChecked": 853,
     "wikidataLocationsChecked": 1577,
     "communesChecked": 53
@@ -10319,6 +10319,11 @@
       "image_url": "https://www.besson-shoes.com/media/wysiwyg/Bergerac.jpg",
       "image_source_url": "https://www.besson-shoes.com/fr/retailer/presentation/retailer/urlKey/magasin-besson-chaussures-bergerac/",
       "image_credit": "Besson Chaussures · Bergerac · Eigen vestigingenpagina"
+    },
+    "osm-way-41774716-pharmacy": {
+      "image_url": "https://tourismeduras.com//images/gmapfp/GA8303/pharmacie.jpeg",
+      "image_source_url": "https://www.tourismeduras.com/pratique-pour-y-vivre/commerces-services-artisans/8303:pharmacie-du-chateau",
+      "image_credit": "Pharmacie du Château · Office de tourisme du Pays de Duras"
     }
   },
   "categoryCoverage": [
@@ -10326,7 +10331,7 @@
       "type": "pharmacy",
       "category": "Apotheek",
       "listings": 267,
-      "photos": 2,
+      "photos": 3,
       "status": "Bronnen gecontroleerd; alleen bevestigde beelden gekoppeld"
     },
     {
