@@ -49,7 +49,7 @@ export function matchesDate(event:AppEvent,filter:DateFilter,now=new Date()){
  if(filter==='weekend'){const weekday=new Date(today+'T12:00:00Z').getUTCDay();from=addDays(today,weekday===0?-1:(6-weekday+7)%7);to=addDays(from,1);}
  return start<=to&&end>=from;
 }
-export type EventFilters={query:string;when:DateFilter;kind:string;city:string;radius:number;freeOnly:boolean;category?:string};
+export type EventFilters={query:string;when:DateFilter;kind:string;city:string;radius:number;freeOnly:boolean;category?:string;sort?:'date'|'distance'|'name'};
 export function filterEvents(events:AppEvent[],filters:EventFilters,now=new Date()){
  const term=normalize(filters.query);
  return events.filter(event=>{
@@ -60,5 +60,12 @@ export function filterEvents(events:AppEvent[],filters:EventFilters,now=new Date
   if(filters.freeOnly&&event.is_free!==true)return false;
   if(term&&!normalize([event.title,event.city,event.address,event.short_description].filter(Boolean).join(' ')).includes(term))return false;
   return matchesDate(event,filters.when,now);
- }).sort((a,b)=>Number(!!a.is_directory_entry)-Number(!!b.is_directory_entry)||Math.max(Date.parse(a.start_at)||0,now.getTime())-Math.max(Date.parse(b.start_at)||0,now.getTime())||a.title.localeCompare(b.title,'nl'));
+ }).sort((a,b)=>{
+  if(filters.sort==='distance'){
+   const left=Number.isFinite(a.distance_km)?a.distance_km!:Infinity,right=Number.isFinite(b.distance_km)?b.distance_km!:Infinity;
+   if(left!==right)return left<right?-1:1;
+  }
+  if(filters.sort==='name')return a.title.localeCompare(b.title,'nl');
+  return Number(!!a.is_directory_entry)-Number(!!b.is_directory_entry)||Math.max(Date.parse(a.start_at)||0,now.getTime())-Math.max(Date.parse(b.start_at)||0,now.getTime())||a.title.localeCompare(b.title,'nl');
+ });
 }
