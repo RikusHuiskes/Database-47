@@ -1,5 +1,5 @@
 export type AppEvent = {
- id:string;title:string;start_at:string;end_at?:string|null;is_directory_entry?:boolean;
+ id:string;title:string;start_at:string;category_ids?:string[];category_id?:string|null;end_at?:string|null;is_directory_entry?:boolean;
  city?:string|null;address?:string|null;short_description?:string|null;description?:string|null;
  image_url?:string|null;is_free?:boolean|null;website_url?:string|null;booking_url?:string|null;
  contact_phone?:string|null;source_url?:string|null;distance_km?:number;
@@ -49,11 +49,12 @@ export function matchesDate(event:AppEvent,filter:DateFilter,now=new Date()){
  if(filter==='weekend'){const weekday=new Date(today+'T12:00:00Z').getUTCDay();from=addDays(today,weekday===0?-1:(6-weekday+7)%7);to=addDays(from,1);}
  return start<=to&&end>=from;
 }
-export type EventFilters={query:string;when:DateFilter;kind:string;city:string;radius:number;freeOnly:boolean};
+export type EventFilters={query:string;when:DateFilter;kind:string;city:string;radius:number;freeOnly:boolean;category?:string};
 export function filterEvents(events:AppEvent[],filters:EventFilters,now=new Date()){
  const term=normalize(filters.query);
  return events.filter(event=>{
   if(filters.kind==='events'&&event.is_directory_entry||filters.kind==='addresses'&&!event.is_directory_entry)return false;
+  if(filters.category&&!(event.category_ids??(event.category_id?[event.category_id]:[])).includes(filters.category))return false;
   if(filters.city&&normalize(event.city||'')!==normalize(filters.city))return false;
   if(filters.radius<50&&(!Number.isFinite(event.distance_km)||event.distance_km!>filters.radius))return false;
   if(filters.freeOnly&&event.is_free!==true)return false;

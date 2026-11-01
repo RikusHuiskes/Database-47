@@ -31,4 +31,8 @@ assert.equal(filterEvents([{...base,start_at:'2021-12-25'}],options,sunday).leng
 assert.equal(filterEvents([{...base,start_at:'2021-01-01',end_at:'2026-12-31'}],{...options,when:'today'},sunday).length,0);
 assert.equal(filterEvents([{...base,start_at:'2021-01-01',end_at:'2026-12-31'}],options,sunday).length,1);
 assert.equal(eventDate({...base,start_at:'2021-12-25'},sunday),'Afgelopen · 25 december 2021');
-console.log('24 checks passed: France dates, DST, weekend boundaries, date ranges, accents, addresses, price and distance filters.');
+assert.equal(filterEvents([{...base,category_ids:['wine','food']}],{...options,category:'wine'},sunday).length,1);
+assert.equal(filterEvents([{...base,category_ids:['wine','food']}],{...options,category:'music'},sunday).length,0);
+assert.equal(filterEvents([{...base,category_id:'wine'}],{...options,category:'wine'},sunday).length,1);
+assert.equal(filterEvents([base],{...options,category:'wine'},sunday).length,0);
+console.log('28 checks passed: France dates, DST, weekend boundaries, date ranges, accents, addresses, price and distance filters.');
