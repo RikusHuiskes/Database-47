@@ -1,3 +1,4 @@
+import {decorateMunicipalDirectory} from "../../../lib/municipal-advertising-server";
 import {SHOP_TYPES} from "../../../lib/municipal-shops";
 import { NextRequest, NextResponse } from "next/server";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
@@ -90,7 +91,7 @@ type SireneSearchResponse = {
   total_pages?: number;
 };
 
-const serviceTypes = new Set([...SHOP_TYPES,
+const serviceTypes = new Set([...SHOP_TYPES, "estate_agent",
   "all",
   "mairie",
   "doctor",
@@ -664,7 +665,7 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = municipalCatalog(city, latitude, longitude, service, suppliedCodeInsee);
-  if (catalog.missingTypes.length === 0 || SHOP_TYPES.includes(service) || service === "all" && catalog.missingTypes.every(type=>SHOP_TYPES.includes(type))) return NextResponse.json(catalog);
+  if (catalog.missingTypes.length === 0 || service==='estate_agent' || SHOP_TYPES.includes(service) || service === "all" && catalog.missingTypes.every(type=>SHOP_TYPES.includes(type))) return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
   const codeInsee = await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude);
 
   const officialDirectoryPromise = service === "mairie" || service === "all"
@@ -672,7 +673,7 @@ export async function GET(request: NextRequest) {
     : Promise.resolve(null);
   const communeBoundaryPromise = fetchCommuneBoundary(codeInsee);
   const requestedServiceTypes = service === "all"
-    ? [...SHOP_TYPES, "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"]
+    ? [...SHOP_TYPES, "estate_agent", "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"]
     : [service];
   const officialCountsPromise = service === "all"
     ? Promise.all(Object.keys(BPE_EQUIPMENT_TYPES).map((type) => fetchOfficialEquipmentCount(codeInsee, type)))
@@ -975,7 +976,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "De gemeentelijke informatie is tijdelijk niet bereikbaar. Probeer het later opnieuw." }, { status: 503 });
   }
 
-  return NextResponse.json({
+  return NextResponse.json(await decorateMunicipalDirectory({
     city,
     radiusKm: catalog.radiusKm,
     updatedAt: new Date().toISOString(),
@@ -991,5 +992,5 @@ export async function GET(request: NextRequest) {
     ],
     mairie,
     services,
-  });
+  },codeInsee,service));
 }

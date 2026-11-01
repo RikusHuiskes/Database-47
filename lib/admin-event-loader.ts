@@ -6,7 +6,7 @@ export async function loadAdminEvents(client: SupabaseClient) {
   const size = 500;
   const page = (offset: number, count = false) => client.from('events')
     .select('*,event_categories(category_id)', count ? {count: 'exact'} : {})
-    .order('start_at', {ascending: true}).order('id').range(offset, offset + size - 1);
+    .is('municipal_key',null).order('start_at', {ascending: true}).order('id').range(offset, offset + size - 1);
   const first = await page(0, true);
   if (first.error) return first;
   const rows = [...(first.data ?? [])];

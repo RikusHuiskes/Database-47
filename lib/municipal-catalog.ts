@@ -1,3 +1,4 @@
+import estateData from "./data/municipal-estate-agents.json";
 import shopData from "./data/municipal-shops.json";
 import {SHOP_TYPES} from "./municipal-shops";
 import mapData from "./data/municipal-osm.json";
@@ -20,7 +21,7 @@ export type CatalogService = {
   mayorSourceUrl?: string; mayorSourceName?: string;
   distanceKm?: number; inSelectedMunicipality?: boolean; sourceUrl: string; sourceName: string;
 };
-export const MUNICIPAL_TYPES = [...SHOP_TYPES, "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"];
+export const MUNICIPAL_TYPES = [...SHOP_TYPES, "estate_agent", "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"];
 function parsed(value: unknown): unknown { try { return typeof value === "string" ? JSON.parse(value) : value; } catch { return value; } }
 function string(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value.trim() : undefined; }
 function contact(value: unknown): string | undefined {
@@ -84,7 +85,7 @@ export function municipalCatalog(city:string,latitude:number,longitude:number,se
     const mayor=mayorData.mayors.find(mayor=>mayor.code===localCode) as {name:string;sourceUrl?:string;sourceName?:string}|undefined;
     return {...entry,mayor:entry.mayor||mayor?.name,mayorSourceUrl:mayor?.sourceUrl||mayorData.sourceUrl,mayorSourceName:mayor?.sourceName||mayorData.sourceName};
   });
-  const pool:CatalogService[]=[...localMairie,...curated,...supplements.points,...shopData.points as CatalogService[],...mapped];
+  const pool:CatalogService[]=[...localMairie,...curated,...estateData.points as CatalogService[],...supplements.points,...shopData.points as CatalogService[],...mapped];
   const seen=new Set<string>();
   const services=pool.flatMap(entry=>{
     if (service!=="all" && entry.type!==service) return [];
@@ -92,7 +93,7 @@ export function municipalCatalog(city:string,latitude:number,longitude:number,se
       if (normalizePlaceName(entry.municipality ?? "")!==normalizePlaceName(city)) return [];
       if(localMairie.length) return [];
     }
-    const shop=SHOP_TYPES.includes(entry.type);
+    const shop=SHOP_TYPES.includes(entry.type)||entry.type==='estate_agent';
     const local=entry.codeInsee ? entry.codeInsee===localCode : normalizePlaceName(entry.municipality??"")===normalizePlaceName(city);
     const located=entry.latitude!=null&&entry.longitude!=null;
     const distance=located?distanceInKm(latitude,longitude,entry.latitude!,entry.longitude!):NaN;
@@ -102,7 +103,7 @@ export function municipalCatalog(city:string,latitude:number,longitude:number,se
     if(seen.has(key)) return []; seen.add(key);
     return [{...entry,distanceKm:Math.round(distance*10)/10,inSelectedMunicipality:entry.codeInsee||entry.municipality ? local : undefined}];
   }).sort((a,b)=>Number(b.inSelectedMunicipality===true)-Number(a.inSelectedMunicipality===true)||(SHOP_TYPES.includes(a.type)&&SHOP_TYPES.includes(b.type)?Number(Boolean(b.address))-Number(Boolean(a.address)):0)||(a.distanceKm??Infinity)-(b.distanceKm??Infinity));
-  return {city,updatedAt:SHOP_TYPES.includes(service) ? shopData.updatedAt : ["all","supermarket","fuel","charging","public_transport","parking","disabled_parking"].includes(service) ? mobilityData.updatedAt : mapData.updatedAt,radiusKm,officialDirectoryAvailable:localMairie.length>0,mapDataAvailable:true,curatedDataAvailable:true,
+  return {city,updatedAt:service==='all'||service==='estate_agent'?estateData.updatedAt:SHOP_TYPES.includes(service) ? shopData.updatedAt : ["all","supermarket","fuel","charging","public_transport","parking","disabled_parking"].includes(service) ? mobilityData.updatedAt : mapData.updatedAt,radiusKm,officialDirectoryAvailable:localMairie.length>0,mapDataAvailable:true,curatedDataAvailable:true,
     officialEquipmentCounts:[],mairie:services.find(entry=>entry.type==="mairie") ?? null,services,
     sources:[{name:"Annuaire des Entreprises / INSEE — SIRENE",url:"https://annuaire-entreprises.data.gouv.fr/"},{name:"OpenStreetMap contributors (ODbL)",url:"https://www.openstreetmap.org/copyright"},{name:"Service-Public.gouv.fr / DILA",url:"https://api-lannuaire.service-public.gouv.fr/explore/dataset/api-lannuaire-administration/"}],
     missingTypes:(service==="all"?MUNICIPAL_TYPES:[service]).filter(type=>!services.some(entry=>entry.type===type))};

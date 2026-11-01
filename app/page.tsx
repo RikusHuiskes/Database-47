@@ -1,6 +1,8 @@
 "use client";
+import MunicipalBusinessAdmin from './components/MunicipalBusinessAdmin';
+import MunicipalPartners from './components/MunicipalPartners';
 import CalendarSiteSwitcher from './components/CalendarSiteSwitcher';
-import {SHOP_TYPES} from "../lib/municipal-shops";
+import {SHOP_TYPES,COMMERCIAL_SERVICE_TYPES} from "../lib/municipal-shops";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -78,8 +80,9 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
-type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking" | "bakery" | "butcher" | "tobacco" | "souvenirs" | "shoes" | "florist" | "fashion" | "diy" | "jeweller" | "hairdresser";
+type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking" | "bakery" | "butcher" | "tobacco" | "souvenirs" | "shoes" | "florist" | "fashion" | "diy" | "jeweller" | "hairdresser" | "estate_agent";
 type MunicipalityServiceEntry = {
+  highlighted?:boolean; image_url?:string; managedEventId?:string;
   latitude?: number;
   longitude?: number;
   id: string;
@@ -108,6 +111,7 @@ type MunicipalityServiceEntry = {
 type MunicipalityServiceResponse = {
   city: string;
   updatedAt: string;
+  municipalPartners?:import('../lib/municipal-advertising-server').MunicipalPaidListing[];
   officialDirectoryAvailable: boolean;
   mapDataAvailable: boolean;
   curatedDataAvailable: boolean;
@@ -133,6 +137,7 @@ type MunicipalityServiceResponse = {
 };
 
 const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }[] = [
+  { id: "estate_agent", label:"Makelaars" },
   { id: "all", label: "Alle categorieën — complete gemeentegids" },
   { id: "mairie", label: "Gemeentehuis & burgemeester" },
   { id: "doctor", label: "Huisarts / medisch centrum" },
@@ -318,6 +323,8 @@ function sourceLabel(value?: string | null): string {
 
 export default function Home() {
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
+  const [municipalityInView,setMunicipalityInView]=useState(false);
+  useEffect(()=>{const node=document.getElementById('gemeenten');if(!node)return;const observer=new IntersectionObserver(entries=>setMunicipalityInView(entries[0]?.isIntersecting||false));observer.observe(node);return()=>observer.disconnect();},[]);
   const [municipalityAreaId, setMunicipalityAreaId] = useState("duras");
   const [municipalityServiceType, setMunicipalityServiceType] = useState<MunicipalityServiceType>("all");
   const [municipalityServiceInfo, setMunicipalityServiceInfo] = useState<MunicipalityServiceResponse | null>(null);
@@ -1643,6 +1650,7 @@ export default function Home() {
     diy: 25,
     jeweller: 25,
     hairdresser: 25,
+    estate_agent: 25,
   };
   const municipalityServiceEntries: MunicipalityServiceEntry[] = !municipalityServiceInfo
     ? []
@@ -1659,7 +1667,9 @@ export default function Home() {
   const municipalityDoctolibSearchUrl = `https://www.doctolib.fr/medecin-generaliste/${municipalityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
   const renderMunicipalityServiceCard = (service: MunicipalityServiceEntry, index: number, groupType: MunicipalityServiceType) => {
     const groupLabel = municipalityServiceOptions.find((option) => option.id === groupType)?.label ?? municipalityServiceLabel;
-    return <article className="municipality-service-card" key={`${groupType}-${service.id}`}>
+    return <article className={`municipality-service-card${service.highlighted?' municipality-service-highlighted':''}`} key={`${groupType}-${service.id}`}>
+      {service.highlighted&&<div className="activity-highlight-banner">Advertentie · Uitgelichte vermelding</div>}
+      {service.image_url&&<img className="municipal-business-photo" src={service.image_url} alt=""/>}
       <div className="municipality-service-card-heading">
         <div><p className="section-kicker">{groupLabel}{service.inSelectedMunicipality === false ? ` · omgeving ${municipalityName}` : service.municipality ? ` · ${service.municipality}` : ""}{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</p><h3>{service.name}</h3></div>
         {service.type === "hospital" && index === 0 && <span className="nearest-service-badge">Dichtstbij</span>}
@@ -1673,7 +1683,7 @@ export default function Home() {
       {service.serviceTimes && <p><strong>Mis- of diensttijden:</strong> {service.serviceTimes}</p>}
       {(groupType === "church" || municipalityServiceType === "all" && service.type === "church") && !service.serviceTimes && <p className="municipality-missing-detail">Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie.</p>}
       {service.extra && <p>{service.extra}</p>}
-      {SHOP_TYPES.includes(service.type)&&<p><a className="text-arrow-link" href={'/gemeentegids/adverteren?'+new URLSearchParams({name:service.name,city:service.municipality||municipalityName,category:groupLabel,address:service.address||''})}>Is dit jouw bedrijf? Beheer en adverteer →</a></p>}
+      {COMMERCIAL_SERVICE_TYPES.includes(service.type)&&<p><a className="text-arrow-link" href={'/gemeentegids/adverteren?'+new URLSearchParams({serviceId:service.id,city:service.municipality||municipalityName})}>Is dit jouw bedrijf? Beheer en adverteer →</a></p>}
       <div className="municipality-service-links">
         {safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer">Website <span aria-hidden="true">↗</span></a>}
         {safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer">Bron: {service.sourceName ?? "gegevens bekijken"} <span aria-hidden="true">↗</span></a>}
@@ -1773,7 +1783,7 @@ export default function Home() {
         {locationNotice&&<p className="location-fallback-note" role="status">{locationNotice}</p>}
       </section>
 
-      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
+      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm||municipalityInView} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
 
       <section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
         {nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}>{nearbyError}</p>}
@@ -1902,7 +1912,7 @@ export default function Home() {
             </div>
           )}
           {municipalitySearchComplete && municipalityServiceType !== "emergency" && municipalityServiceInfo && (
-            <div className="municipality-results" aria-live="polite">
+            <div className={`municipality-result-layout${municipalityServiceInfo.municipalPartners?.length?' has-partners':''}`}><div className="municipality-results" aria-live="polite">
               {municipalityServiceType === "all" ? <>
                 {municipalityServiceGroupTypes.map((option) => {
                   const groupEntries = municipalityServiceEntries.filter((service) => service.type === option.id);
@@ -1959,7 +1969,7 @@ export default function Home() {
               </p>
               {!municipalityServiceInfo.mapDataAvailable && !municipalityServiceInfo.curatedDataAvailable && <p className="municipality-feedback municipality-feedback-error">De kaartgegevens zijn tijdelijk niet bereikbaar. De links naar Google Maps en Doctolib blijven beschikbaar.</p>}
               {!municipalityServiceInfo.mapDataAvailable && municipalityServiceInfo.curatedDataAvailable && <p className="municipality-data-note">De officiële vermeldingen hierboven zijn beschikbaar. De aanvullende OpenStreetMap-resultaten zijn tijdelijk niet bereikbaar.</p>}
-            </div>
+            </div><MunicipalPartners listings={municipalityServiceInfo.municipalPartners??[]} city={municipalityName}/></div>
           )}
         </div>
       </section>
@@ -2306,7 +2316,7 @@ export default function Home() {
       {!authLoading && user && isAdmin && <>
       <CalendarSiteSwitcher currentSite="duras"/>
       <AnalyticsDashboard client={supabase} />
-      <AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/><MailSettings client={supabase}/>
+      <MunicipalBusinessAdmin client={supabase}/><AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/><MailSettings client={supabase}/>
       <div
         style={{
           display: "grid",

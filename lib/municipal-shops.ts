@@ -15,3 +15,6 @@ export function shopNafType(code:string,name:string):string|undefined{
  if(code==='47.78C')return /souvenir|cadeau/.test(normalized)?'souvenirs':undefined;
  return types[code];
 }
+
+export const COMMERCIAL_SERVICE_TYPES=[...SHOP_TYPES,'estate_agent','supermarket','fuel','charging'];
+export const MUNICIPAL_BUSINESS_LABELS:Record<string,string>={...SHOP_LABELS,estate_agent:'Makelaars',supermarket:'Supermarkt',fuel:'Tankstation',charging:'Laadpunt'};

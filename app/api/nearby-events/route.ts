@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("events")
       .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
-      .eq("status", "approved")
+      .is("municipal_key",null).eq("status", "approved")
       .eq("verified", true)
       // Latitude is a conservative coarse bound. Missing/invalid coordinates
       // still take the commune fallback; exact distance is checked below.
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => a.distance_km - b.distance_km || a.start_at.localeCompare(b.start_at));
   // House placements belong to the advertising frame, independently of the
   // visitor's distance filters. Unapproved records can never occupy this slot.
-  let reservedQuery=supabase.from('events').select('id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)').eq('status','approved').eq('verified',true);
+  let reservedQuery=supabase.from('events').select('id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)').eq('status','approved').eq('verified',true).is('municipal_key',null);
   reservedQuery=category&&category!=='all'?reservedQuery.eq('reserved_category_id',category):reservedQuery.eq('reserved_homepage',true);
   const reservedResult=await reservedQuery.limit(1);
   if(reservedResult.error)return NextResponse.json({error:'Advertentieplaatsen konden niet worden geladen.'},{status:502});

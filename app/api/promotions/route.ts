@@ -16,7 +16,7 @@ export async function GET(request:NextRequest){
   const type=category==='all'?'homepage':'category';
   const reserved=category==='all'?'reserved_homepage.eq.true':'reserved_category_id.eq.'+category;
   const columns='id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories'+(category==='all'?'':'!inner')+'(category_id)';
-  let query=client.from('events').select(columns).eq('status','approved').eq('verified',true)
+  let query=client.from('events').select(columns).eq('status','approved').eq('verified',true).is('municipal_key',null)
     .or(reserved+',advertising_placements.cs.[{"placement":"'+type+'"}]'+',and(promotion_type.eq.'+type+',promotion_status.eq.active,or(promotion_start_at.is.null,promotion_start_at.lte.'+now+'),or(promotion_end_at.is.null,promotion_end_at.gt.'+now+'))');
   if(category!=='all')query=query.eq('event_categories.category_id',category);
   const {data,error}=await query.order('id').limit(100);
