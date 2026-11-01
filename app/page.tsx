@@ -2279,7 +2279,7 @@ export default function Home() {
       <details id="beheer" onToggle={(event) => { if (event.currentTarget.open) setAdminContentMounted(true); }} style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
       {adminContentMounted && <>
-      <h2>Beheerdersdashboard</h2><CalendarSiteSwitcher currentSite="duras"/>
+      <h2>Beheerdersdashboard</h2>
 
       {authLoading ? (
         <p>Inlogstatus controleren...</p>
@@ -2306,7 +2306,8 @@ export default function Home() {
         </form>
       )}
 
-      {isAdmin && <>
+      {!authLoading && user && isAdmin && <>
+      <CalendarSiteSwitcher currentSite="duras"/>
       <AnalyticsDashboard client={supabase} />
       <AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/><MailSettings client={supabase}/>
       <div
