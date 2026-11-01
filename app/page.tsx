@@ -16,7 +16,7 @@ import ListingRequestsAdmin from './components/ListingRequestsAdmin';
 import AdvertisingRequests from "./components/AdvertisingRequests";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import {trackAnalytics} from "../lib/analytics-client";
-import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive,hasAdvertisingPlacement} from "../lib/event-presentation";
+import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive,hasAdvertisingPlacement,prioritizeHighlighted} from "../lib/event-presentation";
 import {normalizeWebAddress} from "../lib/web-address";
 import {visitorLocationDecision,shouldUseTownFallback} from '../lib/visitor-location';
 import {loadAdminEvents} from "../lib/admin-event-loader";
@@ -590,18 +590,12 @@ export default function Home() {
   const searchLabel = deferredVisitorLocation ? "jouw locatie" : searchArea?.name ?? "Duras";
   const visibleNearbyEvents = useMemo(() => {
     const query = eventSearch.trim().toLocaleLowerCase("nl-NL");
-    return uniqueEventRecords(nearbyEvents).map(event=>({...event,promotion_status:event.promotion_status==='active'&&!promotionIsActive(event)?'none' as const:event.promotion_status})).filter((event) => {
+    return prioritizeHighlighted(uniqueEventRecords(nearbyEvents).map(event=>({...event,promotion_status:event.promotion_status==='active'&&!promotionIsActive(event)?'none' as const:event.promotion_status})).filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase("nl-NL").includes(query));
     const matchesCategory = categoryFilter === "all" || event.category_ids?.includes(categoryFilter) === true;
     return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
-    }).sort((left, right) => {
-    const isCategoryPromotion = (event: NearbyEvent) => categoryFilter !== "all"
-      && event.category_ids?.includes(categoryFilter)
-      && event.promotion_type === "category"
-      && event.promotion_status === "active";
-    return Number(isCategoryPromotion(right)) - Number(isCategoryPromotion(left));
-    });
+    }));
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
   const placements = useMemo(() => promotionPlacements([...homepagePromotions,...categoryPromotions], categoryFilter), [categoryFilter,homepagePromotions,categoryPromotions,promotionClock]);
   const categoryPromotionEvents = placements.category;

@@ -49,3 +49,8 @@ export function promotionPlacements<T extends PresentedEvent>(events: T[], categ
 export function uniqueEventRecords<T extends {id: string}>(events: T[]) {
   return [...new Map(events.map(event => [event.id, event])).values()];
 }
+
+/** Stable partition: paid, currently active bold listings precede ordinary ones. */
+export function prioritizeHighlighted<T extends PresentedEvent>(events:T[],now=new Date()){
+ return [...events].sort((left,right)=>Number(hasAdvertisingPlacement(right,'highlight',now))-Number(hasAdvertisingPlacement(left,'highlight',now)));
+}

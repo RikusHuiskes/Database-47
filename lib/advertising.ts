@@ -24,3 +24,17 @@ export function validateAdvertiser(type:string,value:unknown){
   if(!result.name||!result.address||!result.postcode||!result.city||!result.country||!result.phone||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result.email))throw Error('Vul naam, adres, postcode, plaats, land, e-mail en telefoon in.');
   return {details:result,quote:advertisingQuote(type,result)};
 }
+
+export const ADVERTISING_LABELS={highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'} as const;
+export function advertisingSelectionQuote(value:unknown,details:AdvertiserDetails){
+ if(!Array.isArray(value)||value.length<1||value.length>3||new Set(value).size!==value.length||value.some(type=>typeof type!=='string'||!Object.hasOwn(MONTHLY_PRICES,type)))throw Error('Kies een of meer geldige advertentievormen.');
+ const placements=[...value].sort() as AdvertisingType[];
+ const quote=advertisingQuote(placements[0],details);
+ return {...quote,placements,amountCents:placements.reduce((total,type)=>total+MONTHLY_PRICES[type]*details.months,0)};
+}
+/** Works for historic single purchases and new combined purchases. */
+export function advertisingOrderTypes(order:{placement?:string;details?:unknown}):AdvertisingType[]{
+ const details=order.details as {placements?:unknown}|undefined;
+ if(Array.isArray(details?.placements))return details.placements.filter((type):type is AdvertisingType=>typeof type==='string'&&Object.hasOwn(MONTHLY_PRICES,type));
+ return order.placement&&Object.hasOwn(MONTHLY_PRICES,order.placement)?[order.placement as AdvertisingType]:[];
+}
