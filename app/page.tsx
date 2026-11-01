@@ -1,4 +1,5 @@
 "use client";
+import CalendarSiteSwitcher from './components/CalendarSiteSwitcher';
 import SourcePhoto from './components/SourcePhoto';
 import {REGIONAL_DEMO,REGION} from '../lib/site-region';
 import {demoListings,saveDemoListing} from '../lib/regional-demo-browser';
@@ -2282,7 +2283,7 @@ export default function Home() {
       <details id="beheer" onToggle={(event) => { if (event.currentTarget.open) setAdminContentMounted(true); }} style={{ margin: "28px 0", padding: 16, background: "#f8fafc", border: "1px solid #d8dee8", borderRadius: 10 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>Beheerdersdashboard</summary>
       {adminContentMounted && <>
-      <h2>Beheerdersdashboard</h2>
+      <h2>Beheerdersdashboard</h2><CalendarSiteSwitcher currentSite={REGION.key}/>
 
       {authLoading ? (
         <p>Inlogstatus controleren...</p>
