@@ -1099,3 +1099,27 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .listing-upgrade-link { display: inline-flex; align-items: center; min-height: 44px; padding: 12px 18px; background: #285442; color: #fff !important; border-radius: 8px; text-decoration: none; font-weight: 700; }
 .listing-upgrade-invitation p { line-height: 1.6; }
 #listing-upgrade { scroll-margin-top: 24px; }
+/* Selectable advertising previews for existing listings. */
+.owner-advertising-options{border:0;padding:0;min-width:0;margin:28px 0}
+.owner-advertising-options legend{font-weight:700;margin-bottom:16px}
+.owner-advertising-options-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.owner-management .owner-advertising-option{display:flex;flex-direction:column;gap:12px;min-width:0;padding:18px;border:2px solid #d7dfd4;border-radius:18px;background:white;cursor:pointer;font-size:15px}
+.owner-management .owner-advertising-option.is-selected{border-color:#235441;background:#f1f5eb;box-shadow:0 0 0 2px #235441}
+.owner-advertising-option-heading{display:flex;align-items:center;gap:9px}
+.owner-management .owner-advertising-option input[type=radio]{width:18px;min-width:18px;max-width:18px;height:18px;margin:0;padding:0;flex:0 0 18px}
+.owner-option-sample{display:flex;flex-direction:column;overflow:hidden;border:1px solid #deded2;border-radius:12px;background:#fffdf3}
+.owner-option-sample img{height:110px;width:100%;object-fit:cover}
+.owner-option-sample>span{padding:8px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#a36930}
+.owner-option-sample>strong{padding:0 10px 14px;font-family:Georgia,serif;font-size:19px;line-height:1.25}
+.owner-option-sample-highlight{border:3px solid #235441}
+.owner-option-sample-highlight>span{background:#235441;color:white}
+.owner-option-selected{margin-top:auto;font-weight:700;color:#235441}
+.owner-partner-preview{padding:22px;background:#faf8ee;border:1px solid #ddcfb6;border-radius:18px}
+.owner-partner-preview>small,.owner-partner-card>small{text-transform:uppercase;letter-spacing:.06em;color:#a36930;font-weight:700;font-size:12px}
+.owner-partner-preview>h3{font-family:Georgia,serif;font-size:28px;line-height:1.15;margin:10px 0 18px}
+.owner-partner-card{background:white;border:1px solid #e3d8c1;border-radius:14px;padding:14px}
+.owner-partner-card img{width:100%;height:180px;object-fit:cover;border-radius:10px;margin-bottom:14px}
+.owner-partner-card h4{font-family:Georgia,serif;font-size:25px;line-height:1.2;margin:10px 0}
+.owner-partner-card p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.owner-partner-link{display:inline-block;background:#235441;color:white;border-radius:30px;padding:9px 18px;font-weight:700}
+@media(max-width:800px){.owner-advertising-options-grid{grid-template-columns:1fr}.owner-option-sample img{height:140px}}

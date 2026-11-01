@@ -26,7 +26,7 @@ function ListingPreview({event,highlighted}:{event:Record<string,unknown>;highli
  </figure>;
 }
 export default function AdvertisingUpgrade({access,event,advertising,paymentReady,busy,onCreated,onCheckout}:Props){
- const [placement,setPlacement]=useState<AdvertisingType>('highlight');
+ const [placement,setPlacement]=useState<AdvertisingType>(advertising?.placement==='homepage'||advertising?.placement==='category'?advertising.placement:'highlight');
  const [details,setDetails]=useState<AdvertiserDetails>(()=>({...emptyAdvertiser,...advertising?.details,startDate:today(),months:1}));
  const [submitting,setSubmitting]=useState(false),[error,setError]=useState('');
  let quote:ReturnType<typeof advertisingQuote>|null=null;try{quote=advertisingQuote(placement,details);}catch{}
@@ -44,14 +44,25 @@ export default function AdvertisingUpgrade({access,event,advertising,paymentRead
  return <section id="listing-upgrade" className="owner-advertising-upgrade" aria-labelledby="upgrade-heading">
   <h2 id="upgrade-heading">Meer bereik voor deze vermelding</h2>
   <p>Maak van ‘{String(event.title)}’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je hierboven gegevens gewijzigd? Sla die eerst op.</p>
-  <div className="owner-listing-comparison" aria-label="Verschil tussen een normale en een vetomrande vermelding">
-   <ListingPreview event={event} highlighted={false}/><ListingPreview event={event} highlighted/>
+  <fieldset className="owner-advertising-options">
+   <legend>Kies je advertentievorm en bekijk het voorbeeld</legend>
+   <div className="owner-advertising-options-grid">
+    {(Object.keys(labels) as AdvertisingType[]).map(type=><label className={`owner-advertising-option${placement===type?' is-selected':''}`} key={type}>
+     <span className="owner-advertising-option-heading"><input type="radio" name="upgrade-placement" value={type} checked={placement===type} onChange={()=>setPlacement(type)}/><strong>{labels[type]}</strong></span>
+     <span>{euro(MONTHLY_PRICES[type])} per maand</span>
+     <span className={`owner-option-sample owner-option-sample-${type}`} aria-hidden="true">{typeof event.image_url==='string'&&/^https?:\/\//i.test(event.image_url)&&<img src={event.image_url} alt=""/>}<span>{type==='highlight'?'Uitgelichte advertentie':type==='category'?'Categoriepartner':'Homepagepartner'}</span><strong>{String(event.title||'Je vermelding')}</strong></span>
+     <small>{type==='highlight'?'Een dikke donkergroene rand tussen de gewone agendaresultaten.':type==='category'?'Een eigen advertentiekaart bij de resultaten van je categorie.':'Een eigen advertentiekaart bij de uitgelichte partners op de homepage.'}</small>
+     <span className="owner-option-selected">{placement===type?'✓ Voorbeeld geselecteerd':'Bekijk dit voorbeeld'}</span>
+    </label>)}
+   </div>
+  </fieldset>
+  <div className="owner-listing-comparison" aria-label="Verschil tussen een normale en een betaalde vermelding">
+   <ListingPreview event={event} highlighted={false}/>{placement==='highlight'?<ListingPreview event={event} highlighted/>:<figure className="owner-listing-example"><figcaption><strong>{labels[placement]}</strong><span>{euro(MONTHLY_PRICES[placement])} per maand</span></figcaption><div className="owner-partner-preview"><small>Lokale partners · Advertenties</small><h3>{placement==='homepage'?'Uitgelicht op de homepage':'Uitgelicht in je categorie'}</h3><article className="owner-partner-card">{typeof event.image_url==='string'&&/^https?:\/\//i.test(event.image_url)&&<img src={event.image_url} alt=""/>}<small>{placement==='homepage'?'Homepagepartner':'Categoriepartner'} · {String(event.city||'In de buurt')}</small><h4>{String(event.title)}</h4><p>{String(event.short_description||event.description||'Ontdek deze vermelding.')}</p><span className="owner-partner-link">Ontdek →</span></article></div></figure>}
   </div>
-  <p className="owner-comparison-note">Dezelfde vermelding, extra opvallend: een dikke donkergroene rand, een lichte crèmeachtergrond en het label ‘Uitgelichte advertentie’. De vetomrande advertentie staat tussen de gewone resultaten; de volgorde verandert hierdoor niet. Dit is een voorbeeld van de weergave, geen bevestiging dat je advertentie al actief is.</p>
+  <p className="owner-comparison-note">{placement==='highlight'?'De vetomrande advertentie verschijnt tussen de gewone resultaten; de volgorde verandert hierdoor niet.':placement==='category'?'De categorieadvertentie verschijnt bij de uitgelichte partners binnen de categorie van deze vermelding.':'De homepageadvertentie verschijnt bij de uitgelichte partners op de homepage.'} Dit is een visueel voorbeeld. Plaatsing volgt na goedkeuring, betaalbevestiging en controle van de beschikbaarheid, binnen je gekozen periode.</p>
   {pending||active?<p>Deze vermelding heeft al een lopende advertentie of aanvraag. Hieronder vind je de betaalstatus en kun je een openstaande betaling afronden. Neem contact op met de beheerder als je de advertentievorm wilt veranderen.</p>:<form className="owner-form" onSubmit={submit}>
    <fieldset disabled={busy||submitting}>
-    <legend>Advertentievorm</legend>
-    {(Object.keys(labels) as AdvertisingType[]).map(type=><label className="owner-advertising-choice" key={type}><input type="radio" name="upgrade-placement" value={type} checked={placement===type} onChange={()=>setPlacement(type)}/><span><strong>{labels[type]}</strong> · {euro(MONTHLY_PRICES[type])} per maand<br/><small>{type==='highlight'?'Een opvallende donkergroene rand tussen de gewone resultaten.':type==='category'?'Een plek bij de uitgelichte advertenties in je bestaande categorie.':'Een plek bij de uitgelichte advertenties op de homepage.'}</small></span></label>)}
+    <legend>Gekozen advertentie: {labels[placement]}</legend>
     <label>Begindatum<input required type="date" min={today()} value={details.startDate} onChange={e=>change('startDate',e.target.value)}/></label>
     <label>Looptijd<select value={details.months} onChange={e=>change('months',Number(e.target.value))}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{i+1} {i===0?'maand':'maanden'}</option>)}</select></label>
     <h3>Factuurgegevens</h3>
