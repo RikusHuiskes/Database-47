@@ -28,7 +28,8 @@ export async function GET(request:Request) {
   const mailResult=result.data?.length?await client.from('listing_mail_outbox').select('request_id,state,recipient,accepted_at,last_error').eq('template','management').in('request_id',result.data.map(item=>item.id)).order('created_at',{ascending:false}):{data:[],error:null};
   if(mailResult.error)return Response.json({error:'De verzendstatus kon niet worden gecontroleerd.'},{status:502});
   const managedIds=new Set(accessResult.data?.map(row=>row.event_id));
-  return Response.json({items:result.data?.map(item=>({...item,managementMail:mailResult.data?.find(mail=>mail.request_id===item.id),hasExistingAccess:managedIds.has(item.event_id),triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
+  const managedCounts=new Map<string,number>();for(const row of accessResult.data??[])managedCounts.set(row.event_id,(managedCounts.get(row.event_id)??0)+1);
+  return Response.json({items:result.data?.map(item=>({...item,managementMail:mailResult.data?.find(mail=>mail.request_id===item.id),existingAccessCount:managedCounts.get(item.event_id)??0,hasExistingAccess:managedIds.has(item.event_id),triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request) {
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
