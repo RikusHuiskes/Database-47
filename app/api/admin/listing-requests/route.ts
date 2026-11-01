@@ -4,9 +4,18 @@ import {processMailOutbox} from '../../../../lib/mail-outbox';
 import {listingTriage} from '../../../../lib/listing-triage';
 import {adminService} from '../../../../lib/admin-service';
 import {managedToken,tokenHash} from '../../../../lib/managed-events';
+import {sealManagementMail} from '../../../../lib/management-mail';
+import {mailConfiguration} from '../../../../lib/mail';
 export async function GET(request:Request) {
   const client=await adminService(request);
   if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
+  const mailFor=new URL(request.url).searchParams.get('mailFor');
+  if(mailFor){
+    if(!/^[a-f\d-]{36}$/i.test(mailFor))return Response.json({error:'Ongeldige aanvraag.'},{status:400});
+    const result=await client.from('listing_mail_outbox').select('id,state,recipient,accepted_at,last_error,next_attempt_at').eq('request_id',mailFor).eq('template','management').order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(result.error)return Response.json({error:'Verzendstatus kon niet worden geladen.'},{status:502});
+    return Response.json({mail:result.data},{headers:{'Cache-Control':'no-store'}});
+  }
   const page=Math.max(1,Math.min(10000,Number(new URL(request.url).searchParams.get('page'))||1));
   const status=new URL(request.url).searchParams.get('status')??'pending';
   if(!['pending','approved','rejected','resolved','revoked','all'].includes(status))return Response.json({error:'Ongeldige selectie.'},{status:400});
@@ -16,8 +25,10 @@ export async function GET(request:Request) {
   if(result.error)return Response.json({error:'Aanvragen konden niet worden geladen.'},{status:502});
   const accessResult=result.data?.length?await client.from('event_owner_access').select('event_id').in('event_id',result.data.map(item=>item.event_id)):{data:[],error:null};
   if(accessResult.error)return Response.json({error:'Bestaande beheerrechten konden niet worden gecontroleerd.'},{status:502});
+  const mailResult=result.data?.length?await client.from('listing_mail_outbox').select('request_id,state,recipient,accepted_at,last_error').eq('template','management').in('request_id',result.data.map(item=>item.id)).order('created_at',{ascending:false}):{data:[],error:null};
+  if(mailResult.error)return Response.json({error:'De verzendstatus kon niet worden gecontroleerd.'},{status:502});
   const managedIds=new Set(accessResult.data?.map(row=>row.event_id));
-  return Response.json({items:result.data?.map(item=>({...item,hasExistingAccess:managedIds.has(item.event_id),triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
+  return Response.json({items:result.data?.map(item=>({...item,managementMail:mailResult.data?.find(mail=>mail.request_id===item.id),hasExistingAccess:managedIds.has(item.event_id),triage:listingTriage(item)})),total:result.count,queue:{claims:claims.count??0,corrections:corrections.count??0}},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request) {
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
@@ -29,9 +40,24 @@ export async function POST(request:Request) {
     if(!['approved','reissued','rejected','resolved','revoked'].includes(body.action))throw Error('Kies een geldige actie.');
     const reviewer=await client.auth.getUser(request.headers.get('authorization')?.replace(/^Bearer\s+/i,'')??'');
     if(!reviewer.data.user)return Response.json({error:'Log opnieuw in.'},{status:403});
-    const {data,error}=await client.rpc('review_listing_request',{p_id:body.id,p_action:body.action,p_note:body.note??'',p_contact:body.contact??'',p_token_hash:tokenHash(token),p_reviewer:reviewer.data.user.id});
-    if(error)throw Error(error.message);
+    const grants=['approved','reissued'].includes(body.action);
+    const args={p_id:body.id,p_action:body.action,p_note:body.note??'',p_contact:body.contact??'',p_token_hash:tokenHash(token),p_reviewer:reviewer.data.user.id};
+    let eventId:string,mail:unknown;
+    if(grants){
+      const email=String(body.deliveryEmail??'').trim().toLowerCase();
+      if(body.emailConfirmed!=='on'||! /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||email.length>254)throw Error('Controleer en bevestig het e-mailadres voor de persoonlijke beheerlink.');
+      if(!mailConfiguration().deliveryEnabled)throw Error('Automatische beheerlinkmail is niet ingesteld. Controleer eerst de Strato-mailverbinding; de goedkeuring is niet opgeslagen.');
+      const listing=await client.from('listing_requests').select('event_id').eq('id',body.id).single();
+      if(listing.error)throw Error('Aanvraag niet gevonden.');
+      eventId=listing.data.event_id;
+      const encrypted=sealManagementMail({eventId,token,origin:new URL(request.url).origin});
+      const result=await client.rpc('review_listing_request_with_mail',{...args,p_email:email,p_encrypted_secret:encrypted});
+      if(result.error)throw Error(result.error.message);
+      mail={id:result.data.mailId,state:'pending',recipient:email};
+    }else{
+      const result=await client.rpc('review_listing_request',args);if(result.error)throw Error(result.error.message);eventId=result.data;
+    }
     after(async()=>{await processMailOutbox().catch(()=>{});});
-    return Response.json({ok:true,manageFragment:['approved','reissued'].includes(body.action)?`${data}:${token}`:undefined},{headers:{'Cache-Control':'no-store'}});
+    return Response.json({ok:true,manageFragment:grants?`${eventId}:${token}`:undefined,mail},{headers:{'Cache-Control':'no-store'}});
   }catch(e){return Response.json({error:e instanceof Error?e.message:'Verwerken mislukt.'},{status:400});}
 }

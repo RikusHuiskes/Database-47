@@ -16,7 +16,7 @@ export async function POST(request:Request){
  try{
   const body=await request.json();if(!['verify','test','process'].includes(body.action))return Response.json({error:'Ongeldige actie.'},{status:400});
   const config=mailConfiguration();if(!config.configured)return Response.json({error:'De Strato-instellingen zijn onvolledig of ongeldig.'},{status:503});
-  if(body.action==='process'){const result=await processMailOutbox(10);return Response.json({message:result.enabled?`${result.accepted} berichten door Strato geaccepteerd; ${result.failed} mislukt. ${config.previewMode?'Alle testberichten zijn uitsluitend naar de eigen mailbox gestuurd.':''}`:'Automatische verzending is uitgeschakeld.'});}
+  if(body.action==='process'){const result=await processMailOutbox(10);return Response.json({message:result.enabled?`${result.accepted} berichten door Strato geaccepteerd; ${result.failed} mislukt. ${config.previewMode?'Algemene testberichten gaan naar de eigen mailbox; goedgekeurde beheerlinkmails naar de gecontroleerde ontvanger.':''}`:'Automatische verzending is uitgeschakeld.'});}
   const transport=mailTransport();
   if(body.action==='verify'){await transport.verify();return Response.json({message:'De beveiligde verbinding en aanmelding bij Strato werken. Er is geen mail verstuurd.'},{headers:{'Cache-Control':'no-store'}});}
   // A test can only go to our own configured mailbox, never a supplied recipient.
