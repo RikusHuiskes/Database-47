@@ -1699,7 +1699,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
       <T>{service.openingHours && <p><strong><T>{"Openingstijden:"}</T></strong> <T>{service.openingHours}</T></p>}</T>
       <T>{service.serviceTimes && <p><strong><T>{"Mis- of diensttijden:"}</T></strong> <T>{service.serviceTimes}</T></p>}</T>
       <T>{(groupType === "church" || municipalityServiceType === "all" && service.type === "church") && !service.serviceTimes && <p className="municipality-missing-detail"><T>{"Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie."}</T></p>}</T>
-      <T>{service.extra && <p><T>{service.extra.split(/(?<=\.)\s+(?=[A-ZÀ-ÖØ-Þ])/u).map(sentence=>sentence+" ")}</T></p>}</T>
+      <T>{service.extra && <p>{service.extra.split(/(?<=\.)\s+(?=[A-ZÀ-ÖØ-Þ])/u).map((sentence,index)=><span key={index}><T>{sentence}</T>{" "}</span>)}</p>}</T>
       <T>{COMMERCIAL_SERVICE_TYPES.includes(service.type)&&<p><a className="text-arrow-link" href={'/gemeentegids/adverteren?'+new URLSearchParams({serviceId:service.id,city:service.municipality||municipalityName})}><T>{"Is dit jouw bedrijf? Beheer en adverteer →"}</T></a></p>}</T>
       <div className="municipality-service-links">
         <T>{safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>

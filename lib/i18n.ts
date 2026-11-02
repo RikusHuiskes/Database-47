@@ -19,7 +19,7 @@ export function localizeMunicipalName(name:string,locale:Locale):string{
   'Tankstation':['Petrol station','Station-service'],
   'Supermarkt':['Supermarket','Supermarché'],
  };
- for(const [label,translations]of Object.entries(labels))if(name===label||name.startsWith(label+' · '))return translations[locale==='en'?0:1]+name.slice(label.length);
+ for(const [label,translations]of Object.entries(labels))if(name===label||name.startsWith(label+' · '))return translations[locale==='en'?0:1]+(name.length>label.length?' · '+localizeMunicipalName(name.slice(label.length+3),locale):'');
  return name;
 }
 /** OSM opening-hours notation: expand day codes while keeping every time unchanged. */
