@@ -11,6 +11,6 @@ export default function NewEventExperience({title,city,category,children}:{title
   </section>
   <div className={s.content}>{children}</div>
   <section className={g.assurance}><div><strong>Eén vermelding, meerdere advertentiemogelijkheden</strong><p>Je evenement blijft tussen de gewone resultaten staan. Advertenties geven extra zichtbaarheid aan dezelfde vermelding.</p></div><div><strong>Duidelijk vooraf</strong><p>Je kiest zelf je vormen en looptijd. Voor je betaalt zie je één overzicht met het totale bedrag.</p></div></section>
-  <footer className={g.footer}><a href="/#agenda">Côte de Duras · Evenementenkalender</a><a href="/mijn-vermelding">Al een vermelding? Beheer je vermelding →</a></footer>
+  <footer className={g.footer}><a href="/#agenda">Côte de Duras · Evenementenkalender</a><a href="/handleiding#toevoegen" target="_blank" rel="noreferrer">Handleiding bij deze pagina ↗</a><a href="/mijn-vermelding">Al een vermelding? Beheer je vermelding →</a></footer>
  </main>;
 }
