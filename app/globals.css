@@ -1152,3 +1152,6 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 
 .municipal-partner-card>a{display:block;color:inherit;text-decoration:none}
 .municipal-partner-card .municipal-service-photo img{margin-bottom:0}
+/* The inline mobile rail keeps its footprint while suppressed, preventing
+   anchor jumps when the municipal guide enters the viewport. */
+@media(max-width:899px){.promotion-sidebar-slot .promotion-sidebar[hidden]{display:block;visibility:hidden;pointer-events:none}}
