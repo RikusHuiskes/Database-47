@@ -77,7 +77,7 @@ const curated: CatalogService[] = [...CURATED_HEALTH_SERVICES,...CURATED_LOCAL_S
   return [{...entry,latitude,longitude}];
 });
 
-export function municipalCatalog(city:string,latitude:number,longitude:number,service="all",codeInsee?:string) {
+export function municipalCatalog(city:string,latitude:number,longitude:number,service="all",codeInsee?:string,includePhotos=true) {
   const radiusKm=["agen","bergerac"].includes(normalizePlaceName(city)) ? 10 : 25;
   const localCode=codeInsee ?? areas.areas.find(area=>normalizePlaceName(area.name)===normalizePlaceName(city))?.code_insee;
   const localMairie=official.filter(entry=>{
@@ -106,7 +106,7 @@ export function municipalCatalog(city:string,latitude:number,longitude:number,se
     return [{...entry,distanceKm:Math.round(distance*10)/10,inSelectedMunicipality:entry.codeInsee||entry.municipality ? local : undefined}];
   }).sort((a,b)=>Number(b.inSelectedMunicipality===true)-Number(a.inSelectedMunicipality===true)||(SHOP_TYPES.includes(a.type)&&SHOP_TYPES.includes(b.type)?Number(Boolean(b.address))-Number(Boolean(a.address)):0)||(a.distanceKm??Infinity)-(b.distanceKm??Infinity));
   return {city,updatedAt:service==='all'||service==='estate_agent'?estateData.updatedAt:SHOP_TYPES.includes(service) ? shopData.updatedAt : ["all","supermarket","fuel","charging","public_transport","parking","disabled_parking"].includes(service) ? mobilityData.updatedAt : mapData.updatedAt,radiusKm,officialDirectoryAvailable:localMairie.length>0,mapDataAvailable:true,curatedDataAvailable:true,
-    officialEquipmentCounts:[],mairie:services.find(entry=>entry.type==="mairie") ? withMunicipalPhoto(services.find(entry=>entry.type==="mairie")!) : null,services:services.map(withMunicipalPhoto),
+    officialEquipmentCounts:[],mairie:services.find(entry=>entry.type==="mairie") ? withMunicipalPhoto(services.find(entry=>entry.type==="mairie")!) : null,services:includePhotos?services.map(withMunicipalPhoto):services,
     sources:[{name:"Annuaire des Entreprises / INSEE — SIRENE",url:"https://annuaire-entreprises.data.gouv.fr/"},{name:"OpenStreetMap contributors (ODbL)",url:"https://www.openstreetmap.org/copyright"},{name:"Service-Public.gouv.fr / DILA",url:"https://api-lannuaire.service-public.gouv.fr/explore/dataset/api-lannuaire-administration/"}],
     missingTypes:(service==="all"?MUNICIPAL_TYPES:[service]).filter(type=>!services.some(entry=>entry.type===type))};
 }

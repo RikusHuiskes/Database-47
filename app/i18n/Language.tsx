@@ -34,7 +34,7 @@ export function useLanguage(){return useContext(Context);}
 function LanguageMenu(){
  const {locale,setLocale}=useLanguage(),bar=useRef<HTMLDivElement>(null);
  useEffect(()=>{const node=bar.current;if(!node)return;const measure=()=>document.documentElement.style.setProperty('--site-language-bar-height',Math.ceil(node.getBoundingClientRect().height)+'px');measure();const observer=new ResizeObserver(measure);observer.observe(node);return()=>observer.disconnect();},[]);
- return <div className="site-language-bar" ref={bar}><div><span aria-hidden="true">◎</span><label htmlFor="site-language">{locale==='fr'?'Langue':locale==='en'?'Language':'Taal'}</label><select id="site-language" value={locale} onChange={event=>setLocale(localeFrom(event.target.value))} aria-label={locale==='fr'?'Choisir la langue':locale==='en'?'Choose language':'Kies je taal'}><option value="nl" lang="nl">Nederlands</option><option value="en" lang="en">English</option><option value="fr" lang="fr">Français</option></select></div></div>;
+ return <div className="site-language-bar" ref={bar}><div><span aria-hidden="true">◎</span><label htmlFor="site-language">{locale==='fr'?'Langue':locale==='en'?'Language':'Taal'}</label><select id="site-language" value={locale} onChange={event=>setLocale(localeFrom(event.target.value))} aria-label={locale==='fr'?'Choisir la langue':locale==='en'?'Choose language':'Kies je taal'}><option value="fr" lang="fr">Français</option><option value="en" lang="en">English</option><option value="nl" lang="nl">Nederlands</option></select></div></div>;
 }
 /** No extra DOM, so labels, options, tables and accessible form relationships are preserved. */
 export function T({children,preserve=false}:{children:ReactNode;preserve?:boolean}){
