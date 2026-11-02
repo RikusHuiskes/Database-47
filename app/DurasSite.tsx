@@ -1791,9 +1791,10 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
           <fieldset className="promotion-fieldset">
             <legend className={entry.srOnly}>Extra bereik voor je evenement (optioneel)</legend>
             <EventAdvertisingExamples value={promotionTypes} onChange={setPromotionTypes} months={advertiser.months} onMonthsChange={months=>setAdvertiser(previous=>({...previous,months}))} title={title} city={cityChoice==='__other__'?customCity:cityChoice} category={categories.find(category=>category.id===categoryId)?.name||''} image={visitorPhotoPreview} categories={categories.map(item=>({id:item.id,name:item.name||item.slug||item.id}))} description={shortDescription} date={entryKind==='directory'?'':startAt}/>
-            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {promotionNames}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} placements={promotionTypes} value={advertiser} onChange={setAdvertiser}/></section>}
+
           </fieldset>
 
+          <div id="event-details" className={entry.detailsHeading}><p>03 · Gegevens van je vermelding</p><h2>De informatie voor je bezoekers</h2><span>Vul je beschrijving, datum, locatie en contactlinks in. De beheerder controleert je inzending voor publicatie.</span></div>
           <div>
             <label htmlFor="event-entry-field-3" style={labelStyle}>Korte beschrijving</label>
             <input id="event-entry-field-3"
@@ -1950,6 +1951,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
           </div>
 
           <p>Je kunt ook www.voorbeeld.fr invoeren; https:// wordt automatisch toegevoegd. Gebruik dezelfde website als er geen aparte reserveringspagina of bronpagina is.</p>
+            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {promotionNames}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} placements={promotionTypes} value={advertiser} onChange={setAdvertiser}/></section>}
           {promotionType !== 'none' && <div className="advertising-checkout-summary"><strong>{promotionNames} · {formatAdvertisingAmount(promotionAmount)} totaal</strong><p>Voor {advertiser.months} {advertiser.months === 1 ? 'maand' : 'maanden'}{advertiser.startDate ? ` vanaf ${advertiser.startDate}` : ''}. Je slaat je vermelding op en gaat direct naar Mollie om je betaalmethode te kiezen. Je hoeft niet opnieuw in te loggen.</p></div>}
           <button
             type="submit"
@@ -2692,7 +2694,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
               </button>
             </div>
           )}
-           
+
           {event.is_free ? (
             <p>Gratis</p>
           ) : event.price_from != null ? (
@@ -2702,7 +2704,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                 ? ` tot €${Number(event.price_to).toFixed(2)}`
                 : ""}
             </p>
-          
+
           ) : null}
 
           {isAdmin && editingEventId === event.id && editDraft && (
