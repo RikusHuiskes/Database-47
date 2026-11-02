@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-11-02T17:09:45.857Z",
+  "generatedAt": "2026-11-02T17:27:15.422Z",
   "ui": {
     "en": {
-      "sourceTexts": 3482,
-      "translated": 3682,
+      "sourceTexts": 3488,
+      "translated": 3690,
       "missing": 0
     },
     "fr": {
-      "sourceTexts": 3482,
-      "translated": 3682,
+      "sourceTexts": 3488,
+      "translated": 3690,
       "missing": 0
     }
   },
