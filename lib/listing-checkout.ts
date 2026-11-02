@@ -19,6 +19,7 @@ export async function requestListingCheckout(fragment: string, fetcher: typeof f
 }
 
 export type ListingPaymentSummary = {
+  placements?: ('homepage' | 'category' | 'highlight')[];
   placement: 'homepage' | 'category' | 'highlight';
   amountCents: number;
   startDate: string;

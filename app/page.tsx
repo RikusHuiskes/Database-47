@@ -11,7 +11,7 @@ import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin
 import FloatingPromotions from './components/FloatingPromotions';
 import AdvertiserFields from "./components/AdvertiserFields";
 import EventAdvertisingExamples from "./components/EventAdvertisingExamples";
-import {MONTHLY_PRICES,advertisingQuote,emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
+import {MONTHLY_PRICES,advertisingSelectionQuote,emptyAdvertiser,validateAdvertiser,type AdvertisingType} from "../lib/advertising";
 import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 import MailSettings from './components/MailSettings';
@@ -456,8 +456,11 @@ export default function Home() {
   const [bookingUrl, setBookingUrl] = useState("https://");
   const [sourceUrl, setSourceUrl] = useState("https://");
   const [categoryId, setCategoryId] = useState("");
-  const [promotionType, setPromotionType] = useState<"none" | "homepage" | "category" | "highlight">("none");
+  const [promotionTypes,setPromotionTypes] = useState<AdvertisingType[]>([]);
+  const promotionType=promotionTypes[0]??"none";
+  const promotionNames=promotionTypes.map(advertisingPlacementName).join(" + ");
   const [advertiser,setAdvertiser] = useState({...emptyAdvertiser});
+  const promotionAmount=promotionTypes.reduce((sum,type)=>sum+MONTHLY_PRICES[type]*advertiser.months,0);
   const [managementLink,setManagementLink] = useState("");
   const [entryKind,setEntryKind] = useState("event");
 
@@ -1247,7 +1250,7 @@ export default function Home() {
     setBookingUrl("https://");
     setSourceUrl("https://");
     setCategoryId("");
-    setPromotionType("none");
+    setPromotionTypes([]);
     setAdvertiser({...emptyAdvertiser});
     setEntryKind("event");
   }
@@ -1294,7 +1297,7 @@ export default function Home() {
       return;
     }
     if (promotionType !== "none") {
-      try { validateAdvertiser(promotionType,advertiser); } catch(cause) { setSubmissionError(cause instanceof Error?cause.message:"Controleer de factuurgegevens.");return; }
+      try { validateAdvertiser(promotionType,advertiser); advertisingSelectionQuote(promotionTypes,advertiser); } catch(cause) { setSubmissionError(cause instanceof Error?cause.message:"Controleer de factuurgegevens.");return; }
     }
 
     const website = normalizeWebAddress(websiteUrl);
@@ -1304,7 +1307,7 @@ export default function Home() {
       setSubmissionError("Vul een geldig webadres in bij Website, Reserveringslink en Informatiebron. Een adres met www. wordt automatisch aangevuld met https://.");
       return;
     }
-    if (promotionType === "category" && !categoryId) {
+    if (promotionTypes.includes("category") && !categoryId) {
       setSubmissionError("Kies een categorie voor de categoriepromotie.");
       return;
     }
@@ -1352,7 +1355,7 @@ export default function Home() {
         verified: false,
       };
 
-      const response = await fetch("/api/visitor-events", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:payload,categoryId:categoryId||null,advertiser:promotionType==='none'?null:advertiser})});
+      const response = await fetch("/api/visitor-events", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:payload,categoryId:categoryId||null,placements:promotionTypes,advertiser:promotionType==='none'?null:advertiser})});
       const result = await readApiJson<{error?:string;manageFragment?:string;advertising?:ListingPaymentSummary|null}>(response);
       if(!response.ok||!result.manageFragment)throw new Error(result.error||"De vermelding kon niet worden opgeslagen.");
       const privateLink=window.location.origin+"/mijn-vermelding#"+result.manageFragment;
@@ -1361,7 +1364,7 @@ export default function Home() {
 
       eventSaved = true;
       const payment = promotionType === "none" ? null : {
-        ...(result.advertising ?? {placement:promotionType,...advertisingQuote(promotionType,advertiser)}),
+        ...(result.advertising ?? {placement:promotionType,...advertisingSelectionQuote(promotionTypes,advertiser)}),
         title:payload.title,
         manageFragment:result.manageFragment,
       };
@@ -2044,8 +2047,8 @@ export default function Home() {
           <fieldset className="promotion-fieldset">
             <legend>Extra bereik voor je evenement (optioneel)</legend>
             <p>Kies je vermelding. Bij een betaalde optie zie je direct de periode, factuurgegevens en het totaalbedrag. Met ‘Opslaan en betalen via Mollie’ ga je rechtstreeks naar de beveiligde betaalomgeving, zonder opnieuw in te loggen. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.</p>
-            <EventAdvertisingExamples value={promotionType} onChange={setPromotionType} title={title} city={cityChoice==='__other__'?customCity:cityChoice} category={categories.find(category=>category.id===categoryId)?.name||''} image={visitorPhotoPreview}/>
-            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {advertisingPlacementName(promotionType)}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/></section>}
+            <EventAdvertisingExamples value={promotionTypes} onChange={setPromotionTypes} title={title} city={cityChoice==='__other__'?customCity:cityChoice} category={categories.find(category=>category.id===categoryId)?.name||''} image={visitorPhotoPreview}/>
+            {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {promotionNames}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} placements={promotionTypes} value={advertiser} onChange={setAdvertiser}/></section>}
           </fieldset>
 
           <label style={labelStyle}>Wat wil je invoeren?<select style={inputStyle} value={entryKind} onChange={e=>setEntryKind(e.target.value)}><option value="event">Evenement met datum</option><option value="directory">Vaste vermelding / bedrijf / accommodatie</option></select></label>
@@ -2062,10 +2065,10 @@ export default function Home() {
           </div>
 
           <div>
-            <label htmlFor="event-entry-field-2" style={labelStyle}>Categorie{promotionType === "category" ? " * (verplicht voor categoriepromotie)" : ""}</label>
+            <label htmlFor="event-entry-field-2" style={labelStyle}>Categorie{promotionTypes.includes("category") ? " * (verplicht voor categoriepromotie)" : ""}</label>
             <select id="event-entry-field-2"
               style={inputStyle}
-              required={promotionType === "category"}
+              required={promotionTypes.includes("category")}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
@@ -2234,7 +2237,7 @@ export default function Home() {
           </div>
 
           <p>Je kunt ook www.voorbeeld.fr invoeren; https:// wordt automatisch toegevoegd. Gebruik dezelfde website als er geen aparte reserveringspagina of bronpagina is.</p>
-          {promotionType !== 'none' && <div className="advertising-checkout-summary"><strong>{advertisingPlacementName(promotionType)} · {formatAdvertisingAmount(MONTHLY_PRICES[promotionType] * advertiser.months)} totaal</strong><p>Voor {advertiser.months} {advertiser.months === 1 ? 'maand' : 'maanden'}{advertiser.startDate ? ` vanaf ${advertiser.startDate}` : ''}. Je slaat je vermelding op en gaat direct naar Mollie om je betaalmethode te kiezen. Je hoeft niet opnieuw in te loggen.</p></div>}
+          {promotionType !== 'none' && <div className="advertising-checkout-summary"><strong>{promotionNames} · {formatAdvertisingAmount(promotionAmount)} totaal</strong><p>Voor {advertiser.months} {advertiser.months === 1 ? 'maand' : 'maanden'}{advertiser.startDate ? ` vanaf ${advertiser.startDate}` : ''}. Je slaat je vermelding op en gaat direct naar Mollie om je betaalmethode te kiezen. Je hoeft niet opnieuw in te loggen.</p></div>}
           <button
             type="submit"
             disabled={saving || checkoutStarting}
@@ -2248,7 +2251,7 @@ export default function Home() {
               fontSize: 16,
             }}
           >
-            {saving ? (promotionType === 'none' ? 'Opslaan…' : 'Opslaan en betaling voorbereiden…') : promotionType === 'none' ? 'Evenement/vermelding opslaan' : `Opslaan en betalen via Mollie · ${formatAdvertisingAmount(MONTHLY_PRICES[promotionType] * advertiser.months)}`}
+            {saving ? (promotionType === 'none' ? 'Opslaan…' : 'Opslaan en betaling voorbereiden…') : promotionType === 'none' ? 'Evenement/vermelding opslaan' : `Opslaan en betalen via Mollie · ${formatAdvertisingAmount(promotionAmount)}`}
           </button>
         </form>
       )}
@@ -2258,7 +2261,7 @@ export default function Home() {
         <p className="section-kicker">Je aanvraag is opgeslagen</p>
         <h2 id="submission-payment-heading">{checkoutStarting ? 'Je gaat naar Mollie' : 'Betaal je advertentie via Mollie'}</h2>
         <p><strong>{submissionPayment.title}</strong></p>
-        <dl><div><dt>Advertentie</dt><dd>{advertisingPlacementName(submissionPayment.placement)}</dd></div><div><dt>Periode</dt><dd>{submissionPayment.startDate} tot {submissionPayment.endDate} · {submissionPayment.months} {submissionPayment.months === 1 ? 'maand' : 'maanden'}</dd></div><div className="submission-payment-total"><dt>Totaal te betalen</dt><dd>{formatAdvertisingAmount(submissionPayment.amountCents)}</dd></div></dl>
+        <dl><div><dt>Advertentie</dt><dd>{(submissionPayment.placements??[submissionPayment.placement]).map(advertisingPlacementName).join(" + ")}</dd></div><div><dt>Periode</dt><dd>{submissionPayment.startDate} tot {submissionPayment.endDate} · {submissionPayment.months} {submissionPayment.months === 1 ? 'maand' : 'maanden'}</dd></div><div className="submission-payment-total"><dt>Totaal te betalen</dt><dd>{formatAdvertisingAmount(submissionPayment.amountCents)}</dd></div></dl>
         <p>Je kiest je betaalmethode in de beveiligde omgeving van Mollie. Opnieuw inloggen is niet nodig.</p>
         {checkoutStarting && <p role="status">De betaalomgeving wordt geopend…</p>}
         {checkoutError && <p className="submission-payment-error" role="alert">Je vermelding en advertentieaanvraag blijven bewaard. {checkoutError}</p>}
@@ -3013,8 +3016,3 @@ export default function Home() {
     </main>
   );
 }
-
-
-
-
-
