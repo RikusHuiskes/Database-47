@@ -42,12 +42,12 @@ export default function DurasApp(){
   const controller=new AbortController();let disposed=false,timedOut=false;
   setEventLoading(true);setEventError('');
   const timer=setTimeout(()=>{timedOut=true;controller.abort();},45000);
-  fetch('/api/nearby-events?lat=44.6755&lon=0.2021&radius=50&lang='+locale,{signal:controller.signal})
+  fetch('/api/nearby-events?lat=44.6755&lon=0.2021&radius=50&lang=nl',{signal:controller.signal})
    .then(async response=>{if(!response.ok)throw Error();const data=await response.json();if(!Array.isArray(data.events))throw Error();if(!disposed){setEvents(data.events);setRefreshed(new Date());}})
    .catch(()=>{if(!disposed)setEventError(timedOut?'Het laden duurt te lang. Probeer het opnieuw.':'De agenda kon niet worden geladen. Probeer het opnieuw.');})
    .finally(()=>{clearTimeout(timer);if(!disposed)setEventLoading(false);});
   return()=>{disposed=true;clearTimeout(timer);controller.abort();};
- },[retry,locale]);
+ },[retry]);
  useEffect(()=>{
   const controller=new AbortController();let disposed=false;setCategoryLoading(true);setCategoryError('');
   fetch('/api/ios-categories',{signal:controller.signal}).then(async response=>{if(!response.ok)throw Error();const data=await response.json();if(!Array.isArray(data.categories))throw Error();if(!disposed)setCategories(data.categories.filter((item:Category)=>typeof item.id==='string'&&typeof item.name==='string').sort((a:Category,b:Category)=>a.name.localeCompare(b.name,'nl')));})

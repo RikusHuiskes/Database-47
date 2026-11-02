@@ -652,7 +652,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
       radius: String(radiusKm),
       category: categoryFilter,
     });
-    void fetch(`/api/nearby-events?${params}&lang=${locale}`, {signal: controller.signal})
+    void fetch(`/api/nearby-events?${params}&lang=nl`, {signal: controller.signal})
       .then(async (response) => {
         const result = await readApiJson<{ events?: NearbyEvent[]; homepage_promotions?: EventRow[]; category_promotions?: EventRow[]; error?: string; locationless_count?: number }>(response);
         if (!response.ok) throw new Error(result.error ?? "Evenementen konden niet worden geladen.");
@@ -674,14 +674,14 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
       })
       .finally(() => { if (active) setNearbyLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [newListingOnly,localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision,locale]);
+  }, [newListingOnly,localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision]);
 
   // Paid placements load independently of ordinary search and geocoding.
   useEffect(() => {
     if(newListingOnly)return;
     const controller=new AbortController();
     let active=true;
-    void fetch('/api/promotions?'+new URLSearchParams({category:categoryFilter,lang:locale}),{signal:controller.signal})
+    void fetch('/api/promotions?'+new URLSearchParams({category:categoryFilter,lang:"nl"}),{signal:controller.signal})
       .then(async response=>{
         const result=await readApiJson<{homepage_promotions?:EventRow[];category_promotions?:EventRow[];error?:string}>(response);
         if(!response.ok)throw new Error(result.error??'Advertenties konden niet worden geladen.');
@@ -2092,7 +2092,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                   <T>{hasAdvertisingPlacement(event,"highlight") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T>
                   <T>{categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && hasAdvertisingPlacement(event,"category") && <span className="sponsored-label"><T>{"Categoriepartner"}</T></span>}</T>
                 </div>
-                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T preserve={event.is_directory_entry===true}>{event.title}</T></button></h3>
+                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T preserve={event.is_directory_entry===true&&!event.title.startsWith("VOORBEELD")}>{event.title}</T></button></h3>
                 <p className="activity-date"><T>{formatDate(event.start_at)}</T><T>{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</T></p>
                 <p className="activity-place"><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</T></p>
                 <T>{(event.short_description || event.description) && <p className="activity-description"><T>{event.short_description || event.description}</T></p>}</T>
