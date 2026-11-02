@@ -2044,7 +2044,7 @@ export default function Home() {
           <fieldset className="promotion-fieldset">
             <legend>Extra bereik voor je evenement (optioneel)</legend>
             <p>Kies je vermelding. Bij een betaalde optie zie je direct de periode, factuurgegevens en het totaalbedrag. Met ‘Opslaan en betalen via Mollie’ ga je rechtstreeks naar de beveiligde betaalomgeving, zonder opnieuw in te loggen. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.</p>
-            <EventAdvertisingExamples value={promotionType} onChange={setPromotionType} title={title} city={city} category={categories.find(category=>category.id===categoryId)?.name||''} image={visitorPhotoPreview}/>
+            <EventAdvertisingExamples value={promotionType} onChange={setPromotionType} title={title} city={cityChoice==='__other__'?customCity:cityChoice} category={categories.find(category=>category.id===categoryId)?.name||''} image={visitorPhotoPreview}/>
             {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {advertisingPlacementName(promotionType)}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/></section>}
           </fieldset>
 
@@ -3013,6 +3013,7 @@ export default function Home() {
     </main>
   );
 }
+
 
 
 
