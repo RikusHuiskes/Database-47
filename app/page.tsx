@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin-import-sources';
 import FloatingPromotions from './components/FloatingPromotions';
 import AdvertiserFields from "./components/AdvertiserFields";
+import EventAdvertisingExamples from "./components/EventAdvertisingExamples";
 import {MONTHLY_PRICES,advertisingQuote,emptyAdvertiser,validateAdvertiser} from "../lib/advertising";
 import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
 import AnalyticsConsent from "./components/AnalyticsConsent";
@@ -2043,17 +2044,7 @@ export default function Home() {
           <fieldset className="promotion-fieldset">
             <legend>Extra bereik voor je evenement (optioneel)</legend>
             <p>Kies je vermelding. Bij een betaalde optie zie je direct de periode, factuurgegevens en het totaalbedrag. Met ‘Opslaan en betalen via Mollie’ ga je rechtstreeks naar de beveiligde betaalomgeving, zonder opnieuw in te loggen. De advertentie verschijnt na goedkeuring en betaalbevestiging, binnen de gekozen periode.</p>
-            <div className="promotion-options">
-              {([
-                ["none", "Gratis vermelding (standaard)", "Je evenement komt na goedkeuring gewoon in de agenda, zonder advertentiekosten."],
-                ["homepage", "Op de homepage · €149 per maand", "Maximaal 9 advertenties zichtbaar bij ‘Uitgelicht op de homepage’."],
-                ["category", "Bovenaan de categorie · €79 per maand", "Maximaal 9 advertenties zichtbaar per gekozen categorie."],
-                ["highlight", "Vetomrand in resultaten · €15 per maand", "Een opvallend kader in de resultaten. Geen limiet aan het aantal vermeldingen."],
-              ] as const).map(([value, heading, copy]) => <label className={`promotion-option${promotionType === value ? " promotion-option-selected" : ""}`} key={value}>
-                <input type="radio" name="promotion-type" value={value} checked={promotionType === value} aria-controls={value==='none'?undefined:'advertiser-details'} onChange={() => {setPromotionType(value);if(value!=='none')requestAnimationFrame(()=>document.getElementById('advertiser-details')?.scrollIntoView({behavior:'smooth',block:'center'}));}} />
-                <span><strong>{heading}</strong><small>{copy}</small></span>
-              </label>)}
-            </div>
+            <EventAdvertisingExamples value={promotionType} onChange={setPromotionType} title={title} city={city} category={categories.find(category=>category.id===categoryId)?.name||''} image={visitorPhotoPreview}/>
             {promotionType !== "none" && <section id="advertiser-details" aria-label="Gekozen advertentie"><p role="status"><strong>Gekozen: {advertisingPlacementName(promotionType)}.</strong> Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.</p><AdvertiserFields type={promotionType} value={advertiser} onChange={setAdvertiser}/></section>}
           </fieldset>
 
