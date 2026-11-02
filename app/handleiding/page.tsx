@@ -43,7 +43,7 @@ export default function VisitorGuide(){return <main className="region-introducti
   <section id="toevoegen"><h2>3. Zelf een evenement of vermelding toevoegen</h2><p>Controleer eerst via de agenda of je evenement of bedrijf al vermeld staat. Staat het er al? Volg dan <a href="#wijzigen">hoofdstuk 4</a> of <a href="#beheer-aanvragen">hoofdstuk 5</a> om een wijziging aan te vragen.</p><p>Voor een nieuwe vermelding:</p><ol>
     <li>Klik in het menu op <strong>Nieuw evenement/vermelding</strong>.</li>
     <li>Voeg eventueel een foto toe via <strong>Foto van het evenement uploaden</strong>. Je ziet een voorbeeld van de gekozen foto.</li>
-    <li>Kies bij <strong>Extra bereik voor je evenement</strong> de gewenste plaatsing. Voor een gewone vermelding kies je <strong>Gratis vermelding (standaard)</strong>.</li>
+    <li>Vink bij <strong>Extra bereik voor je evenement</strong> één, twee of drie advertentievormen aan: vetomrand, categorie en homepage. De voorbeelden en het gezamenlijke totaal veranderen mee. Alle gekozen vormen worden samen via Mollie betaald. Voor alleen een gewone vermelding kies je <strong>Gratis vermelding</strong>; daarmee vervallen de betaalde keuzes.</li>
     <li>Kies bij <strong>Wat wil je invoeren?</strong> voor <strong>Evenement met datum</strong> voor een activiteit op een bepaalde datum, of <strong>Vaste vermelding / bedrijf / accommodatie</strong> voor bijvoorbeeld een bedrijf, restaurant of verblijf.</li>
     <li>Vul de <strong>Titel</strong>, <strong>Categorie</strong>, <strong>Korte beschrijving</strong> en <strong>Uitgebreide beschrijving</strong> in.</li>
     <li>Vul bij een evenement de <strong>Begindatum en -tijd</strong> en eventueel de <strong>Einddatum en -tijd</strong> in.</li>

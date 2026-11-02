@@ -3,12 +3,12 @@ import {MONTHLY_PRICES,type AdvertisingType} from '../../lib/advertising';
 import s from './event-advertising-examples.module.css';
 
 type Choice='none'|AdvertisingType;
-type Props={value:AdvertisingType[];onChange:(value:AdvertisingType[])=>void;title:string;city:string;category:string;image:string};
+type Props={value:AdvertisingType[];onChange:(value:AdvertisingType[])=>void;months:number;title:string;city:string;category:string;image:string};
 const labels:Record<Choice,string>={none:'Gratis vermelding',highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'};
 const descriptions:Record<Choice,string>={none:'Je vermelding verschijnt na goedkeuring tussen de gewone resultaten.',highlight:'Een dikke donkergroene rand en bovenaan de zoekresultaten.',category:'Een extra advertentiekaart in de rechterkolom bij jouw categorie.',homepage:'Een extra advertentiekaart in de rechterkolom op de homepage.'};
 const choices:Choice[]=['none','highlight','category','homepage'];
 const money=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(cents/100);
-export default function EventAdvertisingExamples({value,onChange,title,city,category,image}:Props){
+export default function EventAdvertisingExamples({value,onChange,months,title,city,category,image}:Props){
  const chosen=(type:Choice)=>type==='none'?value.length===0:value.includes(type);
  const toggle=(type:Choice)=>onChange(type==='none'?[]:chosen(type)?value.filter(item=>item!==type):[...value,type]);
  const bold=value.includes('highlight'),partners=value.filter(type=>type!=='highlight');
@@ -25,6 +25,7 @@ export default function EventAdvertisingExamples({value,onChange,title,city,cate
    <span className={`${s.sample} ${type==='highlight'?s.sampleHighlight:''}`} aria-hidden="true">{type!=='none'&&<small>{type==='highlight'?'Uitgelichte advertentie':type==='category'?'Categoriepartner':'Homepagepartner'}</small>}<strong>{name}</strong><span>{type==='homepage'?'Op de homepage':rubric+' · '+place}</span></span>
    <span className={s.description}>{descriptions[type]}</span><strong className={s.price}>{type==='none'?'Gratis':money(MONTHLY_PRICES[type])+' / maand'}</strong><span className={s.selection}>{chosen(type)?'✓ Gekozen':type==='none'?'Alleen gratis vermelden':'Voeg toe aan je keuze'}</span>
   </label>)}</div>
+  <div className={s.total} aria-live="polite"><strong>{value.length?`${value.length} advertentievorm${value.length===1?'':'en'} · ${money(value.reduce((sum,type)=>sum+MONTHLY_PRICES[type],0)*months)} totaal`:'Gratis vermelding · geen advertentiekosten'}</strong><span>{value.length?`${months} maand${months===1?'':'en'} · één gezamenlijke betaling via Mollie`:'Kies hierboven eventueel extra zichtbaarheid.'}</span></div>
   <section id="event-advertising-example" className={s.example} aria-labelledby="event-example-heading">
    <p className={s.kicker}>Door de ogen van de bezoeker</p><h3 id="event-example-heading">Zo ziet jouw vermelding eruit</h3><p>Vul verderop je titel, plaats en categorie in en voeg een foto toe. Je voorbeeld verandert mee.</p>
    <div className={s.layout}><div><h4>{bold?'Bovenaan de zoekresultaten':'Tussen de gewone resultaten'}</h4>{!bold&&<div className={s.other}>Andere vermelding · voorbeeld</div>}{card(bold)}{bold&&<div className={s.other}>Gewone vermelding · voorbeeld</div>}</div>
