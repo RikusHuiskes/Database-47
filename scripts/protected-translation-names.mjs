@@ -1,0 +1,4 @@
+import fs from 'node:fs';
+export function protectedNames(){const names=new Set();const add=value=>{if(typeof value==='string'&&value.trim().length>2)names.add(value.trim());};function walk(value){if(Array.isArray(value))return value.forEach(walk);if(!value||typeof value!=='object')return;for(const [key,entry]of Object.entries(value)){if(['name','municipality','address','postcode','phone','email','website'].includes(key))add(entry);else if(typeof entry==='object')walk(entry);}}
+ for(const file of fs.readdirSync('lib/data').filter(file=>/^(?:area-catalog|commune-centres|municipal-)/.test(file)&&file.endsWith('.json')))walk(JSON.parse(fs.readFileSync('lib/data/'+file,'utf8')));
+ const events=JSON.parse(fs.readFileSync('work/translations/events.json','utf8')).events;for(const event of events){add(event.city);add(event.venue_name);if(event.is_directory_entry)add(event.title);}return names;}

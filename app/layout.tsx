@@ -1,8 +1,12 @@
+import {localizeMetadata} from './i18n/server';
 
 import type { Metadata } from "next";
 import "./globals.css";
+import {cookies} from 'next/headers';
+import {LanguageProvider} from './i18n/Language';
+import {LOCALE_COOKIE,localeFrom} from '../lib/i18n';
 
-export const metadata: Metadata = {
+const sourceMetadata: Metadata = {
   title: "Côte de Duras | Evenementen en informatie",
   description: "Evenementen en informatie voor elke dag binnen een straal van 50 kilometer rond Duras.",
   icons: {
@@ -10,14 +14,17 @@ export const metadata: Metadata = {
     apple: [{ url: "/cote-de-duras-apple-icon.png", sizes: "180x180" }],
   },
 };
+export async function generateMetadata(){return localizeMetadata(sourceMetadata);}
 
-export default function RootLayout({
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale=localeFrom((await cookies()).get(LOCALE_COOKIE)?.value);
   return (
-    <html lang="nl">
+    <html lang={locale}>
       <body
         style={{
           margin: 0,
@@ -26,7 +33,7 @@ export default function RootLayout({
           color: "#172033",
         }}
       >
-        {children}
+        <LanguageProvider initialLocale={locale}>{children}</LanguageProvider>
       </body>
     </html>
   );

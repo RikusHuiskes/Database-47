@@ -1,3 +1,5 @@
+import type {Locale} from '../../lib/i18n';
+const intlLocale:Record<Locale,string>={nl:'nl-NL',en:'en-GB',fr:'fr-FR'};
 export type AppEvent = {
  id:string;title:string;start_at:string;category_ids?:string[];category_id?:string|null;end_at?:string|null;is_directory_entry?:boolean;
  city?:string|null;address?:string|null;short_description?:string|null;description?:string|null;
@@ -8,7 +10,7 @@ export type AppEvent = {
 };
 export type DateFilter='all'|'today'|'tomorrow'|'weekend'|'week';
 const frenchDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'});
-const frenchDate=new Intl.DateTimeFormat('nl-NL',{timeZone:'Europe/Paris',day:'numeric',month:'long',year:'numeric'});
+const dateFormatters=Object.fromEntries((['nl','en','fr'] as Locale[]).map(locale=>[locale,new Intl.DateTimeFormat(intlLocale[locale],{timeZone:'Europe/Paris',day:'numeric',month:'long',year:'numeric'})])) as Record<Locale,Intl.DateTimeFormat>;
 export function calendarDay(value:string|Date){
  if(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)){const parsed=new Date(value+'T12:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value?value:'';}
  const parsed=new Date(value);return Number.isFinite(parsed.getTime())?frenchDay.format(parsed):'';
@@ -28,14 +30,15 @@ export function isCurrentEvent(event:AppEvent,now=new Date()){
  const relevant=event.end_at||event.start_at;
  return /^\d{4}-\d{2}-\d{2}$/.test(relevant)?end>=calendarDay(now):Date.parse(relevant)>=now.getTime();
 }
-export function eventDate(event:Pick<AppEvent,'start_at'|'end_at'|'is_directory_entry'>,now=new Date()){
- if(event.is_directory_entry)return 'Het hele jaar ontdekken';
+export function eventDate(event:Pick<AppEvent,'start_at'|'end_at'|'is_directory_entry'>,now=new Date(),locale:Locale='nl'){
+ const words={nl:{year:'Het hele jaar ontdekken',unknown:'Datum bij de organisator',past:'Afgelopen · ',long:'Langlopende activiteit · actuele dagen bij de organisator',until:'Loopt t/m ',to:' t/m '},en:{year:'Discover all year round',unknown:'Check the date with the organiser',past:'Past event · ',long:'Long-running activity · check current dates with the organiser',until:'Runs until ',to:' to '},fr:{year:'À découvrir toute l’année',unknown:'Date à vérifier auprès de l’organisateur',past:'Événement passé · ',long:'Activité de longue durée · dates à vérifier auprès de l’organisateur',until:'Jusqu’au ',to:' au '}}[locale];
+ if(event.is_directory_entry)return words.year;
  const start=calendarDay(event.start_at),end=calendarDay(event.end_at||event.start_at),today=calendarDay(now);
- const format=(d:string)=>frenchDate.format(new Date(d+'T12:00:00Z'));
- if(!start||!end)return 'Datum bij de organisator';
- if(end<today)return 'Afgelopen · '+format(end);
- if(isLongRunning(event))return 'Langlopende activiteit · actuele dagen bij de organisator';
- if(end>start)return `${start<today&&end>=today?'Loopt t/m '+format(end):format(start)+' t/m '+format(end)}`;
+ const format=(d:string)=>dateFormatters[locale].format(new Date(d+'T12:00:00Z'));
+ if(!start||!end)return words.unknown;
+ if(end<today)return words.past+format(end);
+ if(isLongRunning(event))return words.long;
+ if(end>start)return `${start<today&&end>=today?words.until+format(end):format(start)+words.to+format(end)}`;
  return format(start);
 }
 export function matchesDate(event:AppEvent,filter:DateFilter,now=new Date()){

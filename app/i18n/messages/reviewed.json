@@ -1,0 +1,962 @@
+[
+  [
+    "Agenda",
+    "What's on",
+    "Agenda"
+  ],
+  [
+    "Evenementen",
+    "Events",
+    "Événements"
+  ],
+  [
+    "Evenementenkalender",
+    "Events calendar",
+    "Agenda des événements"
+  ],
+  [
+    "Gemeentegids",
+    "Local directory",
+    "Guide local"
+  ],
+  [
+    "Gemeente informatie",
+    "Local information",
+    "Informations locales"
+  ],
+  [
+    "Mijn vermelding",
+    "My listing",
+    "Mon annonce"
+  ],
+  [
+    "Mijn vermelding beheren",
+    "Manage my listing",
+    "Gérer mon annonce"
+  ],
+  [
+    "Nieuwe vermelding",
+    "New listing",
+    "Nouvelle annonce"
+  ],
+  [
+    "Nieuw evenement/vermelding",
+    "Add an event or listing",
+    "Ajouter un événement ou une annonce"
+  ],
+  [
+    "Handleiding",
+    "User guide",
+    "Mode d’emploi"
+  ],
+  [
+    "Handleiding van Côte de Duras",
+    "Côte de Duras user guide",
+    "Mode d’emploi de Côte de Duras"
+  ],
+  [
+    "Naar de agenda →",
+    "Browse events →",
+    "Voir l’agenda →"
+  ],
+  [
+    "← Terug naar de agenda",
+    "← Back to events",
+    "← Retour à l’agenda"
+  ],
+  [
+    "Terug naar de agenda",
+    "Back to events",
+    "Retour à l’agenda"
+  ],
+  [
+    "← Terug naar de gemeentegids",
+    "← Back to the local directory",
+    "← Retour au guide local"
+  ],
+  [
+    "Contactgegevens",
+    "Contact details",
+    "Coordonnées"
+  ],
+  [
+    "Praktische informatie per gemeente.",
+    "Practical information for each town.",
+    "Les informations pratiques de chaque commune."
+  ],
+  [
+    "Gemeente of dorp",
+    "Town or village",
+    "Commune ou village"
+  ],
+  [
+    "Welke informatie zoek je?",
+    "What are you looking for?",
+    "Que recherchez-vous ?"
+  ],
+  [
+    "Alle categorieën — complete gemeentegids",
+    "All categories — complete local directory",
+    "Toutes les catégories — guide local complet"
+  ],
+  [
+    "Alle categorieën",
+    "All categories",
+    "Toutes les catégories"
+  ],
+  [
+    "Alle soorten",
+    "All types",
+    "Tous les types"
+  ],
+  [
+    "Alle plaatsen",
+    "All towns",
+    "Toutes les communes"
+  ],
+  [
+    "Alle data & adressen",
+    "All dates & places",
+    "Toutes les dates et adresses"
+  ],
+  [
+    "Zoeken",
+    "Search",
+    "Rechercher"
+  ],
+  [
+    "Zoek",
+    "Search",
+    "Rechercher"
+  ],
+  [
+    "Zoekwoord",
+    "Search term",
+    "Mot-clé"
+  ],
+  [
+    "Plaats",
+    "Town",
+    "Commune"
+  ],
+  [
+    "Categorie",
+    "Category",
+    "Catégorie"
+  ],
+  [
+    "Rubriek",
+    "Category",
+    "Rubrique"
+  ],
+  [
+    "Datum",
+    "Date",
+    "Date"
+  ],
+  [
+    "Vandaag",
+    "Today",
+    "Aujourd’hui"
+  ],
+  [
+    "Morgen",
+    "Tomorrow",
+    "Demain"
+  ],
+  [
+    "Dit weekend",
+    "This weekend",
+    "Ce week-end"
+  ],
+  [
+    "Komende 7 dagen",
+    "Next 7 days",
+    "Les 7 prochains jours"
+  ],
+  [
+    "Wanneer",
+    "When",
+    "Quand"
+  ],
+  [
+    "Binnenkort in de buurt",
+    "Coming up nearby",
+    "Prochainement près de chez vous"
+  ],
+  [
+    "Eerstvolgende datum",
+    "Next event first",
+    "Date la plus proche"
+  ],
+  [
+    "Sorteer resultaten",
+    "Sort results",
+    "Trier les résultats"
+  ],
+  [
+    "Alfabetisch",
+    "Alphabetical",
+    "Ordre alphabétique"
+  ],
+  [
+    "Toon meer",
+    "Show more",
+    "Afficher plus"
+  ],
+  [
+    "Meer filters",
+    "More filters",
+    "Plus de filtres"
+  ],
+  [
+    "Geen resultaten",
+    "No results",
+    "Aucun résultat"
+  ],
+  [
+    "Gratis",
+    "Free",
+    "Gratuit"
+  ],
+  [
+    "Gratis vermelding",
+    "Free listing",
+    "Annonce gratuite"
+  ],
+  [
+    "Vetomrande vermelding",
+    "Bold-bordered listing",
+    "Annonce encadrée"
+  ],
+  [
+    "Vetomrande advertentie",
+    "Bold-bordered advert",
+    "Publicité encadrée"
+  ],
+  [
+    "Categorieadvertentie",
+    "Category advert",
+    "Publicité dans une catégorie"
+  ],
+  [
+    "Homepageadvertentie",
+    "Homepage advert",
+    "Publicité en page d’accueil"
+  ],
+  [
+    "Homepagevermelding",
+    "Homepage listing",
+    "Annonce en page d’accueil"
+  ],
+  [
+    "Rubriekpartner",
+    "Category partner",
+    "Partenaire de rubrique"
+  ],
+  [
+    "Gemeentepartner",
+    "Town partner",
+    "Partenaire de la commune"
+  ],
+  [
+    "Advertentie",
+    "Advertisement",
+    "Publicité"
+  ],
+  [
+    "ADVERTENTIE",
+    "ADVERTISEMENT",
+    "PUBLICITÉ"
+  ],
+  [
+    "Advertentie · Uitgelichte vermelding",
+    "Advertisement · Featured listing",
+    "Publicité · Annonce mise en avant"
+  ],
+  [
+    "Uitgelichte advertentie",
+    "Featured advert",
+    "Publicité mise en avant"
+  ],
+  [
+    "UITGELICHTE ADVERTENTIE",
+    "FEATURED ADVERT",
+    "PUBLICITÉ MISE EN AVANT"
+  ],
+  [
+    "Lokale partners · Advertenties",
+    "Local partners · Advertisements",
+    "Partenaires locaux · Publicités"
+  ],
+  [
+    "LOKALE PARTNERS · ADVERTENTIES",
+    "LOCAL PARTNERS · ADVERTISEMENTS",
+    "PARTENAIRES LOCAUX · PUBLICITÉS"
+  ],
+  [
+    "Uitgelicht op de homepage",
+    "Featured on the homepage",
+    "À la une en page d’accueil"
+  ],
+  [
+    "Uitgelicht in",
+    "Featured in",
+    "À la une dans"
+  ],
+  [
+    "Hoe wil je opvallen?",
+    "How would you like to stand out?",
+    "Comment souhaitez-vous vous démarquer ?"
+  ],
+  [
+    "Zo werkt het",
+    "How it works",
+    "Comment ça marche"
+  ],
+  [
+    "Kies je zichtbaarheid",
+    "Choose your visibility",
+    "Choisissez votre visibilité"
+  ],
+  [
+    "Bekijk je eigen voorbeeld",
+    "Preview your own listing",
+    "Visualisez votre annonce"
+  ],
+  [
+    "Eén overzicht, één betaling",
+    "One summary, one payment",
+    "Un récapitulatif, un seul paiement"
+  ],
+  [
+    "Combineer één, twee of drie advertentievormen.",
+    "Combine one, two or all three advertising options.",
+    "Combinez une, deux ou trois formules publicitaires."
+  ],
+  [
+    "Alle gekozen vormen samen in één aanvraag.",
+    "All your chosen options in one request.",
+    "Toutes vos formules réunies dans une seule demande."
+  ],
+  [
+    "Zo ziet jouw vermelding eruit.",
+    "This is how your listing will look.",
+    "Voici à quoi ressemblera votre annonce."
+  ],
+  [
+    "Jouw evenement.",
+    "Your event.",
+    "Votre événement."
+  ],
+  [
+    "Jouw bedrijf.",
+    "Your business.",
+    "Votre entreprise."
+  ],
+  [
+    "Meer gezien in",
+    "More visibility in",
+    "Plus de visibilité à"
+  ],
+  [
+    "Jouw vermelding",
+    "Your listing",
+    "Votre annonce"
+  ],
+  [
+    "Jouw nieuwe evenement of vermelding",
+    "Your new event or listing",
+    "Votre nouvel événement ou annonce"
+  ],
+  [
+    "Jouw categorie",
+    "Your category",
+    "Votre catégorie"
+  ],
+  [
+    "Nieuwe vermelding · Evenementenkalender",
+    "New listing · Events calendar",
+    "Nouvelle annonce · Agenda des événements"
+  ],
+  [
+    "Evenementen · lokaal verbonden",
+    "Events · connecting locally",
+    "Événements · la vie locale en lien"
+  ],
+  [
+    "Gemeentegids · lokaal verbonden",
+    "Local directory · connecting locally",
+    "Guide local · la vie locale en lien"
+  ],
+  [
+    "Voor organisatoren en lokale ondernemers",
+    "For organisers and local businesses",
+    "Pour les organisateurs et les entreprises locales"
+  ],
+  [
+    "Voor lokale ondernemers",
+    "For local businesses",
+    "Pour les entreprises locales"
+  ],
+  [
+    "Bovenaan de resultaten",
+    "At the top of the results",
+    "En tête des résultats"
+  ],
+  [
+    "Extra zichtbaar in jouw categorie",
+    "Extra visibility in your category",
+    "Plus de visibilité dans votre catégorie"
+  ],
+  [
+    "Bereik bezoekers op de homepage",
+    "Reach visitors on the homepage",
+    "Touchez les visiteurs en page d’accueil"
+  ],
+  [
+    "Bekijk betaaloverzicht →",
+    "Review payment summary →",
+    "Voir le récapitulatif →"
+  ],
+  [
+    "Voeg toe aan je keuze",
+    "Add to your selection",
+    "Ajouter à votre sélection"
+  ],
+  [
+    "✓ Toegevoegd aan je keuze",
+    "✓ Added to your selection",
+    "✓ Ajouté à votre sélection"
+  ],
+  [
+    "Looptijd",
+    "Duration",
+    "Durée"
+  ],
+  [
+    "maand",
+    "month",
+    "mois"
+  ],
+  [
+    "maanden",
+    "months",
+    "mois"
+  ],
+  [
+    "/ maand",
+    "/ month",
+    "/ mois"
+  ],
+  [
+    "per maand",
+    "per month",
+    "par mois"
+  ],
+  [
+    "Tarieve​n · per maand",
+    "Rates · per month",
+    "Tarifs · par mois"
+  ],
+  [
+    "Tarieven · per maand",
+    "Rates · per month",
+    "Tarifs · par mois"
+  ],
+  [
+    "totaal",
+    "total",
+    "au total"
+  ],
+  [
+    "Betaaloverzicht",
+    "Payment summary",
+    "Récapitulatif du paiement"
+  ],
+  [
+    "Verder naar Mollie",
+    "Continue to Mollie",
+    "Continuer vers Mollie"
+  ],
+  [
+    "Opslaan en betalen via Mollie",
+    "Save and pay with Mollie",
+    "Enregistrer et payer via Mollie"
+  ],
+  [
+    "Opslaan",
+    "Save",
+    "Enregistrer"
+  ],
+  [
+    "Annuleren",
+    "Cancel",
+    "Annuler"
+  ],
+  [
+    "Sluiten",
+    "Close",
+    "Fermer"
+  ],
+  [
+    "Opnieuw proberen",
+    "Try again",
+    "Réessayer"
+  ],
+  [
+    "Verzoek versturen",
+    "Send request",
+    "Envoyer la demande"
+  ],
+  [
+    "E-mailadres",
+    "Email address",
+    "Adresse e-mail"
+  ],
+  [
+    "Naam",
+    "Name",
+    "Nom"
+  ],
+  [
+    "Contactpersoon",
+    "Contact name",
+    "Personne à contacter"
+  ],
+  [
+    "Bedrijfsnaam",
+    "Business name",
+    "Nom de l’entreprise"
+  ],
+  [
+    "Telefoon",
+    "Phone",
+    "Téléphone"
+  ],
+  [
+    "Factuuradres",
+    "Billing address",
+    "Adresse de facturation"
+  ],
+  [
+    "Postcode",
+    "Postcode",
+    "Code postal"
+  ],
+  [
+    "Btw-nummer",
+    "VAT number",
+    "Numéro de TVA"
+  ],
+  [
+    "Begindatum *",
+    "Start date *",
+    "Date de début *"
+  ],
+  [
+    "Aantal maanden *",
+    "Number of months *",
+    "Nombre de mois *"
+  ],
+  [
+    "Advertentieperiode & factuurgegevens",
+    "Advertising period & billing details",
+    "Période publicitaire et facturation"
+  ],
+  [
+    "Wat wil je invoeren?",
+    "What would you like to add?",
+    "Que souhaitez-vous ajouter ?"
+  ],
+  [
+    "Evenement met datum",
+    "Event with a date",
+    "Événement daté"
+  ],
+  [
+    "Vaste vermelding / bedrijf / accommodatie",
+    "Permanent listing / business / accommodation",
+    "Annonce permanente / entreprise / hébergement"
+  ],
+  [
+    "Titel *",
+    "Title *",
+    "Titre *"
+  ],
+  [
+    "Foto",
+    "Photo",
+    "Photo"
+  ],
+  [
+    "Apotheek",
+    "Pharmacy",
+    "Pharmacie"
+  ],
+  [
+    "Bakkerij",
+    "Bakery",
+    "Boulangerie"
+  ],
+  [
+    "Slagerij",
+    "Butcher’s shop",
+    "Boucherie"
+  ],
+  [
+    "Tabak / Kiosk",
+    "Tobacconist / newsagent",
+    "Tabac / kiosque"
+  ],
+  [
+    "Souvenierswinkel",
+    "Souvenir shop",
+    "Boutique de souvenirs"
+  ],
+  [
+    "Souvenirwinkel",
+    "Souvenir shop",
+    "Boutique de souvenirs"
+  ],
+  [
+    "Schoenenwinkel",
+    "Shoe shop",
+    "Magasin de chaussures"
+  ],
+  [
+    "Bloemist",
+    "Florist",
+    "Fleuriste"
+  ],
+  [
+    "Mode",
+    "Clothing",
+    "Mode"
+  ],
+  [
+    "Bouwmarkten",
+    "DIY stores",
+    "Magasins de bricolage"
+  ],
+  [
+    "Juwelier",
+    "Jeweller",
+    "Bijouterie"
+  ],
+  [
+    "Kapper",
+    "Hairdresser",
+    "Salon de coiffure"
+  ],
+  [
+    "Makelaars",
+    "Estate agents",
+    "Agences immobilières"
+  ],
+  [
+    "Bibliotheek",
+    "Library",
+    "Bibliothèque"
+  ],
+  [
+    "Dichtstbijzijnde ziekenhuis",
+    "Nearest hospital",
+    "Hôpital le plus proche"
+  ],
+  [
+    "Gemeentehuis & burgemeester",
+    "Town hall & mayor",
+    "Mairie et maire"
+  ],
+  [
+    "Huisarts / medisch centrum",
+    "GP / medical centre",
+    "Médecin généraliste / centre médical"
+  ],
+  [
+    "Invalide parkeerplaatsen",
+    "Accessible parking spaces",
+    "Stationnement réservé aux personnes handicapées"
+  ],
+  [
+    "Kerk & diensttijden",
+    "Church & service times",
+    "Église et horaires des offices"
+  ],
+  [
+    "Laadpalen",
+    "EV charging stations",
+    "Bornes de recharge"
+  ],
+  [
+    "Openbaar vervoer",
+    "Public transport",
+    "Transports en commun"
+  ],
+  [
+    "Parkeren",
+    "Parking",
+    "Stationnement"
+  ],
+  [
+    "Supermarkten",
+    "Supermarkets",
+    "Supermarchés"
+  ],
+  [
+    "Tandarts",
+    "Dentist",
+    "Dentiste"
+  ],
+  [
+    "Tankstations",
+    "Petrol stations",
+    "Stations-service"
+  ],
+  [
+    "Art & Expositions",
+    "Art & exhibitions",
+    "Art et expositions"
+  ],
+  [
+    "Ateliers & Cours",
+    "Workshops & classes",
+    "Ateliers et cours"
+  ],
+  [
+    "Cafés",
+    "Cafés",
+    "Cafés"
+  ],
+  [
+    "Concerts & Musique",
+    "Concerts & music",
+    "Concerts et musique"
+  ],
+  [
+    "Culture & Musées",
+    "Culture & museums",
+    "Culture et musées"
+  ],
+  [
+    "Enfants & Famille",
+    "Children & family",
+    "Enfants et famille"
+  ],
+  [
+    "Festivals & Fêtes",
+    "Festivals & celebrations",
+    "Festivals et fêtes"
+  ],
+  [
+    "Hotels & Chambres d’hôtes & Gîtes",
+    "Hotels, B&Bs & holiday cottages",
+    "Hôtels, chambres d’hôtes et gîtes"
+  ],
+  [
+    "Marchés & Brocantes",
+    "Markets & flea markets",
+    "Marchés et brocantes"
+  ],
+  [
+    "Nature & Randonnée",
+    "Nature & walking",
+    "Nature et randonnée"
+  ],
+  [
+    "Restaurants & Gastronomie",
+    "Restaurants & gastronomy",
+    "Restaurants et gastronomie"
+  ],
+  [
+    "Sport",
+    "Sport",
+    "Sport"
+  ],
+  [
+    "Théâtre & Spectacles",
+    "Theatre & shows",
+    "Théâtre et spectacles"
+  ],
+  [
+    "Vie locale",
+    "Local life",
+    "Vie locale"
+  ],
+  [
+    "Wijnhuizen",
+    "Wineries",
+    "Domaines viticoles"
+  ],
+  [
+    "Beheerderslogin",
+    "Administrator sign-in",
+    "Connexion administrateur"
+  ],
+  [
+    "Wachtwoord",
+    "Password",
+    "Mot de passe"
+  ],
+  [
+    "Inloggen",
+    "Sign in",
+    "Se connecter"
+  ],
+  [
+    "Uitloggen",
+    "Sign out",
+    "Se déconnecter"
+  ],
+  [
+    "Beheer",
+    "Administration",
+    "Administration"
+  ],
+  [
+    "Beheerdersdashboard",
+    "Admin dashboard",
+    "Tableau de bord administrateur"
+  ],
+  [
+    "Beheerlink",
+    "Management link",
+    "Lien de gestion"
+  ],
+  [
+    "Persoonlijke link",
+    "Personal link",
+    "Lien personnel"
+  ],
+  [
+    "Deze vermelding beheren",
+    "Manage this listing",
+    "Gérer cette annonce"
+  ],
+  [
+    "Correctie doorgeven",
+    "Suggest a correction",
+    "Signaler une correction"
+  ],
+  [
+    "Advertentie toevoegen / upgraden →",
+    "Add advertising / upgrade →",
+    "Ajouter une publicité / améliorer l’annonce →"
+  ],
+  [
+    "Bekijk evenementdetails →",
+    "View event details →",
+    "Voir les détails de l’événement →"
+  ],
+  [
+    "Ontdek →",
+    "Discover →",
+    "Découvrir →"
+  ],
+  [
+    "Bron bekijken ↗",
+    "View source ↗",
+    "Voir la source ↗"
+  ],
+  [
+    "Website organisator",
+    "Organiser’s website",
+    "Site de l’organisateur"
+  ],
+  [
+    "Oorspronkelijke informatie",
+    "Original information",
+    "Informations d’origine"
+  ],
+  [
+    "Reserveren",
+    "Book",
+    "Réserver"
+  ],
+  [
+    "Ontdek",
+    "Discover",
+    "Découvrir"
+  ],
+  [
+    "Bewaard",
+    "Saved",
+    "Favoris"
+  ],
+  [
+    "Alleen bevestigde gratis toegang",
+    "Confirmed free entry only",
+    "Uniquement les entrées gratuites confirmées"
+  ],
+  [
+    "Dichtst bij Duras",
+    "Nearest to Duras",
+    "Au plus près de Duras"
+  ],
+  [
+    "De agenda wordt geladen…",
+    "Loading events…",
+    "Chargement de l’agenda…"
+  ],
+  [
+    "Mooi dichtbij.",
+    "So much to discover nearby.",
+    "De belles découvertes tout près."
+  ],
+  [
+    "Bonjour, ontdek de streek",
+    "Hello, discover the region",
+    "Bonjour, découvrez la région"
+  ],
+  [
+    "Duras & omgeving",
+    "Duras & surroundings",
+    "Duras et ses environs"
+  ],
+  [
+    "Website * — https://",
+    "Website * — https://",
+    "Site web * — https://"
+  ],
+  [
+    "Reserveringslink * — https://",
+    "Booking link * — https://",
+    "Lien de réservation * — https://"
+  ],
+  [
+    "Informatiebron * — https://",
+    "Information source * — https://",
+    "Source d’information * — https://"
+  ],
+  [
+    "Prijs vanaf (&euro;)",
+    "Price from (€)",
+    "Prix à partir de (€)"
+  ],
+  [
+    "Duidelijk vooraf",
+    "Clear from the start",
+    "Tout est clair avant de payer"
+  ],
+  [
+    "Handleiding bij deze pagina ↗",
+    "Guide to this page ↗",
+    "Aide pour cette page ↗"
+  ],
+  [
+    "Al een vermelding? Beheer je vermelding →",
+    "Already listed? Manage your listing →",
+    "Déjà une annonce ? Gérez-la ici →"
+  ],
+  [
+    "Uitgelicht in {0}",
+    "Featured in {0}",
+    "À la une dans {0}"
+  ],
+  [
+    "Evenementen en informatie voor elke dag binnen een straal van 50 kilometer rond Duras.",
+    "Events and everyday information within 50 kilometres of Duras.",
+    "Événements et informations pratiques dans un rayon de 50 kilomètres autour de Duras."
+  ]
+]

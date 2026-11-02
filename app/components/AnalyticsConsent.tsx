@@ -1,4 +1,6 @@
 "use client";
+import {T, A} from '../i18n/Language';
+
 import {useEffect,useState} from 'react';
 import {analyticsChoice,enableAnalytics,setAnalyticsChoice,trackAnalytics} from '../../lib/analytics-client';
 
@@ -41,11 +43,11 @@ export default function AnalyticsConsent({disabled}:{disabled:boolean}) {
     return()=>{enableAnalytics(false);observer.disconnect();mutations.disconnect();timers.forEach(clearTimeout);document.removeEventListener('click',click);};
   },[disabled,choice]);
   return <>
-    <button className="analytics-settings" type="button" onClick={()=>setSettings(true)}>Statistiekvoorkeuren</button>
-    {ready&&!disabled&&(!choice||settings)&&<aside className="analytics-consent" aria-label="Keuze voor statistieken">
-      <strong>Help Côte de Duras verbeteren</strong>
-      <p>Mogen we bezoeken, bekeken categorieën en klikken meten? Daarmee verbeteren we de agenda en tonen we adverteerders geaggregeerde bereikcijfers. We gebruiken een willekeurige browsercode, bewaren meetgegevens maximaal 13 maanden en slaan geen naam, e-mail of IP-adres op in de statistieken. Uw keuze en browsercode verlopen na 6 maanden. <a href="/statistieken">Meer informatie</a></p>
-      <div><button type="button" onClick={()=>{setAnalyticsChoice(false);setSettings(false);}}>Weigeren</button><button type="button" onClick={()=>{setAnalyticsChoice(true);setSettings(false);}}>Toestaan</button></div>
-    </aside>}
+    <button className="analytics-settings" type="button" onClick={()=>setSettings(true)}><T>{"Statistiekvoorkeuren"}</T></button>
+    <T>{ready&&!disabled&&(!choice||settings)&&<A><aside className="analytics-consent" aria-label="Keuze voor statistieken">
+      <strong><T>{"Help Côte de Duras verbeteren"}</T></strong>
+      <p><T>{"Mogen we bezoeken, bekeken categorieën en klikken meten? Daarmee verbeteren we de agenda en tonen we adverteerders geaggregeerde bereikcijfers. We gebruiken een willekeurige browsercode, bewaren meetgegevens maximaal 13 maanden en slaan geen naam, e-mail of IP-adres op in de statistieken. Uw keuze en browsercode verlopen na 6 maanden. "}</T><a href="/statistieken"><T>{"Meer informatie"}</T></a></p>
+      <div><button type="button" onClick={()=>{setAnalyticsChoice(false);setSettings(false);}}><T>{"Weigeren"}</T></button><button type="button" onClick={()=>{setAnalyticsChoice(true);setSettings(false);}}><T>{"Toestaan"}</T></button></div>
+    </aside></A>}</T>
   </>;
 }

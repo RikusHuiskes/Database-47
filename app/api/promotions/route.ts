@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server';
+import {localizePublicData,requestLocale} from '../../../lib/public-translations';
 import {createClient} from '@supabase/supabase-js';
 import {promotionPlacements} from '../../../lib/event-presentation';
 
@@ -23,5 +24,5 @@ export async function GET(request:NextRequest){
   if(error)return NextResponse.json({error:'Advertenties konden niet worden geladen.'},{status:502});
   const rows=((data??[]) as unknown as PromotionRecord[]).map(record=>{const {event_categories,...event}=record;return {...event,start_at:event.start_at??'',category_ids:(event_categories??[]).map(link=>link.category_id)};});
   const placements=promotionPlacements(rows,category);
-  return NextResponse.json({homepage_promotions:placements.homepage,category_promotions:placements.category});
+  return NextResponse.json(localizePublicData({homepage_promotions:placements.homepage,category_promotions:placements.category},requestLocale(request)),{headers:{Vary:'Cookie'}});
 }

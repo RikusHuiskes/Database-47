@@ -10,21 +10,22 @@ export type AnalyticsReport = {
   events:{event_id:string;name:string;impressions:number;views:number;clicks:number;bookings:number;visitors:number;reached_sessions:number;clicked_sessions:number}[];
 };
 
-export function analyticsRows(report:AnalyticsReport, days:number) {
-  const rows:unknown[][]=[['Côte de Duras — gemeten bereik met toestemming'],['Periode (dagen)',days],['Gegenereerd',report.generatedAt],['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],['Paginaweergaven',report.summary.pageviews],['Evenementen geopend',report.summary.views],['Zichtbare vermeldingen',report.summary.impressions],['Doorklikken',report.summary.clicks],[],
-    ['Maand','Bezoekers','Bezoeken','Paginaweergaven'],...report.monthly.map(m=>[m.month,m.visitors,m.visits,m.pageviews]),[],
-    ['Pagina','Weergaven','Bezoekers'],...report.pages.map(p=>[p.name,p.views,p.visitors]),[],
-    ['Filterplaats','Categorie','Afstand (km)','Toepassingen'],...report.filters.map(f=>[f.area??'Huidige locatie',f.category??'Alle categorieën',f.radius_km,f.uses]),[],
-    ['Dag','Bezoekers','Bezoeken'],...report.daily.map(d=>[d.day,d.visitors,d.visits]),[],
-    ['Plaats','Bezoekers','Keuzes'],...report.places.map(p=>[p.name,p.visitors,p.searches]),[],
-    ['Categorie','Bezoekers','Bezoeken','Categoriekeuzes','Evenementweergaven','Doorklikken'],...report.categories.map(c=>[c.name,c.visitors,c.visits,c.selections,c.views,c.clicks]),[],
-    ['Evenement','Zichtbare vermeldingen','Geopend','Doorklikken','Reserveringsklikken','Bereikte bezoeken','Bezoeken met doorklik na vertoning'],...report.events.map(e=>[e.name,e.impressions,e.views,e.clicks,e.bookings,e.reached_sessions,e.clicked_sessions]),[],
-    ['Toelichting','Uitsluitend gemeten bezoeken met toestemming; geen historische reconstructie, volledige personentelling of bevestigde boekingen.']];
+export function analyticsRows(report:AnalyticsReport, days:number,translate:(text:string)=>string=text=>text) {
+  const labels=(...values:string[])=>values.map(translate);
+  const rows:unknown[][]=[labels('Côte de Duras — gemeten bereik met toestemming'),[translate('Periode (dagen)'),days],[translate('Gegenereerd'),report.generatedAt],[translate('Bezoekers'),report.summary.visitors],[translate('Bezoeken'),report.summary.visits],[translate('Paginaweergaven'),report.summary.pageviews],[translate('Evenementen geopend'),report.summary.views],[translate('Zichtbare vermeldingen'),report.summary.impressions],[translate('Doorklikken'),report.summary.clicks],[],
+    labels('Maand','Bezoekers','Bezoeken','Paginaweergaven'),...report.monthly.map(m=>[m.month,m.visitors,m.visits,m.pageviews]),[],
+    labels('Pagina','Weergaven','Bezoekers'),...report.pages.map(p=>[p.name,p.views,p.visitors]),[],
+    labels('Filterplaats','Categorie','Afstand (km)','Toepassingen'),...report.filters.map(f=>[f.area??translate('Huidige locatie'),f.category?translate(f.category):translate('Alle categorieën'),f.radius_km,f.uses]),[],
+    labels('Dag','Bezoekers','Bezoeken'),...report.daily.map(d=>[d.day,d.visitors,d.visits]),[],
+    labels('Plaats','Bezoekers','Keuzes'),...report.places.map(p=>[p.name,p.visitors,p.searches]),[],
+    labels('Categorie','Bezoekers','Bezoeken','Categoriekeuzes','Evenementweergaven','Doorklikken'),...report.categories.map(c=>[translate(c.name),c.visitors,c.visits,c.selections,c.views,c.clicks]),[],
+    labels('Evenement','Zichtbare vermeldingen','Geopend','Doorklikken','Reserveringsklikken','Bereikte bezoeken','Bezoeken met doorklik na vertoning'),...report.events.map(e=>[e.name,e.impressions,e.views,e.clicks,e.bookings,e.reached_sessions,e.clicked_sessions]),[],
+    labels('Toelichting','Uitsluitend gemeten bezoeken met toestemming; geen historische reconstructie, volledige personentelling of bevestigde boekingen.')];
   return rows;
 }
 
-export function analyticsCsv(report:AnalyticsReport,days:number) {
-  const rows=analyticsRows(report,days);
+export function analyticsCsv(report:AnalyticsReport,days:number,translate:(text:string)=>string=text=>text) {
+  const rows=analyticsRows(report,days,translate);
   const safe=(value:unknown)=>'"'+String(value??'').replace(/^(\s*[=+@-]|[\t\r\n])/,"'$&").replaceAll('"','""')+'"';
   return '\uFEFF'+rows.map(row=>row.map(safe).join(';')).join('\r\n');
 }

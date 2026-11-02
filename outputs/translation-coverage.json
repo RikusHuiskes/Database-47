@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-11-02T14:18:12.341Z",
+  "ui": {
+    "en": {
+      "sourceTexts": 3662,
+      "translated": 3715,
+      "missing": 0
+    },
+    "fr": {
+      "sourceTexts": 3662,
+      "translated": 3715,
+      "missing": 0
+    }
+  },
+  "content": {
+    "en": {
+      "sourceTexts": 17524,
+      "translated": 17506,
+      "missing": 0
+    },
+    "fr": {
+      "sourceTexts": 17524,
+      "translated": 17506,
+      "missing": 0
+    }
+  }
+}

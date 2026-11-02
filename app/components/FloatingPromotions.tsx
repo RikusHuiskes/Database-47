@@ -1,4 +1,6 @@
 "use client";
+import {T, A} from '../i18n/Language';
+
 import {useEffect,useState} from 'react';
 import {createPortal} from 'react-dom';
 
@@ -19,11 +21,11 @@ export default function FloatingPromotions<T extends Promotion>({events,headingI
   },[visible,reduced,events.length,count]);
   if(!events.length)return null;
   const shown=Array.from({length:Math.min(count,events.length)},(_,offset)=>events[(index+offset)%events.length]);
-  const sidebar=<aside className="promotion-sidebar" aria-label="Uitgelichte advertenties" hidden={!visible}>
-    <div className="floating-promotion-heading"><div><small className="carousel-kicker">Lokale partners · Advertenties</small><h2 id={headingId}>{title}</h2></div></div>
-    <div className="floating-promotion-cards">{shown.map(event=><button className="floating-promotion-card" type="button" key={event.id} onClick={()=>onOpen(event)}>{event.image_url&&/^https?:\/\//i.test(event.image_url)&&<img src={event.image_url} alt=""/>}<span className="floating-promotion-copy"><small className="floating-promotion-label">{headingId==='homepage-promotion-heading'?'Homepagepartner':'Categoriepartner'}{event.city?' · '+event.city:''}</small><strong>{event.title}</strong><span className="floating-promotion-description">{event.short_description||event.description||'Ontdek deze lokale partner en bekijk alle informatie.'}</span><span className="floating-promotion-cta">Ontdek →</span></span></button>)}</div>
-    <p className="carousel-position" aria-live="off">{reduced?'Rustige weergave · ':'Wisselt automatisch · '}{index%events.length+1} van {events.length}</p>
-  </aside>;
+  const sidebar=<A><aside className="promotion-sidebar" aria-label="Uitgelichte advertenties" hidden={!visible}>
+    <div className="floating-promotion-heading"><div><small className="carousel-kicker"><T>{"Lokale partners · Advertenties"}</T></small><h2 id={headingId}><T>{title}</T></h2></div></div>
+    <div className="floating-promotion-cards"><T>{shown.map(event=><button className="floating-promotion-card" type="button" key={event.id} onClick={()=>onOpen(event)}><T>{event.image_url&&/^https?:\/\//i.test(event.image_url)&&<A><img src={event.image_url} alt=""/></A>}</T><span className="floating-promotion-copy"><small className="floating-promotion-label"><T>{headingId==='homepage-promotion-heading'?'Homepagepartner':'Categoriepartner'}</T><T>{event.city?' · '+event.city:''}</T></small><strong><T>{event.title}</T></strong><span className="floating-promotion-description"><T>{event.short_description||event.description||'Ontdek deze lokale partner en bekijk alle informatie.'}</T></span><span className="floating-promotion-cta"><T>{"Ontdek →"}</T></span></span></button>)}</T></div>
+    <p className="carousel-position" aria-live="off"><T>{reduced?'Rustige weergave · ':'Wisselt automatisch · '}</T><T>{index%events.length+1}</T><T>{" van "}</T><T>{events.length}</T></p>
+  </aside></A>;
   if(wide&&mounted)return createPortal(sidebar,document.body);
-  return <section className="promotion-sidebar-slot" aria-label={title}>{sidebar}</section>;
+  return <A><section className="promotion-sidebar-slot" aria-label={title}><T>{sidebar}</T></section></A>;
 }

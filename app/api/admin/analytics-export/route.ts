@@ -1,6 +1,10 @@
 import {createClient} from '@supabase/supabase-js';
 import {analyticsWorkbook} from '../../../../lib/analytics-workbook';
 import {analyticsCsv,type AnalyticsReport} from '../../../../lib/analytics-report';
+import {localeFrom,createTranslator} from '../../../../lib/i18n';
+import en from '../../../i18n/messages/en.json';
+import fr from '../../../i18n/messages/fr.json';
+const translators={nl:(text:string)=>text,en:createTranslator('en',en),fr:createTranslator('fr',fr)};
 
 export const runtime='nodejs';
 export const maxDuration=30;
@@ -10,6 +14,7 @@ export async function POST(request:Request) {
   try {
     const text=await request.text();if(text.length>10000)return Response.json({error:'Rapportaanvraag is te groot.'},{status:413,headers});
     const form=new URLSearchParams(text),token=request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]??form.get('access_token');
+    const locale=localeFrom(form.get('lang')??request.headers.get('cookie')?.match(/(?:^|;\s*)cdd-language=(nl|en|fr)(?:;|$)/)?.[1]),translate=translators[locale];
     if(!token)return Response.json({error:'Log opnieuw in als beheerder.'},{status:401,headers});
     const format=form.get('format')??'csv';
     if(!['csv','xlsx'].includes(format))return Response.json({error:'Kies CSV of Excel.'},{status:400,headers});
@@ -22,7 +27,7 @@ export async function POST(request:Request) {
     if(admin.error||admin.data!==true)return Response.json({error:'Beheerderstoegang vereist.'},{status:403,headers});
     const result=await client.rpc('site_analytics_report',{p_days:days});
     if(result.error||!result.data)return Response.json({error:'Het rapport kon niet worden gemaakt. Vernieuw de statistieken en probeer opnieuw.'},{status:502,headers});
-    if(format==='xlsx'){const bytes=await analyticsWorkbook(result.data as AnalyticsReport,days);return new Response(new Uint8Array(bytes),{headers:{...headers,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="cote-de-duras-bereik-${days}-dagen.xlsx"`}});}
-    return new Response(analyticsCsv(result.data as AnalyticsReport,days),{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="cote-de-duras-bereik-${days}-dagen.csv"`}});
+    if(format==='xlsx'){const bytes=await analyticsWorkbook(result.data as AnalyticsReport,days,translate);return new Response(new Uint8Array(bytes),{headers:{...headers,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="cote-de-duras-bereik-${days}-dagen.xlsx"`}});}
+    return new Response(analyticsCsv(result.data as AnalyticsReport,days,translate),{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="cote-de-duras-bereik-${days}-dagen.csv"`}});
   } catch {return Response.json({error:'Het rapport kon niet worden gemaakt. Probeer opnieuw.'},{status:502,headers});}
 }

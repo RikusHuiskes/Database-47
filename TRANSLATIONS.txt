@@ -1,0 +1,48 @@
+Cote de Duras — website translations
+
+Visitors can select Dutch, English or French in the language bar. A functional
+cookie remembers the choice for one year. Names, addresses, contact details,
+identifiers, links and payment amounts remain unchanged.
+
+Reviewed interface translations live in app/i18n/messages/reviewed*.json.
+Generated interface dictionaries are en.json and fr.json. Public descriptions
+use lib/translations/content-{en,fr}.json, indexed by a stable source-text hash.
+Only approved public text is collected. Private form input is never sent to a
+translation provider. Database source records are never overwritten.
+
+Snapshot: 11,535 approved, verified public listings; 17,524 collected text values.
+Whitespace-equivalent texts share one translation. Coverage at delivery is in
+outputs/translation-coverage.json. Short teasers can be derived from their full
+translated descriptions. Public descriptions are machine translated; reviewed
+interface copy takes precedence. Original French artist/work names are retained.
+
+Updating public content requires refreshing the translation snapshot. New or
+changed descriptions fall back to their source text until that refresh. This is
+deliberate: there is no paid translation API or background subscription.
+
+Maintenance (Node 24, from repository root):
+1. node --env-file=.env.local scripts/collect-public-translation-events.mjs
+   Uses only the configured public Supabase URL and anon key, with normal RLS.
+2. node scripts/collect-content-translations.mjs
+3. node scripts/localize-source.mjs
+   Default: extract current UI text. Do not use --instrument on existing code.
+4. Run scripts/translate-offline.py ui and content with the local translation
+   runtime. The runtime, models, source snapshots and caches belong in ignored
+   work/translation-* and work/translations/ directories, never in Git.
+5. node scripts/build-translations.mjs
+6. Require missing=0 for both languages, run localization/report tests and the
+   production build, then inspect the preview before release.
+
+Offline runtime: CTranslate2 4.6.0, SentencePiece 0.2.2, langid 1.1.6.
+Model preparation: scripts/prepare-translations.py downloads official Argos
+packages for nl_en, fr_en and en_fr. Windows additionally needs the official
+Microsoft VC runtime DLLs available to the Python process.
+Translation models: OPUS-MT packages distributed by Argos Translate, credited
+to Jorg Tiedemann and Santhosh Thottingal, CC BY 4.0.
+https://github.com/argosopentech/argospm-index
+https://opus.nlpl.eu/
+https://creativecommons.org/licenses/by/4.0/
+Translations are adaptations. No model weights are included in the website.
+
+This change covers the web site and its browser app preview. The separate
+native SwiftUI application has its own localization workstream.
