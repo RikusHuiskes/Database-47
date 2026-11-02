@@ -1,29 +1,37 @@
 "use client";
 import {MONTHLY_PRICES,type AdvertisingType} from '../../lib/advertising';
-import {useRef} from 'react';
+import {useRef,useState} from 'react';
 import g from '../gemeentegids/adverteren/preview.module.css';
 import s from './event-advertising-examples.module.css';
 
 type Choice='none'|AdvertisingType;
-type Props={value:AdvertisingType[];onChange:(value:AdvertisingType[])=>void;months:number;onMonthsChange:(months:number)=>void;title:string;city:string;category:string;image:string};
+type Props={value:AdvertisingType[];onChange:(value:AdvertisingType[])=>void;months:number;onMonthsChange:(months:number)=>void;title:string;city:string;category:string;image:string;categories:{id:string;name:string}[];description:string;date:string};
 const labels:Record<Choice,string>={none:'Gratis vermelding',highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'};
 const descriptions:Record<Choice,string>={none:'Je vermelding verschijnt na goedkeuring tussen de gewone resultaten.',highlight:'Een dikke donkergroene rand en bovenaan de zoekresultaten.',category:'Een extra advertentiekaart in de rechterkolom bij jouw categorie.',homepage:'Een extra advertentiekaart in de rechterkolom op de homepage.'};
 const choices:AdvertisingType[]=['highlight','category','homepage'];
 const eyebrows={highlight:'Bovenaan de resultaten',category:'Extra zichtbaar in jouw categorie',homepage:'Bereik bezoekers op de homepage'};
 const explanations={highlight:'Je vermelding krijgt een donkergroene rand en staat bovenaan de zoekresultaten binnen je gekozen categorie.',category:'Een eigen advertentiekaart in de rechterkolom bij jouw categorie, naast je gewone vermelding.',homepage:'Je advertentie is zichtbaar in de rechterkolom op de homepage. Je vermelding blijft ook in de gewone resultaten staan.'};
 const money=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(cents/100);
-export default function EventAdvertisingExamples({value,onChange,months,onMonthsChange,title,city,category,image}:Props){
+export default function EventAdvertisingExamples({value,onChange,months,onMonthsChange,title,city,category,image,categories,description,date}:Props){
  const review=useRef<HTMLDialogElement>(null);
+ const [viewPage,setViewPage]=useState<'category'|'homepage'>('category');
+ const [otherCategory,setOtherCategory]=useState('');
  const total=value.reduce((sum,type)=>sum+MONTHLY_PRICES[type]*months,0);
  const chosen=(type:Choice)=>type==='none'?value.length===0:value.includes(type);
- const toggle=(type:Choice)=>onChange(type==='none'?[]:chosen(type)?value.filter(item=>item!==type):[...value,type]);
- const bold=value.includes('highlight'),partners=value.filter(type=>type!=='highlight');
+ const toggle=(type:Choice)=>{onChange(type==='none'?[]:chosen(type)?value.filter(item=>item!==type):[...value,type]);if(type==='homepage'||type==='category')setViewPage(type);};
+ const sameCategory=!otherCategory||categories.find(item=>item.id===otherCategory)?.name===category;
+ const bold=value.includes('highlight')&&sameCategory;
+ const categoryAd=value.includes('category')&&sameCategory&&viewPage==='category';
+ const homepageAd=value.includes('homepage')&&viewPage==='homepage';
  const name=title.trim()||'Jouw evenement of vermelding',place=city.trim()||'Duras & omgeving',rubric=category||'Jouw categorie';
+ const shownCategory=categories.find(item=>item.id===otherCategory)?.name||rubric;
+ const exampleDate=date&&Number.isFinite(Date.parse(date))?new Intl.DateTimeFormat('nl-NL',{dateStyle:'long',timeZone:'Europe/Paris'}).format(new Date(date)):'';
  const photo=/^(blob:|https?:\/\/)/i.test(image)?image:'';
- const visual=photo?<img src={photo} alt=""/>:<div className={s.photo}><span aria-hidden="true">✦</span><small>Jouw foto komt hier</small></div>;
- const card=(highlighted:boolean)=> <article className={`${s.card} ${highlighted?s.highlight:''}`}>
-  {highlighted&&<div className={s.banner}>Advertentie · Uitgelichte vermelding</div>}{visual}<div className={s.copy}><small>{rubric} · {place}</small><h4>{name}</h4><p>Je foto, evenementinformatie en contactgegevens blijven bij dezelfde vermelding staan.</p><span className={s.link}>Bekijk evenementdetails →</span></div>
+ const visual=photo?<img className={s.eventPhoto} src={photo} alt=""/>:<div className={s.photo}><span aria-hidden="true">✦</span><small>Jouw foto komt hier</small></div>;
+ const card=<article className={g.resultCard+' '+(bold?g.bold:'')}>
+  {bold&&<div className={g.banner}>Advertentie · Uitgelichte vermelding</div>}{visual}<div className={g.resultBody}><span className={g.monogram} aria-hidden="true">{name.slice(0,1)}</span><div><small>{rubric} · {place}</small><h3>{name}</h3>{exampleDate&&<p>{exampleDate}</p>}<p>{description||'Je evenementinformatie en contactgegevens blijven bij dezelfde vermelding staan.'}</p><span className={g.textLink}>Bekijk evenementdetails →</span></div></div>
  </article>;
+ const ordinary=(name:string)=><article className={g.resultCard}><div className={g.resultBody}><span className={g.monogram+' '+g.muted} aria-hidden="true">⌖</span><div><small>Gratis vermelding · Voorbeeld</small><h3>{name}</h3><p>Evenementinformatie, adres en contactgegevens.</p></div></div></article>;
  return <div className={s.root}>
   <div className={g.sectionHeading}><div><p className={g.kicker}>01 · Jouw advertentie</p><h3 className={s.choiceHeading}>Hoe wil je opvallen?</h3></div><span className={g.priceNote}>Tarieven · per maand</span></div>
   <p>Vink één, twee of drie advertentievormen aan. Bekijk wat je koopt en betaal alle gekozen vormen samen in één keer.</p>
@@ -36,12 +44,13 @@ export default function EventAdvertisingExamples({value,onChange,months,onMonths
   <div className={g.selectionBar}><label>Looptijd<select aria-label="Looptijd advertentie" value={months} onChange={event=>onMonthsChange(Number(event.target.value))}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{i+1} {i===0?'maand':'maanden'}</option>)}</select></label><div aria-live="polite"><small>{value.length} advertentievorm{value.length===1?'':'en'} · {months} maand{months===1?'':'en'}</small><strong>{money(total)} <span>totaal</span></strong></div><button type="button" className={g.primary} disabled={!value.length} onClick={()=>review.current?.showModal()}>Bekijk betaaloverzicht →</button></div>
   <label className={s.freeChoice}><input type="checkbox" name="promotion-type" value="none" checked={chosen('none')} onChange={()=>toggle('none')}/><span><strong>Gratis vermelding</strong> · Liever alleen een gewone vermelding? Hiermee wis je de betaalde keuzes.</span></label>
   <dialog ref={review} className={g.dialog} aria-labelledby="event-ad-review-heading"><button type="button" className={g.close} aria-label="Betaaloverzicht sluiten" onClick={()=>review.current?.close()}>×</button><span className={g.pill}>Eén gezamenlijke betaling</span><h2 id="event-ad-review-heading">Jouw advertentieoverzicht</h2><p><strong>{name}</strong><br/>{rubric} · {place} · {months} maand{months===1?'':'en'}</p><dl className={g.invoice}>{value.map(type=><div key={type}><dt>{labels[type]}<small>{money(MONTHLY_PRICES[type])} × {months} maand{months===1?'':'en'}</small></dt><dd>{money(MONTHLY_PRICES[type]*months)}</dd></div>)}<div className={g.invoiceTotal}><dt>Totaal te betalen</dt><dd>{money(total)}</dd></div></dl><p className={g.previewNotice}>Vul hierna je vermelding en factuurgegevens in. Na opslaan betaal je alle gekozen vormen samen via Mollie. Plaatsing volgt na goedkeuring, betaalbevestiging en controle van de beschikbaarheid, binnen je gekozen periode.</p><button type="button" className={g.primary} onClick={()=>{review.current?.close();document.getElementById('advertiser-details')?.scrollIntoView({behavior:'smooth',block:'start'});}}>Verder met mijn vermelding →</button></dialog>
-  <section id="event-advertising-example" className={s.example} aria-labelledby="event-example-heading">
-   <p className={s.kicker}>Door de ogen van de bezoeker</p><h3 id="event-example-heading">Zo ziet jouw vermelding eruit</h3><p>Vul verderop je titel, plaats en categorie in en voeg een foto toe. Je voorbeeld verandert mee.</p>
-   <div className={s.layout}><div><h4>{bold?'Bovenaan de zoekresultaten':'Tussen de gewone resultaten'}</h4>{!bold&&<div className={s.other}>Andere vermelding · voorbeeld</div>}{card(bold)}{bold&&<div className={s.other}>Gewone vermelding · voorbeeld</div>}</div>
-    <aside className={s.sidebar}><small>Lokale partners · Advertenties</small><h4>Jouw gekozen extra zichtbaarheid</h4>{partners.length?partners.map(type=><div key={type}><h4>{type==='homepage'?'Op de homepage':'Binnen '+rubric}</h4><article className={s.card}>{visual}<div className={s.copy}><small>{type==='homepage'?'Homepagepartner':'Categoriepartner'} · {place}</small><h4>{name}</h4><p>Ontdek deze vermelding en bekijk alle informatie.</p><span className={s.link}>Ontdek →</span></div></article></div>):<p className={s.empty}>Met een categorie- of homepageadvertentie verschijnt jouw vermelding ook hier.</p>}</aside>
+  <section id="event-advertising-example" className={g.section} aria-labelledby="event-example-heading">
+   <div className={g.sectionHeading}><div><p className={g.kicker}>02 · Door de ogen van de bezoeker</p><h3 className={s.choiceHeading} id="event-example-heading">Zo ziet jouw vermelding eruit.</h3></div><span className={g.priceNote}>Voorbeeld · geen actieve advertenties</span></div>
+   <div className={g.previewFilters}><label>Pagina<select value={viewPage} onChange={event=>setViewPage(event.target.value as 'category'|'homepage')}><option value="category">Categoriepagina</option><option value="homepage">Homepage</option></select></label><label>Categorie<select value={sameCategory?'':otherCategory} onChange={event=>setOtherCategory(event.target.value)}><option value="">{rubric}</option>{categories.filter(item=>item.name!==rubric).map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><p>Wissel van pagina of categorie om het bereik van je keuze te bekijken. Je ingevoerde gegevens blijven gelijk.</p></div>
+   <div className={g.resultsLayout}><div><div className={g.resultsHeading}><strong>{shownCategory} in {place}</strong><span>Voorbeeldresultaten</span></div><div className={g.results}>{sameCategory&&bold&&card}{ordinary('Ander evenement · voorbeeld A')}{sameCategory&&!bold&&card}{ordinary('Andere vermelding · voorbeeld B')}</div></div>
+    <aside className={g.sidebar+' '+s.previewSidebar}><p className={g.kicker}>Lokale partners · Advertenties</p><h3>{viewPage==='homepage'?'Uitgelicht op de homepage':'Uitgelicht in '+shownCategory}</h3>{categoryAd||homepageAd?<article className={g.partnerCard}>{visual}<div className={g.partnerCopy}><small>{homepageAd?'Homepagepartner':'Categoriepartner'} · {place}</small><h4>{name}</h4><p>{description||'Ontdek deze vermelding en bekijk alle informatie.'}</p><span className={g.discover}>Ontdek →</span></div></article>:<div className={g.emptyPartner}><strong>Hier kan jouw evenement staan.</strong><p>{viewPage==='homepage'?'Kies Homepageadvertentie om je vermelding hier te bekijken.':sameCategory?'Kies Categorieadvertentie om je vermelding hier te bekijken.':'De categorieadvertentie is alleen zichtbaar binnen je eigen categorie.'}</p></div>}<p className={g.sidebarNote}>Je gewone vermelding blijft beschikbaar. Een homepageadvertentie verschijnt op de homepage; een categorieadvertentie binnen je eigen categorie.</p></aside>
    </div>
-   <p className={s.note} role="status">{value.length?value.map(type=>descriptions[type]).join(' '):descriptions.none} Je vermelding blijft tussen de gewone resultaten staan. Dit is een visueel voorbeeld, geen actieve advertentie. Betaalde plaatsing volgt na goedkeuring en betaalbevestiging, binnen de gekozen periode en bij beschikbare ruimte.</p>
+   <p className={s.note} role="status">Dit is een visueel voorbeeld. Plaatsing volgt na goedkeuring, betaalbevestiging en controle van de beschikbaarheid, binnen je gekozen periode.</p>
   </section>
  </div>;
 }
