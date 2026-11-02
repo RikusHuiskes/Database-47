@@ -15,6 +15,8 @@ for(const mode of ['ui','content']){
   const result={};
   for(const [source,values]of Object.entries(cache))if(allowed.has(normalize(source))&&typeof values[locale]==='string'){
    let value=values[locale];
+   // OPUS may emit a spurious Chinese punctuation token for decorative quotes.
+   if(!/[\u3400-\u9fff]/u.test(source))value=value.replace(/\u7684/g,'');
    if(mode==='content')value=localizeOpeningHours(source,locale)??value;
    if(mode==='content')value=value.replace(/\bBron bijgewerkt\s*:/g,locale==='en'?'Source updated:':'Source mise à jour le :').replace(/\bBron\s*:/g,locale==='en'?'Source:':'Source :');
    result[mode==='ui'?normalize(source):key(source)]=value;
@@ -35,3 +37,4 @@ for(const mode of ['ui','content']){
  }
 }
 fs.mkdirSync('outputs',{recursive:true});fs.writeFileSync('outputs/translation-coverage.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+
