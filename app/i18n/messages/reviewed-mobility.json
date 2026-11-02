@@ -1,0 +1,77 @@
+[
+  [
+    "Invalide parkeerplaats",
+    "Accessible parking space",
+    "Place de stationnement réservée aux personnes handicapées"
+  ],
+  [
+    "Invalide parkeerplaatsen · {0}",
+    "Accessible parking spaces · {0}",
+    "Places de stationnement réservées aux personnes handicapées · {0}"
+  ],
+  [
+    "Alleen voor klanten; controleer de toegangsvoorwaarden.",
+    "Customers only; check the access conditions.",
+    "Réservé aux clients ; vérifiez les conditions d’accès."
+  ],
+  [
+    "Capaciteit volgens bron: {0} plaatsen.",
+    "Capacity according to the source: {0} spaces.",
+    "Capacité indiquée par la source : {0} places."
+  ],
+  [
+    "Gereserveerde invalide parkeerplaatsen volgens bron: {0}.",
+    "Reserved accessible parking spaces according to the source: {0}.",
+    "Places réservées aux personnes handicapées indiquées par la source : {0}."
+  ],
+  [
+    "Gereserveerde invalide parkeerplaatsen aanwezig volgens bron; aantal niet vermeld.",
+    "Reserved accessible parking spaces are indicated by the source; the number is not specified.",
+    "La source indique des places réservées aux personnes handicapées, sans en préciser le nombre."
+  ],
+  [
+    "Betaald parkeren volgens bron; controleer het actuele tarief ter plaatse.",
+    "Paid parking according to the source; check the current rate on site.",
+    "Stationnement payant selon la source ; vérifiez le tarif sur place."
+  ],
+  [
+    "Gratis parkeren volgens bron.",
+    "Free parking according to the source.",
+    "Stationnement gratuit selon la source."
+  ],
+  [
+    "De kaartbron bevestigt geen actuele vrije parkeerplaatsen; controleer de bebording ter plaatse.",
+    "The map source does not confirm real-time space availability; check the signs on site.",
+    "La source cartographique ne confirme pas les places actuellement libres ; vérifiez la signalisation sur place."
+  ],
+  [
+    "Netwerk / vervoerder: {0}.",
+    "Network / operator: {0}.",
+    "Réseau / transporteur : {0}."
+  ],
+  [
+    "Haltenummer: {0}.",
+    "Stop number: {0}.",
+    "Numéro d’arrêt : {0}."
+  ],
+  [
+    "Raadpleeg de vervoerder voor actuele lijnen en vertrektijden.",
+    "Check with the operator for current routes and departure times.",
+    "Consultez le transporteur pour les lignes et les horaires de départ actualisés."
+  ],
+  [
+    "Aantal laadplaatsen volgens bron: {0}.",
+    "Number of charging spaces according to the source: {0}.",
+    "Nombre de places de recharge indiqué par la source : {0}."
+  ],
+  [
+    "Aansluitingen: {0}.",
+    "Connectors: {0}.",
+    "Connecteurs : {0}."
+  ],
+  [
+    "Controleer beschikbaarheid, laadvermogen en tarieven bij de exploitant.",
+    "Check availability, charging power and rates with the operator.",
+    "Vérifiez la disponibilité, la puissance de recharge et les tarifs auprès de l’exploitant."
+  ]
+]

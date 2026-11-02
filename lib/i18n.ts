@@ -6,6 +6,22 @@ export function normalizeMessage(text:string){return text.replace(/\s+/g,' ').tr
 // Stable key shared with the offline catalogue builder. No personal text is sent to a translator.
 export function messageKey(text:string){let hash=BigInt('14695981039346656037');for(const byte of new TextEncoder().encode(normalizeMessage(text))){hash^=BigInt(byte);hash=BigInt.asUintN(64,hash*BigInt('1099511628211'));}return hash.toString(16).padStart(16,'0');}
 export type Dictionary=Record<string,string>;
+/** Translate generated facility labels, retaining the exact street/operator suffix. */
+export function localizeMunicipalName(name:string,locale:Locale):string{
+ if(locale==='nl')return name;
+ const labels:Record<string,[string,string]>={
+  'Invalide parkeerplaatsen':['Accessible parking spaces','Places de stationnement réservées aux personnes handicapées'],
+  'Invalide parkeerplaats':['Accessible parking space','Place de stationnement réservée aux personnes handicapées'],
+  'Parkeerterrein':['Car park','Parking'],
+  'Laadstation':['EV charging station','Borne de recharge'],
+  'Trein- of tramhalte':['Train or tram stop','Arrêt de train ou de tramway'],
+  'Bushalte':['Bus stop','Arrêt de bus'],
+  'Tankstation':['Petrol station','Station-service'],
+  'Supermarkt':['Supermarket','Supermarché'],
+ };
+ for(const [label,translations]of Object.entries(labels))if(name===label||name.startsWith(label+' · '))return translations[locale==='en'?0:1]+name.slice(label.length);
+ return name;
+}
 /** OSM opening-hours notation: expand day codes while keeping every time unchanged. */
 export function localizeOpeningHours(source:string,locale:Locale):string|null{
  const tokens=source.match(/[A-Za-z]+/g)??[];

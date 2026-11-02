@@ -1,7 +1,7 @@
 "use client";
 import {T, A, useLanguage} from './i18n/Language';
 
-import {intlLocale} from '../lib/i18n';
+import {intlLocale,localizeMunicipalName} from '../lib/i18n';
 
 
 import MunicipalServicePhoto from './components/MunicipalServicePhoto';
@@ -1688,7 +1688,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
       <T>{service.highlighted&&<div className="activity-highlight-banner"><T>{"Advertentie · Uitgelichte vermelding"}</T></div>}</T>
       <MunicipalServicePhoto {...service}/>
       <div className="municipality-service-card-heading">
-        <div><p className="section-kicker"><T>{groupLabel}</T><T>{service.inSelectedMunicipality === false ? ` · omgeving ${municipalityName}` : service.municipality ? ` · ${service.municipality}` : ""}</T><T>{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</T></p><h3><T preserve>{service.name}</T></h3></div>
+        <div><p className="section-kicker"><T>{groupLabel}</T><T>{service.inSelectedMunicipality === false ? ` · omgeving ${municipalityName}` : service.municipality ? ` · ${service.municipality}` : ""}</T><T>{service.distanceKm != null ? ` · ${service.distanceKm} km` : ""}</T></p><h3><T preserve>{localizeMunicipalName(service.name,locale)}</T></h3></div>
         <T>{service.type === "hospital" && index === 0 && <span className="nearest-service-badge"><T>{"Dichtstbij"}</T></span>}</T>
       </div>
       <T>{(groupType === "mairie" || municipalityServiceType === "all" && service.type === "mairie") && <p><strong><T>{"Burgemeester:"}</T></strong> <T>{service.mayor ?? "Naam niet vermeld in de gemeentelijke contactgegevens."}</T></p>}</T>
@@ -1699,7 +1699,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
       <T>{service.openingHours && <p><strong><T>{"Openingstijden:"}</T></strong> <T>{service.openingHours}</T></p>}</T>
       <T>{service.serviceTimes && <p><strong><T>{"Mis- of diensttijden:"}</T></strong> <T>{service.serviceTimes}</T></p>}</T>
       <T>{(groupType === "church" || municipalityServiceType === "all" && service.type === "church") && !service.serviceTimes && <p className="municipality-missing-detail"><T>{"Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie."}</T></p>}</T>
-      <T>{service.extra && <p><T>{service.extra}</T></p>}</T>
+      <T>{service.extra && <p><T>{service.extra.split(/(?<=\.)\s+(?=[A-ZÀ-ÖØ-Þ])/u).map(sentence=>sentence+" ")}</T></p>}</T>
       <T>{COMMERCIAL_SERVICE_TYPES.includes(service.type)&&<p><a className="text-arrow-link" href={'/gemeentegids/adverteren?'+new URLSearchParams({serviceId:service.id,city:service.municipality||municipalityName})}><T>{"Is dit jouw bedrijf? Beheer en adverteer →"}</T></a></p>}</T>
       <div className="municipality-service-links">
         <T>{safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
