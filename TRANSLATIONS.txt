@@ -1,12 +1,18 @@
 Cote de Duras — website translations
 
+User preference: generate translations locally. Do not send the public content
+corpus, private input or administrator data to an external translation service.
+
 Visitors can select Dutch, English or French in the language bar. A functional
 cookie remembers the choice for one year. Names, addresses, contact details,
 identifiers, links and payment amounts remain unchanged.
 
 Reviewed interface translations live in app/i18n/messages/reviewed*.json.
-Generated interface dictionaries are en.json and fr.json. Public descriptions
-use lib/translations/content-{en,fr}.json, indexed by a stable source-text hash.
+Generated interface dictionaries are en.json and fr.json; nl.json contains
+Dutch translations of source category labels that were originally French.
+Public descriptions use lib/translations/content-{nl,en,fr}.json, indexed by a
+stable source-text hash. Dutch is a translation target for French/English
+descriptions, not a synonym for the original source language.
 Only approved public text is collected. Private form input is never sent to a
 translation provider. Database source records are never overwritten.
 
@@ -26,16 +32,16 @@ Maintenance (Node 24, from repository root):
 2. node scripts/collect-content-translations.mjs
 3. node scripts/localize-source.mjs
    Default: extract current UI text. Do not use --instrument on existing code.
-4. Run scripts/translate-offline.py ui and content with the local translation
+4. Run scripts/translate-offline.py ui, content and nl with the local translation
    runtime. The runtime, models, source snapshots and caches belong in ignored
    work/translation-* and work/translations/ directories, never in Git.
 5. node scripts/build-translations.mjs
-6. Require missing=0 for both languages, run localization/report tests and the
+6. Require missing=0 for every target language, run localization/report tests and the
    production build, then inspect the preview before release.
 
 Offline runtime: CTranslate2 4.6.0, SentencePiece 0.2.2, langid 1.1.6.
 Model preparation: scripts/prepare-translations.py downloads official Argos
-packages for nl_en, fr_en and en_fr. Windows additionally needs the official
+packages for nl_en, fr_en, en_fr and en_nl. Windows additionally needs the official
 Microsoft VC runtime DLLs available to the Python process.
 Translation models: OPUS-MT packages distributed by Argos Translate, credited
 to Jorg Tiedemann and Santhosh Thottingal, CC BY 4.0.

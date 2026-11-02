@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/verify-translations.mjs && next build",
     "start": "next start",
     "test:import": "node --test lib/tourisme-duras.test.mjs lib/regional-official-agendas.test.mjs lib/additive-import.test.mjs",
     "test:photo": "node --test lib/event-photo.test.mjs",

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 const root=process.cwd(), messages=new Set();
 const attrs=new Set(['placeholder','title','alt','aria-label','aria-description']);
-function natural(s){return /\p{L}/u.test(s)&&!/^\s*(?:https?:|\/|#|[\w.-]+\.(?:png|jpg|json|csv|webp)|[\w-]+(?:\/[\w-]+)+)/i.test(s)&&!s.includes('process.env')&&s.length<15000;}
+function natural(s){return !/^\.{1,2}\//.test(s)&&/\p{L}/u.test(s)&&!/^\s*(?:https?:|\/|#|[\w.-]+\.(?:png|jpg|json|csv|webp)|[\w-]+(?:\/[\w-]+)+)/i.test(s)&&!s.includes('process.env')&&s.length<15000;}
 function jsxText(s){return s.split(/\r?\n/).map((line,i,a)=>{let x=line.replace(/\t/g,' ');if(i)x=x.replace(/^ +/,'');if(i<a.length-1)x=x.replace(/ +$/,'');return x+(x&&i<a.length-1?' ':'');}).join('');}
 function files(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 for(const file of [...files('app'),...files('native-api/app'),...files('lib')].filter(f=>/\.tsx?$/.test(f)&&!f.includes('i18n')&&!f.endsWith('.test.ts'))){

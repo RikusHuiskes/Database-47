@@ -32,7 +32,7 @@ export function localizeOpeningHours(source:string,locale:Locale):string|null{
  const words=locale==='fr'?fr:en;return source.replace(/[A-Za-z]+/g,token=>words[token]);
 }
 export function translateMessage(source:string,locale:Locale,dictionary:Dictionary):string{
- if(locale==='nl'||!source.trim())return source;
+ if(!source.trim())return source;
  const key=normalizeMessage(source),value=dictionary[key];
  if(value!==undefined)return source.slice(0,source.length-source.trimStart().length)+value+source.slice(source.trimEnd().length);
  return source;
@@ -52,7 +52,8 @@ export function createTranslator(locale:Locale,dictionary:Dictionary){
  const patterns=Object.entries(dictionary).filter(([key])=>/\{\d+\}/.test(key)&&key.replace(/\{\d+\}/g,'').length>5&&(key.match(/\{\d+\}/g)?.length??0)<7).map(([key,value])=>{const literals=key.split(/\{\d+\}/);return {key,value,prefix:literals[0],suffix:literals.at(-1)??'',anchor:[...literals].sort((a,b)=>b.length-a.length)[0],regex:new RegExp('^'+key.split(/(\{\d+\})/).map(part=>/^\{\d+\}$/.test(part)?'(.+?)':escapeRegex(part)).join('')+'$')};}).sort((a,b)=>b.key.length-a.key.length);
  const months=['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
  const translate=(source:string,depth=0):string=>{
-  if(locale==='nl'||!source.trim())return source;
+  if(!source.trim())return source;
+  if(locale==='nl')return lookup(source)??source;
   const hours=localizeOpeningHours(source,locale);if(hours!==null)return hours;
   const normalized=normalizeMessage(source),direct=lookup(source);
   if(direct!==undefined)return direct;

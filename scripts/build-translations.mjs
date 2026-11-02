@@ -10,15 +10,16 @@ for(const mode of ['ui','content']){
  const sources=JSON.parse(fs.readFileSync(`work/translations/${mode}-source.json`,'utf8'));
  const cache=JSON.parse(fs.readFileSync(`work/translations/${mode}-cache.json`,'utf8'));
  const allowed=new Set(sources.map(normalize));
- if(mode==='content')for(const entry of JSON.parse(fs.readFileSync('work/translations/content-derived.json','utf8'))){const parent=cache[normalize(entry.parent)];if(parent)cache[normalize(entry.source)]={en:parent.en.length>260?parent.en.slice(0,245).replace(/\s+\S*$/,'')+'…':parent.en,fr:parent.fr.length>260?parent.fr.slice(0,245).replace(/\s+\S*$/,'')+'…':parent.fr};}
- for(const [index,locale]of ['en','fr'].entries()){
+ if(mode==='content')for(const entry of JSON.parse(fs.readFileSync('work/translations/content-derived.json','utf8'))){const parent=cache[normalize(entry.parent)];if(parent)cache[normalize(entry.source)]={nl:parent.nl?(parent.nl.length>260?parent.nl.slice(0,245).replace(/\s+\S*$/,'')+'…':parent.nl):undefined,en:parent.en.length>260?parent.en.slice(0,245).replace(/\s+\S*$/,'')+'…':parent.en,fr:parent.fr.length>260?parent.fr.slice(0,245).replace(/\s+\S*$/,'')+'…':parent.fr};}
+ for(const locale of (mode==='content'?['nl','en','fr']:['en','fr'])){
+  const index=locale==='en'?0:1;
   const result={};
   for(const [source,values]of Object.entries(cache))if(allowed.has(normalize(source))&&typeof values[locale]==='string'){
    let value=values[locale];
    // OPUS may emit a spurious Chinese punctuation token for decorative quotes.
    if(!/[\u3400-\u9fff]/u.test(source))value=value.replace(/\u7684/g,'');
    if(mode==='content')value=localizeOpeningHours(source,locale)??value;
-   if(mode==='content')value=value.replace(/\bBron bijgewerkt\s*:/g,locale==='en'?'Source updated:':'Source mise à jour le :').replace(/\bBron\s*:/g,locale==='en'?'Source:':'Source :');
+   if(mode==='content'&&locale!=='nl')value=value.replace(/\bBron bijgewerkt\s*:/g,locale==='en'?'Source updated:':'Source mise à jour le :').replace(/\bBron\s*:/g,locale==='en'?'Source:':'Source :');
    result[mode==='ui'?normalize(source):key(source)]=value;
   }
   if(mode==='ui')for(const row of reviewed)result[normalize(row[0])]=row[index+1];
@@ -28,7 +29,8 @@ for(const mode of ['ui','content']){
    for(const source of Object.keys(result)){if(exact.has(source))continue;const value=labels.get(source.toLocaleLowerCase('nl'));if(value)result[source]=source===source.toLocaleUpperCase('nl')&&/\p{L}/u.test(source)?value.toLocaleUpperCase(locale):source===source.toLocaleLowerCase('nl')&&!/^[A-Z]{2}/.test(value)?value.charAt(0).toLocaleLowerCase(locale)+value.slice(1):value;}
   }
   if(mode==='ui')for(const name of protectedValues)if(Object.hasOwn(result,normalize(name))&&!reviewedKeys.has(normalize(name)))result[normalize(name)]=name;
-  if(mode==='content')for(const row of reviewed)if(allowed.has(normalize(row[0])))result[key(row[0])]=row[index+1];
+  if(mode==='content'&&locale!=='nl')for(const row of reviewed)if(allowed.has(normalize(row[0])))result[key(row[0])]=row[index+1];
+  if(mode==='content'&&locale==='nl'&&fs.existsSync('lib/translations/reviewed-nl.json'))for(const [source,value]of Object.entries(JSON.parse(fs.readFileSync('lib/translations/reviewed-nl.json','utf8'))))if(allowed.has(normalize(source)))result[key(source)]=value;
   const missing=sources.filter(source=>!Object.hasOwn(result,mode==='ui'?normalize(source):key(source)));
   report[mode][locale]={sourceTexts:sources.length,translated:Object.keys(result).length,missing:missing.length};
   const target=mode==='ui'?`app/i18n/messages/${locale}.json`:`lib/translations/content-${locale}.json`;

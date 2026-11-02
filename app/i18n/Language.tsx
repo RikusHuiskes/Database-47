@@ -2,12 +2,14 @@
 import {Children,cloneElement,createContext,isValidElement,useContext,useEffect,useMemo,useRef,useState,useSyncExternalStore,type ReactElement,type ReactNode} from 'react';
 import {useRouter} from 'next/navigation';
 import {LOCALE_COOKIE,localeFrom,normalizeMessage,createTranslator,messageKey,type Dictionary,type Locale} from '../../lib/i18n';
+import {publicEventText} from '../../lib/public-event-links';
+import nl from './messages/nl.json';
 import en from './messages/en.json';
 import fr from './messages/fr.json';
 import publicKeys from '../../lib/translations/content-index.json';
 import './language.css';
 type LanguageContext={locale:Locale;setLocale:(locale:Locale)=>void;t:(text:string)=>string};
-const dictionaries:Record<Locale,Dictionary>={nl:{},en,fr};
+const dictionaries:Record<Locale,Dictionary>={nl,en,fr};
 const knownPublicKeys=new Set(publicKeys);
 const Context=createContext<LanguageContext>({locale:'nl',setLocale:()=>{},t:text=>text});
 const contentCache:Record<Locale,Map<string,string|null>>={nl:new Map(),en:new Map(),fr:new Map()};
@@ -17,7 +19,6 @@ const subscribe=(listener:()=>void)=>{listeners.add(listener);return ()=>{listen
 const snapshot=()=>revision,serverSnapshot=()=>0;
 const scheduled=new Set<Locale>();
 function queueContent(locale:Locale,keys:string[]){
- if(locale==='nl')return;
  for(const key of keys)if(knownPublicKeys.has(key)&&!contentCache[locale].has(key))queues[locale].add(key);
  if(!queues[locale].size||scheduled.has(locale))return;scheduled.add(locale);
  setTimeout(async()=>{const keys=[...queues[locale]].slice(0,100);keys.forEach(key=>queues[locale].delete(key));try{const response=await fetch('/api/content-translations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({locale,keys})});if(!response.ok)throw Error('Translation lookup failed');const data=await response.json() as {translations:Record<string,string>};for(const key of keys)contentCache[locale].set(key,typeof data.translations[key]==='string'?data.translations[key]:null);revision++;listeners.forEach(listener=>listener());}catch{/* Keep the original public text on a network failure. Retry on the next render. */}finally{scheduled.delete(locale);if(queues[locale].size)queueContent(locale,[]);}},30);
@@ -39,13 +40,13 @@ function LanguageMenu(){
 export function T({children,preserve=false}:{children:ReactNode;preserve?:boolean}){
  const {t,locale}=useLanguage();useSyncExternalStore(subscribe,snapshot,serverSnapshot);
  const keys:string[]=[];
- if(!preserve&&locale!=='nl')Children.forEach(children,child=>{if(typeof child==='string'&&child.trim()){const key=messageKey(child);if(knownPublicKeys.has(key))keys.push(key);}});
+ if(!preserve)Children.forEach(children,child=>{if(typeof child==='string'&&child.trim()){const key=messageKey(child);if(knownPublicKeys.has(key))keys.push(key);}});
  const requested=keys.join(',');useEffect(()=>{queueContent(locale,requested?requested.split(','):[]);},[locale,requested]);
  return <>{Children.map(children,child=>{
-  if(preserve||typeof child!=='string'||locale==='nl')return child;
+  if(preserve||typeof child!=='string')return child;
   const key=messageKey(child);
-  if(knownPublicKeys.has(key))return contentCache[locale].get(key)??child;
-  return t(child);
+  if(knownPublicKeys.has(key))return publicEventText(contentCache[locale].get(key)??child);
+  return publicEventText(t(child));
  })}</>;
 }
 /** Translate display attributes without touching input values, links, IDs or handlers. */

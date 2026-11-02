@@ -1,30 +1,147 @@
 [
- ["Kies bovenaan de website Nederlands, English of Français. Je taalkeuze blijft bewaard wanneer je een andere pagina opent. Wisselen van taal wist je ingevulde vermelding en advertentiekeuzes niet. Bedrijfsnamen, plaatsnamen, adressen en contactgegevens blijven herkenbaar in hun oorspronkelijke vorm.","Choose Nederlands, English or Français at the top of the website. Your choice is remembered as you move between pages. Changing language does not clear your listing details or advertising selections. Business names, town names, addresses and contact details keep their original form.","Choisissez Nederlands, English ou Français en haut du site. Votre choix est conservé lorsque vous changez de page. Changer de langue n’efface ni les informations saisies ni vos choix publicitaires. Les noms d’entreprises et de communes, les adresses et les coordonnées conservent leur forme d’origine."],
- ["Office de tourisme","Tourist office","Office de tourisme"],
- ["Souvenirswinkel","Souvenir shop","Boutique de souvenirs"],
- ["Kerk & mis- of diensttijden","Church & service times","Église et horaires des offices"],
- ["Laadpalen voor elektrische voertuigen","EV charging stations","Bornes de recharge pour véhicules électriques"],
- ["Noodnummers","Emergency numbers","Numéros d’urgence"],
- ["Europees noodnummer","European emergency number","Numéro d’urgence européen"],
- ["Medische nood, politie of brandweer","Medical emergency, police or fire service","Urgence médicale, police ou pompiers"],
- ["Totaal:","Total:","Total :"],
- ["maand(en)","month(s)","mois"],
- ["Côte de Duras","Côte de Duras","Côte de Duras"],
- ["Bijvoorbeeld: Marché nocturne","For example: Night market","Par exemple : Marché nocturne"],
- ["Begin met de naam en categorie. Deze gegevens zie je terug in je voorbeelden.","Start with the name and category. They will appear in your previews.","Commencez par le nom et la catégorie. Ces informations apparaîtront dans vos aperçus."],
- ["Voorbeeld · geen actieve advertenties","Preview · no live advertisements","Aperçu · aucune publicité active"],
- ["Gratis activiteit","Free activity","Activité gratuite"],
- ["Advertentieplek","Advertising space","Emplacement publicitaire"],
- ["Opslaan en betalen","Save and pay","Enregistrer et payer"],
- ["Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.","Enter your advertising period, billing details and listing. You will then go straight to Mollie.","Renseignez la période, vos coordonnées de facturation et votre annonce. Vous serez ensuite dirigé directement vers Mollie."],
- ["Na ‘Opslaan en betalen via Mollie’ ga je direct naar de beveiligde betaalomgeving. Daar kies je je betaalmethode. Je hoeft niet opnieuw in te loggen. Je factuurgegevens staan niet in de openbare vermelding.","After choosing ‘Save and pay with Mollie’, you go straight to the secure payment page to select your payment method. You do not need to sign in again. Your billing details are not shown in the public listing.","Après avoir choisi « Enregistrer et payer via Mollie », vous accédez directement à la page de paiement sécurisée pour choisir votre moyen de paiement. Vous n’avez pas à vous reconnecter. Vos coordonnées de facturation ne figurent pas dans l’annonce publique."],
- [" per maand voor je volledige keuze. Alle gekozen advertenties worden samen betaald en verschijnen alleen in de gekozen periode, na goedkeuring en betaalbevestiging."," per month for your entire selection. All chosen adverts are paid for together and appear only during the chosen period, after approval and payment confirmation."," par mois pour l’ensemble de votre sélection. Toutes les publicités choisies sont réglées ensemble et ne paraissent que pendant la période sélectionnée, après validation et confirmation du paiement."],
- ["Landcode, bijvoorbeeld FR of NL","Country code, for example FR or NL","Code pays, par exemple FR ou NL"],
- ["Beheeraanvragen & correctiemeldingen","Management requests & corrections","Demandes de gestion et corrections"],
- ["Bezoekers & advertentiebereik","Visitors & advertising reach","Visiteurs et portée des publicités"],
- ["Weet je zeker dat je “{0}” definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.","Are you sure you want to permanently delete “{0}”? This cannot be undone.","Voulez-vous vraiment supprimer définitivement « {0} » ? Cette action est irréversible."],
- ["Alle {0} wachtende imports goedkeuren? Ze worden openbaar zichtbaar. Dit geldt voor alle categorieën en alle pagina’s, ook buiten je zoekfilters. Handmatige inzendingen worden niet meegenomen.","Approve all {0} pending imports? They will become public. This applies to every category and page, including those outside your search filters. Manual submissions are excluded.","Valider les {0} imports en attente ? Ils deviendront publics. Cela concerne toutes les catégories et toutes les pages, y compris en dehors de vos filtres de recherche. Les propositions manuelles ne sont pas incluses."],
- ["Je bewerkt nu: {0}","You are editing: {0}","Vous gérez actuellement : {0}"],
- ["Welke evenementenkalender wil je beheren?","Which events calendar would you like to manage?","Quel agenda souhaitez-vous gérer ?"],
- ["Open beheer van {0} →","Open administration for {0} →","Ouvrir l’administration de {0} →"]
+  [
+    "Kies bovenaan de website Nederlands, English of Français. Je taalkeuze blijft bewaard wanneer je een andere pagina opent. Wisselen van taal wist je ingevulde vermelding en advertentiekeuzes niet. Bedrijfsnamen, plaatsnamen, adressen en contactgegevens blijven herkenbaar in hun oorspronkelijke vorm.",
+    "Choose Nederlands, English or Français at the top of the website. Your choice is remembered as you move between pages. Changing language does not clear your listing details or advertising selections. Business names, town names, addresses and contact details keep their original form.",
+    "Choisissez Nederlands, English ou Français en haut du site. Votre choix est conservé lorsque vous changez de page. Changer de langue n’efface ni les informations saisies ni vos choix publicitaires. Les noms d’entreprises et de communes, les adresses et les coordonnées conservent leur forme d’origine."
+  ],
+  [
+    "Office de tourisme",
+    "Tourist office",
+    "Office de tourisme"
+  ],
+  [
+    "Souvenirswinkel",
+    "Souvenir shop",
+    "Boutique de souvenirs"
+  ],
+  [
+    "Kerk & mis- of diensttijden",
+    "Church & service times",
+    "Église et horaires des offices"
+  ],
+  [
+    "Laadpalen voor elektrische voertuigen",
+    "EV charging stations",
+    "Bornes de recharge pour véhicules électriques"
+  ],
+  [
+    "Noodnummers",
+    "Emergency numbers",
+    "Numéros d’urgence"
+  ],
+  [
+    "Europees noodnummer",
+    "European emergency number",
+    "Numéro d’urgence européen"
+  ],
+  [
+    "Medische nood, politie of brandweer",
+    "Medical emergency, police or fire service",
+    "Urgence médicale, police ou pompiers"
+  ],
+  [
+    "Totaal:",
+    "Total:",
+    "Total :"
+  ],
+  [
+    "maand(en)",
+    "month(s)",
+    "mois"
+  ],
+  [
+    "Côte de Duras",
+    "Côte de Duras",
+    "Côte de Duras"
+  ],
+  [
+    "Bijvoorbeeld: Marché nocturne",
+    "For example: Night market",
+    "Par exemple : Marché nocturne"
+  ],
+  [
+    "Begin met de naam en categorie. Deze gegevens zie je terug in je voorbeelden.",
+    "Start with the name and category. They will appear in your previews.",
+    "Commencez par le nom et la catégorie. Ces informations apparaîtront dans vos aperçus."
+  ],
+  [
+    "Voorbeeld · geen actieve advertenties",
+    "Preview · no live advertisements",
+    "Aperçu · aucune publicité active"
+  ],
+  [
+    "Gratis activiteit",
+    "Free activity",
+    "Activité gratuite"
+  ],
+  [
+    "Advertentieplek",
+    "Advertising space",
+    "Emplacement publicitaire"
+  ],
+  [
+    "Opslaan en betalen",
+    "Save and pay",
+    "Enregistrer et payer"
+  ],
+  [
+    "Vul je periode, factuurgegevens en vermelding in. Daarna ga je direct door naar Mollie.",
+    "Enter your advertising period, billing details and listing. You will then go straight to Mollie.",
+    "Renseignez la période, vos coordonnées de facturation et votre annonce. Vous serez ensuite dirigé directement vers Mollie."
+  ],
+  [
+    "Na ‘Opslaan en betalen via Mollie’ ga je direct naar de beveiligde betaalomgeving. Daar kies je je betaalmethode. Je hoeft niet opnieuw in te loggen. Je factuurgegevens staan niet in de openbare vermelding.",
+    "After choosing ‘Save and pay with Mollie’, you go straight to the secure payment page to select your payment method. You do not need to sign in again. Your billing details are not shown in the public listing.",
+    "Après avoir choisi « Enregistrer et payer via Mollie », vous accédez directement à la page de paiement sécurisée pour choisir votre moyen de paiement. Vous n’avez pas à vous reconnecter. Vos coordonnées de facturation ne figurent pas dans l’annonce publique."
+  ],
+  [
+    " per maand voor je volledige keuze. Alle gekozen advertenties worden samen betaald en verschijnen alleen in de gekozen periode, na goedkeuring en betaalbevestiging.",
+    " per month for your entire selection. All chosen adverts are paid for together and appear only during the chosen period, after approval and payment confirmation.",
+    " par mois pour l’ensemble de votre sélection. Toutes les publicités choisies sont réglées ensemble et ne paraissent que pendant la période sélectionnée, après validation et confirmation du paiement."
+  ],
+  [
+    "Landcode, bijvoorbeeld FR of NL",
+    "Country code, for example FR or NL",
+    "Code pays, par exemple FR ou NL"
+  ],
+  [
+    "Beheeraanvragen & correctiemeldingen",
+    "Management requests & corrections",
+    "Demandes de gestion et corrections"
+  ],
+  [
+    "Bezoekers & advertentiebereik",
+    "Visitors & advertising reach",
+    "Visiteurs et portée des publicités"
+  ],
+  [
+    "Weet je zeker dat je “{0}” definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "Are you sure you want to permanently delete “{0}”? This cannot be undone.",
+    "Voulez-vous vraiment supprimer définitivement « {0} » ? Cette action est irréversible."
+  ],
+  [
+    "Alle {0} wachtende imports goedkeuren? Ze worden openbaar zichtbaar. Dit geldt voor alle categorieën en alle pagina’s, ook buiten je zoekfilters. Handmatige inzendingen worden niet meegenomen.",
+    "Approve all {0} pending imports? They will become public. This applies to every category and page, including those outside your search filters. Manual submissions are excluded.",
+    "Valider les {0} imports en attente ? Ils deviendront publics. Cela concerne toutes les catégories et toutes les pages, y compris en dehors de vos filtres de recherche. Les propositions manuelles ne sont pas incluses."
+  ],
+  [
+    "Je bewerkt nu: {0}",
+    "You are editing: {0}",
+    "Vous gérez actuellement : {0}"
+  ],
+  [
+    "Welke evenementenkalender wil je beheren?",
+    "Which events calendar would you like to manage?",
+    "Quel agenda souhaitez-vous gérer ?"
+  ],
+  [
+    "Open beheer van {0} →",
+    "Open administration for {0} →",
+    "Ouvrir l’administration de {0} →"
+  ],
+  [
+    " voor de website van de aanbieder.",
+    " for the provider’s website.",
+    " pour le site du prestataire."
+  ]
 ]

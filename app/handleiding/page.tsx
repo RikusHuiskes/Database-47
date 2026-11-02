@@ -30,7 +30,7 @@ export default function VisitorGuide(){return <main className="region-introducti
   <h3><T>{"De details bekijken"}</T></h3><ol>
     <li><T>{"Klik op de titel, de foto of "}</T><strong><T>{"Bekijk evenementdetails"}</T></strong><T>{"."}</T></li>
     <li><T>{"Lees de beschrijving, datum, locatie en eventuele prijs."}</T></li>
-    <li><T>{"Gebruik, indien aanwezig: "}</T><strong><T>{"Reserveren"}</T></strong><T>{" om naar de reserveringspagina te gaan; "}</T><strong><T>{"Website organisator"}</T></strong><T>{" voor de website van de aanbieder; "}</T><strong><T>{"Oorspronkelijke informatie"}</T></strong><T>{" om de bron te bekijken."}</T></li>
+    <li><T>{"Gebruik, indien aanwezig: "}</T><strong><T>{"Reserveren"}</T></strong><T>{" om naar de reserveringspagina te gaan; "}</T><strong><T>{"Website organisator"}</T></strong><T>{" voor de website van de aanbieder."}</T></li>
     <li><T>{"Klik op "}</T><strong><T>{"Terug naar de agenda"}</T></strong><T>{" of op het "}</T><strong><T>{"kruisje rechtsboven"}</T></strong><T>{" om het detailvenster te sluiten."}</T></li>
   </ol><p><T>{"Externe websites openen in een nieuw tabblad. Reserveren gebeurt bij de aanbieder. Controleer daar de actuele beschikbaarheid, openingstijden en prijzen."}</T></p><p><T>{"Bij een vaste vermelding, zoals een accommodatie of bedrijf, staat niet altijd een evenementdatum."}</T></p><a className="manual-action" href="/#agenda"><T>{"Zoek in de agenda →"}</T></a></section>
 

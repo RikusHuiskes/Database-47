@@ -1,18 +1,23 @@
 {
-  "generatedAt": "2026-11-02T14:54:07.778Z",
+  "generatedAt": "2026-11-02T16:02:16.891Z",
   "ui": {
     "en": {
-      "sourceTexts": 3662,
-      "translated": 3860,
+      "sourceTexts": 3472,
+      "translated": 3673,
       "missing": 0
     },
     "fr": {
-      "sourceTexts": 3662,
-      "translated": 3860,
+      "sourceTexts": 3472,
+      "translated": 3673,
       "missing": 0
     }
   },
   "content": {
+    "nl": {
+      "sourceTexts": 17524,
+      "translated": 17506,
+      "missing": 0
+    },
     "en": {
       "sourceTexts": 17524,
       "translated": 17506,

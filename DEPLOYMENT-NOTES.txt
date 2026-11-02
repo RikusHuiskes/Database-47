@@ -1,0 +1,23 @@
+Preview project separation
+
+The repository is connected to database-47, cote-de-duras-app,
+cote-de-libourne and cote-de-sarlat. A Duras feature commit previously triggered
+all four. The Libourne/Sarlat project build commands reference prepare-region.mjs,
+which belongs to their separate regional branch and is absent from the Duras
+branch. Those unrelated builds failed with module_not_found while Duras was READY.
+
+The two regional projects now ignore only feature/tourisme-duras-enrichment:
+  [ "$VERCEL_GIT_COMMIT_REF" = "feature/tourisme-duras-enrichment" ]
+Exit 0 skips that unrelated build; other branches continue normally. Duras and
+the browser-app project retain normal builds and failure notifications.
+No production domain, protection rule, credential or notification preference
+was changed. Check all connected projects after pushing a preview.
+
+Public event presentation
+
+Visitor cards and detail dialogs expose organiser/booking links, not import
+source links. CSV, JSON, XML, spreadsheet and archive dataset links are rejected
+even if mistakenly stored in website_url or booking_url. The public event API
+omits source_url. Administrator records and import metadata remain unchanged.
+SIRTAQUI import footers are omitted from displayed descriptions. Photo credits
+and municipal-service sources are separate and retain their existing display.

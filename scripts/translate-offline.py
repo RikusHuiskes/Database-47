@@ -7,6 +7,8 @@ if os.name=='nt':
     dlls=[os.add_dll_directory(str(root/'work/translation-runtime/vclibs')),os.add_dll_directory(str(root/'work/translation-runtime/Lib/site-packages/ctranslate2'))]
 import ctranslate2,sentencepiece
 mode=sys.argv[1] if len(sys.argv)>1 else 'ui'
+dutch_only=mode=='nl'
+if dutch_only:mode='content'
 source=json.loads((root/f'work/translations/{"ui" if mode=="ui" else "content"}-source.json').read_text('utf8'))
 source=list(dict.fromkeys(re.sub(r'\s+',' ',s).strip() for s in source if s.strip()))
 if mode=='content':
@@ -23,7 +25,7 @@ segment_cache=json.loads(segment_source.read_text('utf8')) if segment_source.exi
 def engine(pair):
     if pair not in models:
         folder=next((root/'work/translation-models'/pair).glob('*/sentencepiece.model')).parent
-        models[pair]=(ctranslate2.Translator(str(folder/'model'),device='cpu',compute_type='int8',inter_threads=(2 if mode=='content' else 1),intra_threads=1),sentencepiece.SentencePieceProcessor(model_file=str(folder/'sentencepiece.model')))
+        models[pair]=(ctranslate2.Translator(str(folder/'model'),device='cpu',compute_type='int8',inter_threads=(2 if mode=='content' else 1),intra_threads=(2 if dutch_only else 1)),sentencepiece.SentencePieceProcessor(model_file=str(folder/'sentencepiece.model')))
     return models[pair]
 def translate_batch(texts,pair):
     memory=segment_cache.setdefault(pair,{})
@@ -34,7 +36,7 @@ def translate_batch(texts,pair):
     if not pending:return [memory[s] for s in texts]
     model,tokenizer=engine(pair)
     tokens=[tokenizer.encode(s,out_type=str) for s in pending]
-    results=model.translate_batch(tokens,beam_size=2,max_batch_size=16,batch_type='examples',max_input_length=512,max_decoding_length=512,repetition_penalty=1.0)
+    results=model.translate_batch(tokens,beam_size=(1 if dutch_only else 2),max_batch_size=(64 if dutch_only else 16),batch_type='examples',max_input_length=512,max_decoding_length=(256 if dutch_only else 512),repetition_penalty=(1.1 if dutch_only else 1.0))
     for text,result in zip(pending,results):memory[text]=tokenizer.decode_pieces(result.hypotheses[0]).replace('▁',' ').strip()
     return [memory[s] for s in texts]
 def pieces(text):
@@ -51,16 +53,20 @@ start=time.time()
 def save():
     temporary=cachefile.with_suffix('.tmp');temporary.write_text(json.dumps(cache,ensure_ascii=False),encoding='utf8');temporary.replace(cachefile)
     temporary=segmentfile.with_suffix('.tmp');temporary.write_text(json.dumps(segment_cache,ensure_ascii=False),encoding='utf8');temporary.replace(segmentfile)
-remaining=[s for s in source if s not in cache]
+remaining=[s for s in source if s not in cache or dutch_only and 'nl' not in cache[s]]
 print(mode,'texts',len(source),'remaining',len(remaining),flush=True)
 for offset in range(0,len(remaining),96):
     batch=remaining[offset:offset+96]
     print(mode,'classifying',offset,flush=True)
-    entries=[(s,language(s),pieces(s)) for s in batch]
+    entries=[(s,language(re.sub(r'\s*(?:Bron|Source)\s*:\s*SIRTAQUI\b.*$','',s,flags=re.I)) if dutch_only else language(s),pieces(s)) for s in batch]
+    if dutch_only:
+        for text,lang,_ in entries:
+            if lang=='nl':cache.setdefault(text,{})['nl']=text
+        entries=[(text,'en',pieces(re.sub(r'\s*(?:Bron|Source)\s*:\s*SIRTAQUI\b.*$','',cache[text]['en'],flags=re.I))) for text,lang,_ in entries if lang!='nl']
     print(mode,'classified',offset,flush=True)
     for s,lang,parts in entries:
-        cache[s]={'en':s,'fr':s}
-    for origin in ['nl','fr','en']:
+        cache.setdefault(s,{'en':s,'fr':s})
+    for origin in (['en'] if dutch_only else ['nl','fr','en']):
         positions=[(s,i,p) for s,lang,parts in entries if lang==origin for i,p in enumerate(parts) if p.strip() and not re.fullmatch(r'[\U0001f000-\U0001ffff\u2600-\u27bf\ufe0f]+',p) and not re.fullmatch(r'\{\d+\}|https?://\S+|[\w.+-]+@[\w.-]+\.\w+|\n+',p)]
         if not positions:continue
         # Split at sentences before reaching the model's token window; never silently truncate.
@@ -81,18 +87,18 @@ for offset in range(0,len(remaining),96):
         print(mode,origin,'segments',len(strings),'characters',sum(map(len,strings)),flush=True)
         english=strings if origin=='en' else translate_batch(strings,f'{origin}_en')
         print(mode,origin,'English ready',flush=True)
-        french=strings if origin=='fr' else translate_batch(english,'en_fr')
+        french=translate_batch(english,'en_nl') if dutch_only else strings if origin=='fr' else translate_batch(english,'en_fr')
         assembled={}
         for (s,i,p),en,fr in zip(expanded,english,french):
             assembled.setdefault((s,i),{'en':[],'fr':[]})['en'].append(en)
             assembled[(s,i)]['fr'].append(fr)
         for s,lang,parts in entries:
             if lang!=origin:continue
-            for target in ['en','fr']:
+            for target in (['nl'] if dutch_only else ['en','fr']):
                 translated=[]
                 for i,p in enumerate(parts):
                     if (s,i) in assembled:
-                        value=' '.join(assembled[(s,i)][target]);translated.append((' ' if p.startswith(' ') else '')+value+(' ' if p.endswith(' ') else ''))
+                        value=' '.join(assembled[(s,i)]['fr' if dutch_only else target]);translated.append((' ' if p.startswith(' ') else '')+value+(' ' if p.endswith(' ') else ''))
                     else:translated.append(p)
                 cache[s][target]=''.join(translated)
     save()

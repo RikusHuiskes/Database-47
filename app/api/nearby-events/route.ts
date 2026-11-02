@@ -1,3 +1,4 @@
+import {visitorEventData} from '../../../lib/public-event-links';
 import { NextRequest, NextResponse } from "next/server";
 import {localizePublicData,requestLocale} from '../../../lib/public-translations';
 import { createClient } from "@supabase/supabase-js";
@@ -193,5 +194,5 @@ export async function GET(request: NextRequest) {
   const reserved=(reservedResult.data??[]).map((record:EventRecord)=>{const {event_categories,...event}=record;const category_ids=(event_categories??[]).map(link=>link.category_id);return {...event,start_at:event.start_at??'',category_ids,category_id:category_ids[0]??null};});
   const placements=promotionPlacements([...events,...reserved],category??'all');
   const homepage_promotions=placements.homepage,category_promotions=placements.category;
-  return NextResponse.json(localizePublicData({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount },requestLocale(request)),{headers:{Vary:'Cookie'}});
+  return NextResponse.json(visitorEventData(localizePublicData({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount },requestLocale(request))),{headers:{Vary:'Cookie'}});
 }

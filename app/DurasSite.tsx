@@ -1,6 +1,7 @@
 "use client";
 import {T, A, useLanguage} from './i18n/Language';
 
+import {publicEventUrl} from '../lib/public-event-links';
 import {intlLocale,localizeMunicipalName} from '../lib/i18n';
 
 
@@ -652,7 +653,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
       radius: String(radiusKm),
       category: categoryFilter,
     });
-    void fetch(`/api/nearby-events?${params}&lang=nl`, {signal: controller.signal})
+    void fetch(`/api/nearby-events?${params}&lang=source`, {signal: controller.signal})
       .then(async (response) => {
         const result = await readApiJson<{ events?: NearbyEvent[]; homepage_promotions?: EventRow[]; category_promotions?: EventRow[]; error?: string; locationless_count?: number }>(response);
         if (!response.ok) throw new Error(result.error ?? "Evenementen konden niet worden geladen.");
@@ -681,7 +682,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
     if(newListingOnly)return;
     const controller=new AbortController();
     let active=true;
-    void fetch('/api/promotions?'+new URLSearchParams({category:categoryFilter,lang:"nl"}),{signal:controller.signal})
+    void fetch('/api/promotions?'+new URLSearchParams({category:categoryFilter,lang:"source"}),{signal:controller.signal})
       .then(async response=>{
         const result=await readApiJson<{homepage_promotions?:EventRow[];category_promotions?:EventRow[];error?:string}>(response);
         if(!response.ok)throw new Error(result.error??'Advertenties konden niet worden geladen.');
@@ -2098,12 +2099,10 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                 <T>{(event.short_description || event.description) && <p className="activity-description"><T>{event.short_description || event.description}</T></p>}</T>
                 <div className="activity-links">
                   <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T>{"Bekijk evenementdetails "}</T><span aria-hidden="true"><T>{"→"}</T></span></button>
-                  <T>{safeHttpUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
-                  <T>{safeHttpUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
-                  <T>{safeHttpUrl(event.source_url) && <a className="activity-link" data-analytics-channel="source" href={safeHttpUrl(event.source_url)!} target="_blank" rel="noreferrer"><T>{"Meer informatie "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                  <T>{publicEventUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={publicEventUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                  <T>{publicEventUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={publicEventUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
                 </div>
                 <p className="external-link-note"><T>{"Externe pagina’s openen in een nieuw tabblad; deze agenda blijft open."}</T></p>
-                <T>{event.source_url && <p className="activity-source"><T>{"Bron: "}</T><T>{sourceLabel(event.source_url)}</T></p>}</T>
               </div>
             </article>
           ))}</T>
@@ -2507,8 +2506,8 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                   <T>{(event.short_description || event.description) && <p className="import-event-description"><T>{event.short_description || event.description}</T></p>}</T>
                   <div className="import-event-meta">
                     <T>{event.contact_phone && <span><T>{"Tel. "}</T><T preserve>{event.contact_phone}</T></span>}</T>
-                    <T>{safeHttpUrl(event.website_url) && <a data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</T></a>}</T>
-                    <T>{safeHttpUrl(event.booking_url) && <a data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren"}</T></a>}</T>
+                    <T>{publicEventUrl(event.website_url) && <a data-analytics-channel="website" href={publicEventUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{event.source_url.includes("eymet-dordogne.fr") ? "Aanvullende evenementpagina" : "Website organisator"}</T></a>}</T>
+                    <T>{publicEventUrl(event.booking_url) && <a data-analytics-channel="booking" href={publicEventUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren"}</T></a>}</T>
                   </div>
                   <p className="import-category-suggestion"><strong><T>{"Voorgestelde categorie:"}</T></strong> <T>{categories.find((category) => category.id === event.category_id)?.name ?? "Nog te bepalen"}</T><T>{". Je kunt deze na import wijzigen via BEWERKEN."}</T></p>
                   <a className="import-source-link" href={event.source_url} target="_blank" rel="noreferrer"><T>{"Oorspronkelijke bron bekijken ↗ "}</T><span><T>{sourceLabel(event.source_url)}</T></span></a>
@@ -2591,8 +2590,8 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
           )}</T>
           <T>{event.contact_phone && <p><T>{"Telefoon: "}</T><a href={`tel:${event.contact_phone.replace(/[^+\d]/g, "")}`}><T preserve>{event.contact_phone}</T></a></p>}</T>
           <T>{event.is_manual_entry && <div><button type="button" onClick={()=>void createOwnerLink(event)}><T>{"Persoonlijke beheerlink voor inzender maken"}</T></button><T>{managementLink.includes(event.id+":")&&<label><T>{"Alleen delen met de geverifieerde inzender"}</T><input style={inputStyle} readOnly value={managementLink} onFocus={e=>e.target.select()}/></label>}</T></div>}</T>
-          <T>{safeHttpUrl(event.website_url) && <p><a data-analytics-channel="website" href={safeHttpUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website"}</T></a></p>}</T>
-          <T>{safeHttpUrl(event.booking_url) && <p><a data-analytics-channel="booking" href={safeHttpUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren"}</T></a></p>}</T>
+          <T>{publicEventUrl(event.website_url) && <p><a data-analytics-channel="website" href={publicEventUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website"}</T></a></p>}</T>
+          <T>{publicEventUrl(event.booking_url) && <p><a data-analytics-channel="booking" href={publicEventUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren"}</T></a></p>}</T>
           <T>{event.source_category && <p><T>{"Type bij bron: "}</T><T>{event.source_category}</T></p>}</T>
           <T>{event.organizer_name && <p><T>{"Organisator: "}</T><T>{event.organizer_name}</T></p>}</T>
           <T>{event.source_url && <p><T>{"Bron: "}</T><T>{sourceLabel(event.source_url)}</T></p>}</T>
@@ -2910,12 +2909,10 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
               <T>{(selectedVisitorEvent.short_description || selectedVisitorEvent.description) && <p className="event-detail-description"><T>{selectedVisitorEvent.description || selectedVisitorEvent.short_description}</T></p>}</T>
               <T>{selectedVisitorEvent.is_free ? <p className="event-detail-price"><T>{"Gratis"}</T></p> : selectedVisitorEvent.price_from != null ? <p className="event-detail-price"><T>{"Vanaf €"}</T><T>{Number(selectedVisitorEvent.price_from).toFixed(2)}</T><T>{selectedVisitorEvent.price_to != null ? ` tot €${Number(selectedVisitorEvent.price_to).toFixed(2)}` : ""}</T></p> : null}</T>
               <div className="event-detail-links">
-                <T>{safeHttpUrl(selectedVisitorEvent.booking_url) && <a className="event-detail-primary" data-analytics-channel="booking" href={safeHttpUrl(selectedVisitorEvent.booking_url)!} target="_blank" rel="noopener noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
-                <T>{safeHttpUrl(selectedVisitorEvent.website_url) && <a data-analytics-channel="website" href={safeHttpUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer"><T>{"Website organisator "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
-                <T>{safeHttpUrl(selectedVisitorEvent.source_url) && <a data-analytics-channel="source" href={safeHttpUrl(selectedVisitorEvent.source_url)!} target="_blank" rel="noopener noreferrer"><T>{"Oorspronkelijke informatie "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                <T>{publicEventUrl(selectedVisitorEvent.booking_url) && <a className="event-detail-primary" data-analytics-channel="booking" href={publicEventUrl(selectedVisitorEvent.booking_url)!} target="_blank" rel="noopener noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                <T>{publicEventUrl(selectedVisitorEvent.website_url) && <a data-analytics-channel="website" href={publicEventUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer"><T>{"Website organisator "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
               </div>
               <p className="event-detail-note"><T>{"Externe pagina’s openen in een nieuw tabblad. Je kunt hierna direct terug naar de agenda."}</T></p>
-              <T>{selectedVisitorEvent.source_url && <p className="activity-source"><T>{"Bron: "}</T><T>{sourceLabel(selectedVisitorEvent.source_url)}</T></p>}</T>
               <ListingRequestForm key={selectedVisitorEvent.id} eventId={selectedVisitorEvent.id} title={selectedVisitorEvent.title}/><button className="event-detail-back event-detail-back-bottom" type="button" onClick={closeVisitorEvent}><span aria-hidden="true"><T>{"←"}</T></span><T>{" Terug naar de agenda"}</T></button>
             </div>
           </section>
