@@ -24,7 +24,7 @@ export default function EventAdvertisingExamples({value,onChange,months,onMonths
  const [otherCategory,setOtherCategory]=useState('');
  const total=value.reduce((sum,type)=>sum+MONTHLY_PRICES[type]*months,0);
  const chosen=(type:Choice)=>type==='none'?value.length===0:value.includes(type);
- const toggle=(type:Choice)=>{onChange(type==='none'?[]:chosen(type)?value.filter(item=>item!==type):[...value,type]);if(type==='homepage'||type==='category')setViewPage(type);};
+ const toggle=(type:Choice)=>{const adding=type!=='none'&&!chosen(type);onChange(type==='none'?[]:chosen(type)?value.filter(item=>item!==type):[...value,type]);if(adding){if(type==='homepage')setViewPage('homepage');else{setViewPage('category');setOtherCategory('');}}};
  const sameCategory=!otherCategory||categories.find(item=>item.id===otherCategory)?.name===category;
  const bold=value.includes('highlight')&&sameCategory;
  const categoryAd=value.includes('category')&&sameCategory&&viewPage==='category';
