@@ -19,6 +19,10 @@ export default function CoteDeDurasAdvertisement({
   variant: AdvertisementVariant;
   categoryName?: string;
 }) {
+  const advertisingHref = placement === 'municipal'
+    ? '/gemeentegids/adverteren'
+    : '/evenement/nieuw';
+
   return (
     <article className={`cote-preview-ad cote-preview-ad--${variant}`} aria-label="Côte de Duras">
       <div className="cote-preview-ad-logo"><A><img src="/cote-de-duras-logo.webp" alt="" loading="lazy" /></A></div>
@@ -29,7 +33,7 @@ export default function CoteDeDurasAdvertisement({
         </p>
         <h3><T preserve>{'CÔTE DE DURAS'}</T></h3>
         <p><T>{'Leven, beleven en ontdekken in het zuidwesten'}</T></p>
-        <a className="cote-preview-ad-cta" href="/de-streek-beleven"><T>{'Ontdek →'}</T></a>
+        <a className="cote-preview-ad-cta" href={advertisingHref}><T>{'Ontdek →'}</T></a>
       </div>
     </article>
   );
