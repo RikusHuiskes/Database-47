@@ -4,7 +4,7 @@ import {localizePublicData,requestLocale} from '../../../lib/public-translations
 import { createClient } from "@supabase/supabase-js";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { savedCommuneCenter } from "../../../lib/commune-center";
-import { uniqueEventRecords, promotionPlacements } from "../../../lib/event-presentation";
+import { isDemoLayoutAdvertisement, uniqueEventRecords, promotionPlacements } from "../../../lib/event-presentation";
 
 export const revalidate = 0;
 
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
     const category_ids = (event_categories ?? []).map(link => link.category_id);
     return { ...event, start_at:event.start_at??'', category_id: category_ids[0] ?? null, category_ids };
   })
-    .filter((event) => isUpcoming(event, now) && (!category || category==='all' || event.category_ids.includes(category)));
+    .filter((event) => !isDemoLayoutAdvertisement(event) && isUpcoming(event, now) && (!category || category==='all' || event.category_ids.includes(category)));
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
   const results = await Promise.all(upcoming.map(async (event) => {
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
   reservedQuery=category&&category!=='all'?reservedQuery.eq('reserved_category_id',category):reservedQuery.eq('reserved_homepage',true);
   const reservedResult=await reservedQuery.limit(1);
   if(reservedResult.error)return NextResponse.json({error:'Advertentieplaatsen konden niet worden geladen.'},{status:502});
-  const reserved=(reservedResult.data??[]).map((record:EventRecord)=>{const {event_categories,...event}=record;const category_ids=(event_categories??[]).map(link=>link.category_id);return {...event,start_at:event.start_at??'',category_ids,category_id:category_ids[0]??null};});
+  const reserved=(reservedResult.data??[]).filter((record:EventRecord)=>!isDemoLayoutAdvertisement(record)).map((record:EventRecord)=>{const {event_categories,...event}=record;const category_ids=(event_categories??[]).map(link=>link.category_id);return {...event,start_at:event.start_at??'',category_ids,category_id:category_ids[0]??null};});
   const placements=promotionPlacements([...events,...reserved],category??'all');
   const homepage_promotions=placements.homepage,category_promotions=placements.category;
   return NextResponse.json(visitorEventData(localizePublicData({ events, homepage_promotions, category_promotions, radius_km: radiusKm, locationless_count: locationlessCount },requestLocale(request))),{headers:{Vary:'Cookie'}});

@@ -15,6 +15,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin-import-sources';
 import FloatingPromotions from './components/FloatingPromotions';
+import CoteDeDurasAdvertisement from './components/CoteDeDurasAdvertisement';
 import AdvertiserFields from "./components/AdvertiserFields";
 import EventAdvertisingExamples from "./components/EventAdvertisingExamples";
 import NewEventExperience from "./components/NewEventExperience";
@@ -333,7 +334,7 @@ function sourceLabel(value?: string | null): string {
   }
 }
 
-export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolean}) {
+export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean}) {
   const {locale,t}=useLanguage();
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
   const [municipalityInView,setMunicipalityInView]=useState(false);
@@ -2065,7 +2066,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
         <T>{locationNotice&&<p className="location-fallback-note" role="status"><T>{locationNotice}</T></p>}</T>
       </section>
 
-      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm||municipalityInView} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
+      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm||municipalityInView} previewSample={previewAdSamplesEnabled?{placement:categoryFilter==='all'?'homepage':'category',categoryName:categoryFilter==='all'?undefined:categories.find(category=>category.id===categoryFilter)?.name}:undefined} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
 
       <A><section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
         <T>{nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}><T>{nearbyError}</T></p>}</T>
@@ -2075,6 +2076,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
         <T>{locationlessCount > 0 && <p className="location-note"><T>{locationlessCount}</T><T>{" aankomende "}</T><T>{locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"}</T><T>{" nog geen herkenbare plaats en kan daarom niet op afstand worden getoond."}</T></p>}</T>
 
         <A><div className="event-grid" aria-label="Aankomende activiteiten">
+          {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="highlight" placement="highlight" categoryName={categoryFilter==='all'?undefined:categories.find(category=>category.id===categoryFilter)?.name}/>}
           <T>{displayedNearbyEvents.map((event) => (
             <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard"} className={`activity-card${hasAdvertisingPlacement(event,"highlight") ? " activity-card-highlighted" : ""}`} key={event.id}>
               <T>{hasAdvertisingPlacement(event,"highlight") && <div className="activity-highlight-banner"><T>{"Uitgelichte advertentie"}</T></div>}</T>
@@ -2177,14 +2179,17 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
           <T>{municipalityServicesError && <p className="municipality-feedback municipality-feedback-error" role="alert"><T>{municipalityServicesError}</T></p>}</T>
           <T>{municipalityServicesLoading && <p className="municipality-feedback" role="status"><T>{municipalityServiceType === "all" ? `We verzamelen nu alle gemeentelijke diensten voor ${municipalityName}, inclusief voorzieningen in de directe omgeving.` : `We zoeken ${municipalityServiceLabel.toLocaleLowerCase(intlLocale[locale])} ${municipalityServiceRadiusKm[municipalityServiceType] > 0 ? `in ${municipalityName} en tot ${municipalityServiceRadiusKm[municipalityServiceType]} km eromheen` : `in de gemeente ${municipalityName}`}.`}</T></p>}</T>
           <T>{municipalitySearchComplete && municipalityServiceType === "emergency" && (
-            <A><div className="emergency-number-grid" aria-label="Franse noodnummers">
-              <T>{frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
-                <A><a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}><T>{item.number}</T></a></A>
-                <strong><T>{item.name}</T></strong>
-                <span><T>{item.note}</T></span>
-              </article>)}</T>
-              <p className="municipality-source-note"><T>{"Deze Franse noodnummers gelden ook in "}</T><T>{municipalityName}</T><T>{". "}</T><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer"><T>{"Officiële informatie van Service-Public"}</T></a><T>{"."}</T></p>
-            </div></A>
+            <>
+              <A><div className="emergency-number-grid" aria-label="Franse noodnummers">
+                <T>{frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
+                  <A><a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}><T>{item.number}</T></a></A>
+                  <strong><T>{item.name}</T></strong>
+                  <span><T>{item.note}</T></span>
+                </article>)}</T>
+                <p className="municipality-source-note"><T>{"Deze Franse noodnummers gelden ook in "}</T><T>{municipalityName}</T><T>{". "}</T><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer"><T>{"Officiële informatie van Service-Public"}</T></a><T>{"."}</T></p>
+              </div></A>
+              {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="municipal" placement="municipal" categoryName={municipalityServiceLabel}/>}
+            </>
           )}</T>
           <T>{municipalitySearchComplete && municipalityServiceType !== "emergency" && municipalityServiceInfo && (
             <div className={`municipality-result-layout${municipalityServiceInfo.municipalPartners?.length?' has-partners':''}`}><div className="municipality-results" aria-live="polite">
@@ -2200,6 +2205,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                     </article>)}</T>
                   </div></A>
                   <p className="municipality-source-note"><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer"><T>{"Officiële informatie van Service-Public"}</T></a><T>{"."}</T></p>
+                  {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="municipal" placement="municipal" categoryName={option.label}/>}
                 </section>);
                   const groupEntries = municipalityServiceEntries.filter((service) => service.type === option.id);
                   const equipmentCount = municipalityServiceInfo.officialEquipmentCounts?.find((item) => item.service === option.id);
@@ -2220,6 +2226,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                         <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${option.label} ${municipalityName}`)}`} target="_blank" rel="noreferrer"><T>{"OpenStreetMap "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>
                       </div>
                     </div>}</T>
+                    {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="municipal" placement="municipal" categoryName={option.label}/>}
                   </section>;
                 })}</T>
 
@@ -2237,6 +2244,7 @@ export default function DurasSite({newListingOnly=false}:{newListingOnly?:boolea
                     <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`} target="_blank" rel="noreferrer"><T>{"OpenStreetMap "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>
                   </div>
                 </div>}</T>
+                {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="municipal" placement="municipal" categoryName={municipalityServiceLabel}/>}
               </>}</T>
               <p className="municipality-source-note"><T>{"Geraadpleegd op "}</T><T>{new Date(municipalityServiceInfo.updatedAt).toLocaleDateString(intlLocale[locale])}</T><T>{". "}</T><T>{municipalityServiceInfo.sources?.length ? <><T>{" Controleer ook deze aanvullende bronnen:"}</T><T>{municipalityServiceInfo.sources.map((source) => <span key={source.url}> <a href={safeHttpUrl(source.url) ?? "#"} target="_blank" rel="noreferrer"><T>{source.name}</T> <span aria-hidden="true"><T>{"↗"}</T></span></a><T>{"."}</T></span>)}</T></> : null}</T>
                 <T>{municipalityServiceType !== "mairie" && municipalityServiceEntries.some((service) => service.sourceName === "OpenStreetMap") && municipalityServiceInfo.mapDataAvailable && <><T>{" Aanvullende kaartgegevens: © OpenStreetMap-bijdragers."}</T></>}</T>

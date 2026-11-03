@@ -1,11 +1,13 @@
 "use client";
 import {T, A} from '../i18n/Language';
+import CoteDeDurasAdvertisement from './CoteDeDurasAdvertisement';
 
 import {useEffect,useState} from 'react';
 import {createPortal} from 'react-dom';
 
 type Promotion={id:string;title:string;image_url?:string|null;city?:string|null;short_description?:string|null;description?:string|null};
-export default function FloatingPromotions<T extends Promotion>({events,headingId,title,onOpen,suppressed=false}:{events:T[];headingId:string;title:string;onOpen:(event:T)=>void;suppressed?:boolean}){
+type PreviewSample={placement:'homepage'|'category';categoryName?:string};
+export default function FloatingPromotions<T extends Promotion>({events,headingId,title,onOpen,suppressed=false,previewSample}:{events:T[];headingId:string;title:string;onOpen:(event:T)=>void;suppressed?:boolean;previewSample?:PreviewSample}){
   const [index,setIndex]=useState(0),[count,setCount]=useState(1),[reduced,setReduced]=useState(false),[wide,setWide]=useState(false),[mounted,setMounted]=useState(false);
   useEffect(()=>{
     const wideViewport=matchMedia('(min-width: 900px)'),motion=matchMedia('(prefers-reduced-motion: reduce)');
@@ -13,18 +15,19 @@ export default function FloatingPromotions<T extends Promotion>({events,headingI
     wideViewport.addEventListener('change',update);motion.addEventListener('change',update);
     return()=>{wideViewport.removeEventListener('change',update);motion.removeEventListener('change',update);};
   },[]);
-  const visible=!suppressed&&events.length>0;
+  const displayCount=previewSample?Math.max(1,count-1):count;
+  const visible=!suppressed&&(events.length>0||!!previewSample);
   useEffect(()=>{
-    if(!visible||reduced||events.length<=count)return;
-    const timer=setInterval(()=>{if(document.visibilityState==='visible')setIndex(value=>(value+count)%events.length);},8000);
+    if(!visible||reduced||events.length<=displayCount)return;
+    const timer=setInterval(()=>{if(document.visibilityState==='visible')setIndex(value=>(value+displayCount)%events.length);},8000);
     return()=>clearInterval(timer);
-  },[visible,reduced,events.length,count]);
-  if(!events.length)return null;
-  const shown=Array.from({length:Math.min(count,events.length)},(_,offset)=>events[(index+offset)%events.length]);
+  },[visible,reduced,events.length,displayCount]);
+  if(!events.length&&!previewSample)return null;
+  const shown=Array.from({length:Math.min(displayCount,events.length)},(_,offset)=>events[(index+offset)%events.length]);
   const sidebar=<A><aside className="promotion-sidebar" aria-label="Uitgelichte advertenties" hidden={!visible}>
     <div className="floating-promotion-heading"><div><small className="carousel-kicker"><T>{"Lokale partners · Advertenties"}</T></small><h2 id={headingId}><T>{title}</T></h2></div></div>
-    <div className="floating-promotion-cards"><T>{shown.map(event=><button className="floating-promotion-card" type="button" key={event.id} onClick={()=>onOpen(event)}><T>{event.image_url&&/^https?:\/\//i.test(event.image_url)&&<A><img src={event.image_url} alt=""/></A>}</T><span className="floating-promotion-copy"><small className="floating-promotion-label"><T>{headingId==='homepage-promotion-heading'?'Homepagepartner':'Categoriepartner'}</T><T>{event.city?' · '+event.city:''}</T></small><strong><T>{event.title}</T></strong><span className="floating-promotion-description"><T>{event.short_description||event.description||'Ontdek deze lokale partner en bekijk alle informatie.'}</T></span><span className="floating-promotion-cta"><T>{"Ontdek →"}</T></span></span></button>)}</T></div>
-    <p className="carousel-position" aria-live="off"><T>{reduced?'Rustige weergave · ':'Wisselt automatisch · '}</T><T>{index%events.length+1}</T><T>{" van "}</T><T>{events.length}</T></p>
+    <div className="floating-promotion-cards">{previewSample&&<CoteDeDurasAdvertisement variant="rail" placement={previewSample.placement} categoryName={previewSample.categoryName}/>}<T>{shown.map(event=><button className="floating-promotion-card" type="button" key={event.id} onClick={()=>onOpen(event)}><T>{event.image_url&&/^https?:\/\//i.test(event.image_url)&&<A><img src={event.image_url} alt=""/></A>}</T><span className="floating-promotion-copy"><small className="floating-promotion-label"><T>{headingId==='homepage-promotion-heading'?'Homepagepartner':'Categoriepartner'}</T><T>{event.city?' · '+event.city:''}</T></small><strong><T>{event.title}</T></strong><span className="floating-promotion-description"><T>{event.short_description||event.description||'Ontdek deze lokale partner en bekijk alle informatie.'}</T></span><span className="floating-promotion-cta"><T>{"Ontdek →"}</T></span></span></button>)}</T></div>
+    {events.length>displayCount&&<p className="carousel-position" aria-live="off"><T>{reduced?'Rustige weergave · ':'Wisselt automatisch · '}</T><T>{index%events.length+1}</T><T>{" van "}</T><T>{events.length}</T></p>}
   </aside></A>;
   if(wide&&mounted)return createPortal(sidebar,document.body);
   return <A><section className="promotion-sidebar-slot" aria-label={title}><T>{sidebar}</T></section></A>;

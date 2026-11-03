@@ -2,10 +2,10 @@ import {visitorEventData} from '../../../lib/public-event-links';
 import {NextRequest,NextResponse} from 'next/server';
 import {localizePublicData,requestLocale} from '../../../lib/public-translations';
 import {createClient} from '@supabase/supabase-js';
-import {promotionPlacements} from '../../../lib/event-presentation';
+import {isDemoLayoutAdvertisement,promotionPlacements} from '../../../lib/event-presentation';
 
 export const revalidate=0;
-type PromotionRecord={id:string;start_at:string|null;event_categories?:{category_id:string}[];advertising_placements?:{placement:string;starts_at:string;ends_at:string}[]|null;promotion_type?:string|null;promotion_status?:string|null;promotion_start_at?:string|null;promotion_end_at?:string|null;reserved_homepage?:boolean;reserved_category_id?:string|null};
+type PromotionRecord={id:string;slug:string;start_at:string|null;event_categories?:{category_id:string}[];advertising_placements?:{placement:string;starts_at:string;ends_at:string}[]|null;promotion_type?:string|null;promotion_status?:string|null;promotion_start_at?:string|null;promotion_end_at?:string|null;reserved_homepage?:boolean;reserved_category_id?:string|null};
 
 /** Public advertising only: no ordinary results or geocoding on this path. */
 export async function GET(request:NextRequest){
@@ -23,7 +23,7 @@ export async function GET(request:NextRequest){
   if(category!=='all')query=query.eq('event_categories.category_id',category);
   const {data,error}=await query.order('id').limit(100);
   if(error)return NextResponse.json({error:'Advertenties konden niet worden geladen.'},{status:502});
-  const rows=((data??[]) as unknown as PromotionRecord[]).map(record=>{const {event_categories,...event}=record;return {...event,start_at:event.start_at??'',category_ids:(event_categories??[]).map(link=>link.category_id)};});
+  const rows=((data??[]) as unknown as PromotionRecord[]).filter(record=>!isDemoLayoutAdvertisement(record)).map(record=>{const {event_categories,...event}=record;return {...event,start_at:event.start_at??'',category_ids:(event_categories??[]).map(link=>link.category_id)};});
   const placements=promotionPlacements(rows,category);
   return NextResponse.json(visitorEventData(localizePublicData({homepage_promotions:placements.homepage,category_promotions:placements.category},requestLocale(request))),{headers:{Vary:'Cookie'}});
 }

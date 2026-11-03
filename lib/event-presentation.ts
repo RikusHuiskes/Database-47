@@ -12,6 +12,11 @@ type PresentedEvent = {
   reserved_category_id?: string | null;
 };
 
+/** Seeded layout samples are not real calendar events or paid advertisements. */
+export function isDemoLayoutAdvertisement(event: { slug?: string | null }) {
+ return typeof event.slug === 'string' && event.slug.startsWith('demo-layout-20261030-');
+}
+
 export function promotionIsActive(event:Pick<PresentedEvent,'promotion_status'|'promotion_start_at'|'promotion_end_at'>,now=new Date()){
   if(event.promotion_status!=='active')return false;
   const starts=event.promotion_start_at?Date.parse(event.promotion_start_at):Number.NEGATIVE_INFINITY;
