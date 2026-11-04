@@ -91,6 +91,11 @@ type SireneSearchResponse = {
   total_pages?: number;
 };
 
+type RppsDirectoryResponse = {
+  data?: Array<Record<string, unknown>>;
+  meta?: { total?: number; page_size?: number };
+};
+
 const serviceTypes = new Set([...SHOP_TYPES, "estate_agent",
   "all",
   "mairie",
@@ -327,6 +332,7 @@ function municipalReferenceSources(service: string, city: string, codeInsee: str
       return [
         { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
         { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Annuaire Santé — données RPPS officielles", url: "https://www.data.gouv.fr/datasets/annuaire-sante-extractions-des-donnees-en-libre-acces-des-professionnels-intervenant-dans-le-systeme-de-sante-rpps" },
         { name: "Doctolib — kinésithérapeutes", url: `https://www.doctolib.fr/masseur-kinesitherapeute/${slug}` },
         { name: "Kaartgegevens OpenStreetMap", url: osm },
       ];
@@ -336,6 +342,7 @@ function municipalReferenceSources(service: string, city: string, codeInsee: str
       return [
         { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
         { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Annuaire Santé — données RPPS officielles", url: "https://www.data.gouv.fr/datasets/annuaire-sante-extractions-des-donnees-en-libre-acces-des-professionnels-intervenant-dans-le-systeme-de-sante-rpps" },
         { name: "Doctolib — psychologues", url: `https://www.doctolib.fr/psychologue/${slug}` },
         { name: "Kaartgegevens OpenStreetMap", url: osm },
       ];
@@ -483,8 +490,6 @@ const SIRENE_ACTIVITY_TYPES: Partial<Record<string, string>> = {
   hospital: "86.10Z",
   dentist: "86.23Z",
   pharmacy: "47.73Z",
-  physiotherapist: "86.90E",
-  psychologist: "86.90F",
 };
 
 function sireneAddress(establishment: SireneEstablishment): string | undefined {
@@ -573,6 +578,153 @@ async function fetchSireneHealthServices(
             ? "Deze SIRENE-activiteitscode omvat psychologische en enkele verwante gezondheidsactiviteiten. Controleer het concrete beroep in Annuaire Santé of rechtstreeks bij de praktijk."
             : undefined,
       };
+    });
+  } catch {
+    return [];
+  }
+}
+
+const RPPS_HEALTH_DIRECTORY_URL = "https://tabular-api.data.gouv.fr/api/resources/fffda7e9-0ea2-4c35-bba0-4496f3af935d/data/";
+const RPPS_HEALTH_DATASET_URL = "https://www.data.gouv.fr/datasets/annuaire-sante-extractions-des-donnees-en-libre-acces-des-professionnels-intervenant-dans-le-systeme-de-sante-rpps";
+const RPPS_HEALTH_COLUMNS = [
+  "Identifiant PP",
+  "Code profession",
+  "Libellé profession",
+  "Nom d'exercice",
+  "Prénom d'exercice",
+  "Code genre activité",
+  "Code commune (coord. structure)",
+  "Libellé commune (coord. structure)",
+  "Complément destinataire (coord. structure)",
+  "Complément point géographique (coord. structure)",
+  "Numéro Voie (coord. structure)",
+  "Libellé type de voie (coord. structure)",
+  "Libellé Voie (coord. structure)",
+  "Code postal (coord. structure)",
+  "Téléphone (coord. structure)",
+  "Téléphone 2 (coord. structure)",
+  "Raison sociale site",
+  "Enseigne commerciale site",
+].join(",");
+
+function rppsText(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function rppsPersonName(value: unknown): string | undefined {
+  const name = rppsText(value);
+  if (!name) return undefined;
+  return name.toLocaleLowerCase("fr-FR").replace(/(^|[\s'-])\p{L}/gu, (part) => part.toLocaleUpperCase("fr-FR"));
+}
+
+function rppsPhone(value: unknown): string | undefined {
+  const raw = rppsText(value);
+  if (!raw) return undefined;
+  const digits = raw.replace(/\D/g, "");
+  const national = digits.startsWith("0033")
+    ? `0${digits.slice(4)}`
+    : digits.startsWith("33") && digits.length === 11
+      ? `0${digits.slice(2)}`
+      : digits;
+  if (national.length === 10 && national.startsWith("0")) return national.match(/.{1,2}/g)?.join(" ");
+  return raw;
+}
+
+function rppsAddress(row: Record<string, unknown>): string | undefined {
+  const complement = rppsText(row["Complément destinataire (coord. structure)"])
+    ?? rppsText(row["Complément point géographique (coord. structure)"]);
+  const number = rppsText(row["Numéro Voie (coord. structure)"]);
+  const streetType = rppsText(row["Libellé type de voie (coord. structure)"]);
+  const streetName = rppsText(row["Libellé Voie (coord. structure)"]);
+  const street = streetName
+    ? number && !streetName.startsWith(number)
+      ? [number, streetType, streetName].filter(Boolean).join(" ")
+      : streetName
+    : undefined;
+  return [
+    complement,
+    street,
+    rppsText(row["Code postal (coord. structure)"]),
+    rppsText(row["Libellé commune (coord. structure)"]),
+  ].filter(Boolean).join(", ") || undefined;
+}
+
+async function fetchRppsHealthServices(
+  codeInsee: string | undefined,
+  service: string,
+  selectedCity: string,
+): Promise<Array<{
+  id: string;
+  type: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  distanceKm?: number;
+  municipality: string;
+  inSelectedMunicipality: boolean;
+  sourceUrl: string;
+  sourceName: string;
+  extra?: string;
+}>> {
+  if (!codeInsee || (service !== "physiotherapist" && service !== "psychologist")) return [];
+
+  const professionCode = service === "physiotherapist" ? "70" : "93";
+  const pageSize = 100;
+  const fetchPage = async (page: number) => {
+    const url = new URL(RPPS_HEALTH_DIRECTORY_URL);
+    url.searchParams.set("Code commune (coord. structure)__exact", codeInsee);
+    url.searchParams.set("Code profession__exact", professionCode);
+    url.searchParams.set("Code genre activité__exact", "GENR01");
+    url.searchParams.set("columns", RPPS_HEALTH_COLUMNS);
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("page_size", String(pageSize));
+    const response = await fetch(url, {
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(9000),
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error("Het officiële Annuaire Santé-register is tijdelijk niet bereikbaar.");
+    return response.json() as Promise<RppsDirectoryResponse>;
+  };
+
+  try {
+    const firstPage = await fetchPage(1);
+    const totalPages = Math.min(10, Math.ceil((firstPage.meta?.total ?? firstPage.data?.length ?? 0) / pageSize));
+    const otherPages = await Promise.all(Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => fetchPage(index + 2)));
+    const rows = [firstPage, ...otherPages].flatMap((page) => page.data ?? []);
+    return rows.flatMap((row) => {
+      const rowCodeInsee = rppsText(row["Code commune (coord. structure)"]);
+      const municipality = rppsText(row["Libellé commune (coord. structure)"]) ? selectedCity : undefined;
+      const person = [rppsPersonName(row["Prénom d'exercice"]), rppsPersonName(row["Nom d'exercice"])].filter(Boolean).join(" ");
+      const profession = rppsText(row["Libellé profession"])
+        ?? (service === "physiotherapist" ? "Masseur-kinésithérapeute" : "Psychologue");
+      const business = rppsText(row["Enseigne commerciale site"]) ?? rppsText(row["Raison sociale site"]);
+      const name = person ? `${person} — ${profession.toLocaleLowerCase("fr-FR")}` : business ?? profession;
+      const ppId = row["Identifiant PP"];
+      if (!municipality || !name || rowCodeInsee && rowCodeInsee !== codeInsee
+        || row["Code profession"] != null && String(row["Code profession"]) !== professionCode) return [];
+      const address = rppsAddress(row);
+      const additionalPhone = rppsPhone(row["Téléphone 2 (coord. structure)"]);
+      const primaryPhone = rppsPhone(row["Téléphone (coord. structure)"]);
+      const differentPhone = additionalPhone && primaryPhone && additionalPhone !== primaryPhone ? additionalPhone : undefined;
+      const structure = business && normalizePlaceName(business) !== normalizePlaceName(name) ? business : undefined;
+      const noteParts = [
+        structure ? `Praktijk/locatie: ${structure}.` : undefined,
+        differentPhone ? `Tweede telefoonnummer: ${differentPhone}.` : undefined,
+        "Dit is een beroepsvermelding uit het RPPS-register; bel of controleer een afspraaksite voor actuele beschikbaarheid.",
+      ].filter(Boolean);
+      return [{
+        id: `rpps-${service}-${String(ppId ?? normalizePlaceName(name))}-${normalizePlaceName(address ?? municipality)}`,
+        type: service,
+        name,
+        address,
+        phone: primaryPhone ?? additionalPhone,
+        municipality,
+        inSelectedMunicipality: true,
+        sourceUrl: RPPS_HEALTH_DATASET_URL,
+        sourceName: "Annuaire Santé — RPPS, données officielles",
+        extra: noteParts.join(" "),
+      }];
     });
   } catch {
     return [];
@@ -699,7 +851,7 @@ export async function GET(request: NextRequest) {
   const directoryRadiusKm = dynamicallyEnrichedHealthService ? 25 : catalog.radiusKm;
   const serviceRadiusKm = (type: string) =>
     service !== "all" && (type === "physiotherapist" || type === "psychologist") ? 25 : catalog.radiusKm;
-  if (!dynamicallyEnrichedHealthService && (catalog.missingTypes.length === 0 || service==='estate_agent' || SHOP_TYPES.includes(service) || service === "all" && catalog.missingTypes.every(type=>SHOP_TYPES.includes(type)))) return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
+  if (service !== "all" && !dynamicallyEnrichedHealthService && (catalog.missingTypes.length === 0 || service==='estate_agent' || SHOP_TYPES.includes(service))) return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
   const codeInsee = await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude);
 
   const officialDirectoryPromise = service === "mairie" || service === "all"
@@ -716,6 +868,9 @@ export async function GET(request: NextRequest) {
     ? Object.keys(SIRENE_ACTIVITY_TYPES)
     : [service]).filter((type) => SIRENE_ACTIVITY_TYPES[type]);
   const sireneServicesPromise = Promise.all(requestedHealthTypes.map((type) => fetchSireneHealthServices(city, codeInsee, type)));
+  const requestedRppsTypes = (service === "all" ? ["physiotherapist", "psychologist"] : [service])
+    .filter((type) => type === "physiotherapist" || type === "psychologist");
+  const rppsServicesPromise = Promise.all(requestedRppsTypes.map((type) => fetchRppsHealthServices(codeInsee, type, city)));
   const officialLibrariesPromise = service === "library" || service === "all"
     ? fetchOfficialLibraries(codeInsee)
     : Promise.resolve([] as PublicLibraryRow[]);
@@ -815,13 +970,14 @@ export async function GET(request: NextRequest) {
     return { elements: [...uniqueElements.values()] };
   });
 
-  const [officialResult, osmResult, boundaryResult, officialCountsResult, officialLibrariesResult, sireneServicesResult] = await Promise.allSettled([
+  const [officialResult, osmResult, boundaryResult, officialCountsResult, officialLibrariesResult, sireneServicesResult, rppsServicesResult] = await Promise.allSettled([
     officialDirectoryPromise,
     osmLookupPromise,
     communeBoundaryPromise,
     officialCountsPromise,
     officialLibrariesPromise,
     sireneServicesPromise,
+    rppsServicesPromise,
   ]);
   const communeBoundary = boundaryResult.status === "fulfilled" ? boundaryResult.value : null;
   const officialEquipmentCounts = officialCountsResult.status === "fulfilled"
@@ -835,6 +991,9 @@ export async function GET(request: NextRequest) {
     : [];
   const sireneServices = sireneServicesResult.status === "fulfilled"
     ? sireneServicesResult.value.flat()
+    : [];
+  const rppsServices = rppsServicesResult.status === "fulfilled"
+    ? rppsServicesResult.value.flat()
     : [];
 
   const officialRow = officialResult.status === "fulfilled" ? officialResult.value : null;
@@ -923,6 +1082,7 @@ export async function GET(request: NextRequest) {
     ...(service === "all" && officialService ? [officialService] : []),
     ...curatedHealthServices,
     ...sireneServices,
+    ...rppsServices,
     ...curatedLocalServices,
     ...nonDuplicateOfficialLibraries,
   ].filter((entry, index, entries) => entries.findIndex((candidate) => candidate.id === entry.id) === index);
