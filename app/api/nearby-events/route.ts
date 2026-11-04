@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { distanceInKm, normalizePlaceName } from "../../../lib/local-area";
 import { savedCommuneCenter } from "../../../lib/commune-center";
 import { isDemoLayoutAdvertisement, uniqueEventRecords, promotionPlacements } from "../../../lib/event-presentation";
+import { matchesSelectedCategory, normalizeSearchRadiusKm } from "../../../lib/nearby-search";
 
 export const revalidate = 0;
 
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
   const latitude = Number(request.nextUrl.searchParams.get("lat") || Number.NaN);
   const longitude = Number(request.nextUrl.searchParams.get("lon") || Number.NaN);
   const requestedRadius = Number(request.nextUrl.searchParams.get("radius") || Number.NaN);
-  const radiusKm = Math.min(50, Math.max(5, Number.isFinite(requestedRadius) ? requestedRadius : 25));
+  const radiusKm = normalizeSearchRadiusKm(requestedRadius);
   const category = request.nextUrl.searchParams.get('category');
   if(category && category!=='all' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(category)) {
     return NextResponse.json({error:'Kies een geldige categorie.'},{status:400});
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
     const category_ids = (event_categories ?? []).map(link => link.category_id);
     return { ...event, start_at:event.start_at??'', category_id: category_ids[0] ?? null, category_ids };
   })
-    .filter((event) => !isDemoLayoutAdvertisement(event) && isUpcoming(event, now) && (!category || category==='all' || event.category_ids.includes(category)));
+    .filter((event) => !isDemoLayoutAdvertisement(event) && isUpcoming(event, now) && matchesSelectedCategory(event.category_ids, category ?? "all"));
   const communeCenters = new Map<string, Promise<{ latitude: number; longitude: number } | null>>();
   let locationlessCount = 0;
   const results = await Promise.all(upcoming.map(async (event) => {

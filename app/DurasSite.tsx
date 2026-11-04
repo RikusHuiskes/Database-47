@@ -42,6 +42,7 @@ import { inferEventCategorySlug } from "../lib/import-sources";
 import {prepareEventPhoto} from "../lib/event-photo-browser";
 import { eventPhotoType } from "../lib/event-photo";
 import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, type LocalAreaTown } from "../lib/local-area";
+import { categoryIdsForSelection, DEFAULT_SEARCH_RADIUS_KM, matchesSelectedCategory, SEARCH_RADIUS_OPTIONS } from "../lib/nearby-search";
 type Category = {
   id: string;
   name?: string;
@@ -354,7 +355,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const [locating,setLocating]=useState(false);
   const locationRequest=useRef(0);
   const deferredVisitorLocation = useDeferredValue(visitorLocation);
-  const [radiusKm, setRadiusKm] = useState(25);
+  const [radiusKm, setRadiusKm] = useState<number>(DEFAULT_SEARCH_RADIUS_KM);
   const [eventSearch, setEventSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [promotionClock,setPromotionClock]=useState(0);
@@ -619,7 +620,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     return prioritizeHighlighted(uniqueEventRecords(nearbyEvents).map(event=>({...event,promotion_status:event.promotion_status==='active'&&!promotionIsActive(event)?'none' as const:event.promotion_status})).filter((event) => {
     const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
       .some((value) => value?.toLocaleLowerCase(intlLocale[locale]).includes(query));
-    const matchesCategory = categoryFilter === "all" || event.category_ids?.includes(categoryFilter) === true;
+    const matchesCategory = matchesSelectedCategory(event.category_ids, categoryFilter);
     return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
     }));
   }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
@@ -723,7 +724,6 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     locationRequest.current++;setLocating(false);setLocationNotice('');
     setVisitorLocation(null);
     setSelectedAreaId(areaId);
-    setRadiusKm(["agen", "bergerac"].includes(areaId) ? 10 : 25);
   }
 
   async function findMunicipalityServices(event: React.FormEvent<HTMLFormElement>) {
@@ -2044,7 +2044,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         </div>
         <div className="search-controls search-controls-primary">
           <label className="field-label" style={labelStyle}><T>{"Zoek binnen "}</T><select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
-              <T>{[10, 25, 50].map((radius) => <option key={radius} value={radius}><T>{radius}</T><T>{" kilometer"}</T></option>)}</T>
+              <T>{SEARCH_RADIUS_OPTIONS.map((radius) => <option key={radius} value={radius}><T>{radius}</T><T>{" kilometer"}</T></option>)}</T>
             </select>
           </label>
           <button className="location-button" type="button" disabled={locating} onClick={useCurrentLocation}>
@@ -2081,7 +2081,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         <T>{nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}><T>{nearbyError}</T></p>}</T>
         <T>{!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results"><T>{"Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats."}</T></p>}</T>
         <T>{!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results"><T>{"Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan."}</T></p>}</T>
-        <T>{!nearbyLoading&&!nearbyError&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p><T>{"Bekijk een groter gebied of verwijder je zoekfilters."}</T></p><button type="button" onClick={()=>setRadiusKm(50)}><T>{"Zoek binnen 50 kilometer"}</T></button><button type="button" onClick={()=>{setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Toon alle soorten activiteiten"}</T></button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(25);setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Bekijk de streek rond Duras"}</T></button></div>}</T>
+        <T>{!nearbyLoading&&!nearbyError&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p><T>{"Bekijk een groter gebied of verwijder je zoekfilters."}</T></p><button type="button" onClick={()=>setRadiusKm(50)}><T>{"Zoek binnen 50 kilometer"}</T></button><button type="button" onClick={()=>{setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Toon alle soorten activiteiten"}</T></button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(DEFAULT_SEARCH_RADIUS_KM);setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Bekijk de streek rond Duras"}</T></button></div>}</T>
         <T>{locationlessCount > 0 && <p className="location-note"><T>{locationlessCount}</T><T>{" aankomende "}</T><T>{locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"}</T><T>{" nog geen herkenbare plaats en kan daarom niet op afstand worden getoond."}</T></p>}</T>
 
         <A><div className="event-grid" aria-label="Aankomende activiteiten">
@@ -2099,7 +2099,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               </div>
               <div className="activity-card-content">
                 <div className="activity-tags">
-                  <T>{event.category_ids?.length ? <span className="category-pill"><T>{event.category_ids.map(id => categories.find(category => category.id === id)?.name).filter(Boolean).join(" · ")}</T></span> : null}</T>
+                  <T>{categoryIdsForSelection(event.category_ids, categoryFilter).length ? <span className="category-pill"><T>{categoryIdsForSelection(event.category_ids, categoryFilter).map(id => categories.find(category => category.id === id)?.name).filter(Boolean).join(" · ")}</T></span> : null}</T>
                   <T>{event.is_free && <span className="free-pill"><T>{"Gratis"}</T></span>}</T>
                   <T>{hasAdvertisingPlacement(event,"highlight") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T>
                   <T>{categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && hasAdvertisingPlacement(event,"category") && <span className="sponsored-label"><T>{"Categoriepartner"}</T></span>}</T>
