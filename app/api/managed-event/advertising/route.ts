@@ -13,6 +13,10 @@ export async function POST(request:Request){
   const token=request.headers.get('authorization')!.slice(7);
   const {data:id,error}=await client.rpc(selection?'request_managed_advertising_selection':'upgrade_managed_advertising',{p_event_id:body.eventId,p_token_hash:tokenHash(token),...(!selection?{p_placement:body.placement}:{}),p_ad:{...quote,details:selection?{...details,placements:('placements' in quote?quote.placements:[])}:details}});
   if(error)throw Error(error.message);
+  if(process.env.MOLLIE_API_KEY?.startsWith('test_')){
+   const marked=await client.from('advertising_requests').update({is_test_mode:true}).eq('id',id);
+   if(marked.error)throw Error('De aanvraag is aangemaakt, maar de testmarkering kon niet worden opgeslagen. Neem contact op met de beheerder voordat je betaalt.');
+  }
   const result=await client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details').eq('id',id).single();
   if(result.error)throw Error('De aanvraag is opgeslagen. Vernieuw de pagina om de betaling te openen.');
   return Response.json({advertising:result.data},{headers:{'Cache-Control':'no-store'}});

@@ -8,7 +8,8 @@ export async function GET(request:Request){
  const config=mailConfiguration();
  const states=['pending','sending','accepted','failed'];
  const counts=await Promise.all(states.map(state=>client.from('listing_mail_outbox').select('id',{count:'exact',head:true}).eq('state',state)));
- return Response.json({configured:config.configured,missing:config.missing,deliveryEnabled:config.deliveryEnabled,previewMode:config.previewMode,testRecipient:config.user,queue:counts.some(row=>row.error)?null:Object.fromEntries(states.map((state,i)=>[state,counts[i].count??0]))},{headers:{'Cache-Control':'no-store'}});
+ const invoiceCounts=await Promise.all(states.map(state=>client.from('advertising_invoice_mail_outbox').select('id',{count:'exact',head:true}).eq('state',state)));
+ return Response.json({configured:config.configured,missing:config.missing,deliveryEnabled:config.deliveryEnabled,previewMode:config.previewMode,testRecipient:config.user,queue:counts.some(row=>row.error)?null:Object.fromEntries(states.map((state,i)=>[state,counts[i].count??0])),invoiceQueue:invoiceCounts.some(row=>row.error)?null:Object.fromEntries(states.map((state,i)=>[state,invoiceCounts[i].count??0]))},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request){
  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
@@ -16,7 +17,7 @@ export async function POST(request:Request){
  try{
   const body=await request.json();if(!['verify','test','process'].includes(body.action))return Response.json({error:'Ongeldige actie.'},{status:400});
   const config=mailConfiguration();if(!config.configured)return Response.json({error:'De Strato-instellingen zijn onvolledig of ongeldig.'},{status:503});
-  if(body.action==='process'){const result=await processMailOutbox(10);return Response.json({message:result.enabled?`${result.accepted} berichten door Strato geaccepteerd; ${result.failed} mislukt. ${config.previewMode?'Algemene testberichten gaan naar de eigen mailbox; goedgekeurde beheerlinkmails naar de gecontroleerde ontvanger.':''}`:'Automatische verzending is uitgeschakeld.'});}
+  if(body.action==='process'){const result=await processMailOutbox(10);return Response.json({message:result.enabled?`${result.accepted} algemene berichten en ${result.invoiceAccepted} facturen door Strato geaccepteerd; ${result.failed+result.invoiceFailed} mislukt. ${config.previewMode?'Previewfacturen gaan uitsluitend naar de eigen mailbox.':''}`:'Automatische verzending is uitgeschakeld.'});}
   const transport=mailTransport();
   if(body.action==='verify'){await transport.verify();return Response.json({message:'De beveiligde verbinding en aanmelding bij Strato werken. Er is geen mail verstuurd.'},{headers:{'Cache-Control':'no-store'}});}
   // A test can only go to our own configured mailbox, never a supplied recipient.

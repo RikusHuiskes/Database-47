@@ -24,6 +24,10 @@ export async function POST(request:Request){
     const token=managedToken();
     const {data,error}=await service.rpc(combined&&ad?'submit_managed_event_selection':'submit_managed_event',{p_event:event,p_category_id:category,p_token_hash:tokenHash(token),p_ad:ad});
     if(error)throw Error('De vermelding kon niet worden opgeslagen. '+error.message);
+    if(ad&&process.env.MOLLIE_API_KEY?.startsWith('test_')){
+      const marked=await service.from('advertising_requests').update({is_test_mode:true}).eq('event_id',data).eq('payment_status','requested');
+      if(marked.error)throw Error('De aanvraag is aangemaakt, maar de testmarkering kon niet worden opgeslagen. Neem contact op met de beheerder voordat je betaalt.');
+    }
     return Response.json({eventId:data,manageFragment:`${data}:${token}`,advertising:ad?{placement:event.promotion_type,placements:ad.placements,amountCents:ad.amountCents,startDate:ad.startDate,endDate:ad.endDate,months:ad.months}:null},{status:201,headers:{'Cache-Control':'no-store'}});
   }catch(error){return Response.json({error:error instanceof Error?error.message:'Opslaan mislukt.'},{status:400});}
 }

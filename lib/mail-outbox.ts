@@ -1,8 +1,9 @@
 import {createServiceClient} from './supabase-server';
 import {listingMail,mailConfiguration,mailTransport,safeMailError} from './mail';
 import {openManagementMail,managementMailMessage,managementMailTokenHash} from './management-mail';
+import {processAdvertisingInvoiceMailOutbox} from './advertising-invoices';
 export async function processMailOutbox(limit=10){
- if(!mailConfiguration().deliveryEnabled)return {enabled:false,accepted:0,failed:0};
+ if(!mailConfiguration().deliveryEnabled)return {enabled:false,accepted:0,failed:0,invoiceAccepted:0,invoiceFailed:0};
  const client=createServiceClient();if(!client)throw Error('Serververbinding ontbreekt.');
  const {data,error}=await client.rpc('claim_listing_mail_v2',{p_limit:Math.min(10,Math.max(1,limit))});
  if(error)throw Error('De e-mailwachtrij kon niet worden geopend.');
@@ -33,5 +34,6 @@ export async function processMailOutbox(limit=10){
    await client.from('listing_mail_outbox').update({state:row.attempts>=5?'failed':'pending',last_error:safeMailError(error),next_attempt_at:new Date(Date.now()+Math.min(1440,5*2**row.attempts)*60000).toISOString(),lease_token:null}).eq('id',row.id).eq('lease_token',row.lease_token);
   }
  }
- return {enabled:true,accepted,failed};
+ const invoices=await processAdvertisingInvoiceMailOutbox(limit);
+ return {enabled:true,accepted,failed,invoiceAccepted:invoices.accepted,invoiceFailed:invoices.failed};
 }
