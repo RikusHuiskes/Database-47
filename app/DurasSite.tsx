@@ -15,6 +15,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {IMPORT_SOURCES,ALL_IMPORT_SOURCES,fetchImportPreview} from '../lib/admin-import-sources';
 import FloatingPromotions from './components/FloatingPromotions';
+import PaidListingsCarousel from './components/PaidListingsCarousel';
 import CoteDeDurasAdvertisement from './components/CoteDeDurasAdvertisement';
 import AdvertiserFields from "./components/AdvertiserFields";
 import EventAdvertisingExamples from "./components/EventAdvertisingExamples";
@@ -2270,15 +2271,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         </div>
       </section>
 
-      <A><section className="visitor-guides" aria-label="Ontdek meer over de streek">
-        <article className="guide-card guide-health" id="gezondheid">
-          <span className="guide-icon" aria-hidden="true"><T>{"♡"}</T></span>
-          <p className="section-kicker"><T>{"Zorg & gezondheid"}</T></p>
-          <h2><T>{"Goed voor jezelf zorgen begint ook buiten."}</T></h2>
-          <p><T>{"Even wandelen, samen op pad of iets nieuws proberen? Bekijk activiteiten in en rond de gemeenten die nu in de agenda staan."}</T></p>
-          <a href="#agenda"><T>{"Bekijk activiteiten "}</T><span aria-hidden="true"><T>{"→"}</T></span></a>
-        </article>
-      </section></A>
+      <div className="visitor-guides"><PaidListingsCarousel /></div>
 
       <T>{listingContent}</T>
 

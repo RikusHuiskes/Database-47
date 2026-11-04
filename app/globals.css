@@ -492,6 +492,16 @@ body { background: var(--paper) !important; color: var(--ink) !important; }
   .activity-links { gap: 5px; }
   .activity-link { padding: 6px 7px; }
 }
+@media (max-width: 760px) {
+  .paid-listings-heading { align-items: flex-start; }
+  .paid-listing-card { grid-template-columns: 1fr; }
+  .paid-listing-media, .paid-listing-media img { min-height: 190px; max-height: 240px; }
+  .paid-listing-placeholder { min-height: 190px; }
+}
+@media (max-width: 460px) {
+  .paid-listings-heading { flex-direction: column; }
+  .paid-listings-controls { align-self: flex-end; }
+}
 
 /* Destination portal, inspired by the supplied Lot-et-Garonne homepage. */
 body { font-family: Arial, Helvetica, sans-serif; }
@@ -680,6 +690,31 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .search-controls-secondary { grid-template-columns: minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, 1fr) auto; }
 .area-explorer { margin-top: 0; margin-bottom: 44px; border-radius: 20px; }
 .visitor-guides { display: grid; grid-template-columns: 1fr; gap: 17px; margin-bottom: 52px; }
+.visitor-guides:empty { margin: 0; }
+.paid-listings-carousel { display: grid; gap: 16px; padding: clamp(18px, 2.4vw, 28px); border: 1px solid #dfd5be; border-radius: 20px; background: linear-gradient(135deg, #fffdf7, #f5efdf); box-shadow: 0 14px 38px #233d350b; }
+.paid-listings-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.paid-listings-heading .section-kicker { margin: 0 0 6px; color: #a16b48; font-size: 10px; font-weight: 850; letter-spacing: 1.3px; text-transform: uppercase; }
+.paid-listings-heading h2 { margin: 0; color: #1e403a; font-family: Georgia, "Times New Roman", serif; font-size: clamp(23px, 3vw, 32px); font-weight: 600; line-height: 1.15; }
+.paid-listings-heading > div:first-child > p:last-child { margin: 7px 0 0; color: #66756d; font-size: 13px; line-height: 1.5; }
+.paid-listings-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; color: #60756b; font-size: 12px; font-weight: 750; }
+.paid-listings-controls button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #d8ddcf; border-radius: 50%; background: #fffefa; color: #245447; cursor: pointer; font-size: 18px; }
+.paid-listings-controls button:hover { border-color: #b66b45; color: #b66b45; }
+.paid-listings-controls button:focus-visible, .paid-listing-link:focus-visible { outline: 3px solid #d99652; outline-offset: 3px; }
+.paid-listing-card { display: grid; grid-template-columns: minmax(220px, 34%) minmax(0, 1fr); min-height: 230px; overflow: hidden; border: 1px solid #e7ddc9; border-radius: 16px; background: #fffefa; box-shadow: 0 8px 22px #233d350a; }
+.paid-listing-loading { min-height: 165px; place-items: center; color: #60756b; font-size: 14px; }
+.paid-listing-media { min-height: 230px; overflow: hidden; background: linear-gradient(140deg, #e1e8d8, #c6d9d0 55%, #e9d9bd); }
+.paid-listing-media img { display: block; width: 100%; height: 100%; min-height: 230px; object-fit: cover; }
+.paid-listing-placeholder { display: grid; min-height: 230px; place-items: center; color: #567565; font-size: 48px; }
+.paid-listing-content { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; padding: clamp(18px, 2.3vw, 28px); }
+.paid-listing-labels { display: flex; flex-wrap: wrap; gap: 6px; }
+.paid-listing-source, .paid-listing-placement { padding: 5px 8px; border-radius: 999px; background: #eef2e7; color: #526e5c; font-size: 9px; font-weight: 850; letter-spacing: .55px; text-transform: uppercase; }
+.paid-listing-placement { background: #fbefdc; color: #9a6538; }
+.paid-listing-content h3 { margin: 12px 0 0; color: #1e403a; font-family: Georgia, "Times New Roman", serif; font-size: clamp(22px, 2.5vw, 31px); font-weight: 600; line-height: 1.14; }
+.paid-listing-date { margin: 9px 0 0; color: #bb6844; font-size: 13px; font-weight: 800; }
+.paid-listing-location { margin: 7px 0 0; color: #60756b; font-size: 12px; line-height: 1.5; }
+.paid-listing-description { display: -webkit-box; max-width: 700px; margin: 9px 0 15px; overflow: hidden; color: #66756d; font-size: 13px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.paid-listing-link { display: inline-flex; align-items: center; gap: 9px; margin-top: auto; padding: 9px 14px; border: 1px solid #d8e2d9; border-radius: 999px; background: #f8f8f1; color: #315c4b; font-size: 12px; font-weight: 800; text-decoration: none; }
+.paid-listing-link:hover { border-color: #c86441; color: #b45e3c; }
 .guide-card { position: relative; min-height: 270px; padding: 25px 23px; overflow: hidden; border: 1px solid #e5e6db; border-radius: 18px; background: #fffefa; }
 .guide-card::after { position: absolute; right: -30px; bottom: -48px; width: 150px; height: 150px; border: 1px solid #ffffff8a; border-radius: 50%; box-shadow: 0 0 0 18px #ffffff39, 0 0 0 38px #ffffff22; content: ""; pointer-events: none; }
 .guide-health { background: #e9efe5; }
