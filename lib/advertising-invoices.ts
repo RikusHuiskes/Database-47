@@ -4,7 +4,7 @@ import {createServiceClient} from './supabase-server';
 import {mailConfiguration,mailTransport,safeMailError} from './mail';
 
 export type InvoiceSettings={tax_mode:'standard'|'franchise_exempt';vat_rate:number;vat_number:string|null;tax_note:string;price_basis:'tax_inclusive'};
-export type InvoiceProfile={seller:typeof ADVERTISING_SELLER;taxMode:'standard'|'franchise_exempt';vatRate:number;vatNumber:string|null;taxNote:string;priceBasis:'tax_inclusive'};
+export type InvoiceProfile={seller:typeof ADVERTISING_SELLER&{vatNumber:string};taxMode:'standard'|'franchise_exempt';vatRate:number;vatNumber:string|null;taxNote:string;priceBasis:'tax_inclusive'};
 
 export function validateInvoiceSettings(input:unknown):{settings:InvoiceSettings|null;missing:string[]} {
  const value=input&&typeof input==='object'?input as Record<string,unknown>:{};
