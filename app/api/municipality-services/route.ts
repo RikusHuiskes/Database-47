@@ -695,7 +695,7 @@ async function fetchRppsHealthServices(
     const totalPages = Math.min(10, Math.ceil((firstPage.meta?.total ?? firstPage.data?.length ?? 0) / pageSize));
     const otherPages = await Promise.all(Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => fetchPage(index + 2)));
     const rows = [firstPage, ...otherPages].flatMap((page) => page.data ?? []);
-    return rows.flatMap((row) => {
+    const entries = rows.flatMap((row) => {
       const rowCodeInsee = rppsText(row["Code commune (coord. structure)"]);
       const municipality = rppsText(row["Libellé commune (coord. structure)"]) ? selectedCity : undefined;
       const person = [rppsPersonName(row["Prénom d'exercice"]), rppsPersonName(row["Nom d'exercice"])].filter(Boolean).join(" ");
@@ -716,8 +716,12 @@ async function fetchRppsHealthServices(
         differentPhone ? `Tweede telefoonnummer: ${differentPhone}.` : undefined,
         "Dit is een beroepsvermelding uit het RPPS-register; bel of controleer een afspraaksite voor actuele beschikbaarheid.",
       ].filter(Boolean);
+      const stableAddress = normalizePlaceName(address ?? municipality)
+        .replace(/\b(?:du|des|de|la|le|les|l)\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
       return [{
-        id: `rpps-${service}-${String(ppId ?? normalizePlaceName(name))}-${normalizePlaceName(address ?? municipality)}`,
+        id: `rpps-${service}-${String(ppId ?? normalizePlaceName(name))}-${stableAddress}`,
         type: service,
         name,
         address,
@@ -729,6 +733,7 @@ async function fetchRppsHealthServices(
         extra: noteParts.join(" "),
       }];
     });
+    return [...new Map(entries.map((entry) => [entry.id, entry])).values()];
   } catch {
     return [];
   }
