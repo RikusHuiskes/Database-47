@@ -2188,7 +2188,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <T>{municipalityServicesError && <p className="municipality-feedback municipality-feedback-error" role="alert"><T>{municipalityServicesError}</T></p>}</T>
           <T>{municipalityServicesLoading && <p className="municipality-feedback" role="status"><T>{municipalityServiceType === "all" ? `We verzamelen nu alle gemeentelijke diensten voor ${municipalityName}, inclusief voorzieningen in de directe omgeving.` : `We zoeken ${municipalityServiceLabel.toLocaleLowerCase(intlLocale[locale])} ${municipalityServiceRadiusKm[municipalityServiceType] > 0 ? `in ${municipalityName} en tot ${municipalityServiceRadiusKm[municipalityServiceType]} km eromheen` : `in de gemeente ${municipalityName}`}.`}</T></p>}</T>
           <T>{municipalitySearchComplete && municipalityServiceType === "emergency" && (
-            <>
+            <div className={`municipality-result-layout${previewAdSamplesEnabled?' has-partners':''}`}>
+              <div className="municipality-results municipality-emergency-results" aria-live="polite">
               <A><div className="emergency-number-grid" aria-label="Franse noodnummers">
                 <T>{frenchEmergencyNumbers.map((item) => <article className="emergency-number-card" key={item.number}>
                   <A><a href={`tel:${item.number}`} aria-label={`Bel ${item.number}, ${item.name}`}><T>{item.number}</T></a></A>
@@ -2198,10 +2199,12 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                 <p className="municipality-source-note"><T>{"Deze Franse noodnummers gelden ook in "}</T><T>{municipalityName}</T><T>{". "}</T><a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F33954" target="_blank" rel="noreferrer"><T>{"Officiële informatie van Service-Public"}</T></a><T>{"."}</T></p>
               </div></A>
               {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="municipal" placement="municipal" categoryName={municipalityServiceLabel}/>}
-            </>
+              </div>
+              <MunicipalPartners listings={[]} city={municipalityName} previewAdSamplesEnabled={previewAdSamplesEnabled} categoryName={municipalityServiceLabel}/>
+            </div>
           )}</T>
           <T>{municipalitySearchComplete && municipalityServiceType !== "emergency" && municipalityServiceInfo && (
-            <div className={`municipality-result-layout${municipalityServiceInfo.municipalPartners?.length?' has-partners':''}`}><div className="municipality-results" aria-live="polite">
+            <div className={`municipality-result-layout${municipalityServiceInfo.municipalPartners?.length||previewAdSamplesEnabled?' has-partners':''}`}><div className="municipality-results" aria-live="polite">
               <T>{municipalityServiceType === "all" ? <>
                 <T>{municipalityServiceGroupTypes.map((option) => {
                   if(option.id==="emergency")return (<section key="emergency" className="municipality-service-group municipality-emergency-group">
@@ -2262,7 +2265,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               </p>
               <T>{!municipalityServiceInfo.mapDataAvailable && !municipalityServiceInfo.curatedDataAvailable && <p className="municipality-feedback municipality-feedback-error"><T>{"De kaartgegevens zijn tijdelijk niet bereikbaar. De links naar Google Maps en Doctolib blijven beschikbaar."}</T></p>}</T>
               <T>{!municipalityServiceInfo.mapDataAvailable && municipalityServiceInfo.curatedDataAvailable && <p className="municipality-data-note"><T>{"De officiële vermeldingen hierboven zijn beschikbaar. De aanvullende OpenStreetMap-resultaten zijn tijdelijk niet bereikbaar."}</T></p>}</T>
-            </div><MunicipalPartners listings={municipalityServiceInfo.municipalPartners??[]} city={municipalityName}/></div>
+            </div><MunicipalPartners listings={municipalityServiceInfo.municipalPartners??[]} city={municipalityName} previewAdSamplesEnabled={previewAdSamplesEnabled} categoryName={municipalityServiceType==='all'?undefined:municipalityServiceLabel}/></div>
           )}</T>
         </div>
       </section>
