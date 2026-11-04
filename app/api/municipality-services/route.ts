@@ -8,7 +8,7 @@ import { municipalCatalog } from "../../../lib/municipal-catalog";
 import { mobilityType, mobilityTypes, mobilityName, mobilityDetails } from "../../../lib/municipal-mobility";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 20;
+export const maxDuration = 30;
 
 type JsonRecord = Record<string, unknown>;
 type OfficialDirectoryRow = {
@@ -680,8 +680,11 @@ async function fetchRppsHealthServices(
     url.searchParams.set("page_size", String(pageSize));
     const response = await fetch(url, {
       next: { revalidate: 86400 },
-      signal: AbortSignal.timeout(9000),
-      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(20000),
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "CoteDeDurasMunicipalGuide/1.0",
+      },
     });
     if (!response.ok) throw new Error("Het officiële Annuaire Santé-register is tijdelijk niet bereikbaar.");
     return response.json() as Promise<RppsDirectoryResponse>;
