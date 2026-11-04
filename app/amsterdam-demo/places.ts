@@ -39,7 +39,10 @@ export const AMSTERDAM_DEMO_PLACES: DemoPlace[] = [
   { name: "Abcoude", latitude: 52.2720, longitude: 4.9700 },
 ];
 
-export function distanceKm(a: DemoPlace, b: DemoPlace): number {
+export function distanceKm(
+  a: Pick<DemoPlace, "latitude" | "longitude">,
+  b: Pick<DemoPlace, "latitude" | "longitude">,
+): number {
   const rad = (n: number) => n * Math.PI / 180;
   const dLat = rad(b.latitude - a.latitude);
   const dLon = rad(b.longitude - a.longitude);

@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     const latitude = element.lat ?? element.center?.lat;
     const longitude = element.lon ?? element.center?.lon;
     if (!type || !name || latitude == null || longitude == null || (category !== "Alle voorzieningen" && type !== category)) return [];
-    const distance = distanceKm(place, { latitude, longitude, name: name });
+    const distance = distanceKm(place, { latitude, longitude });
     if (distance > radius) return [];
     const key = `${type}:${name.toLocaleLowerCase("nl")}:${latitude.toFixed(4)}:${longitude.toFixed(4)}`;
     if (seen.has(key)) return [];

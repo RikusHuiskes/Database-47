@@ -89,6 +89,12 @@ function eventDate(value: string): string {
   return value.slice(0, 16);
 }
 
+function localDateTime(date: string, time: string): string {
+  const cleanDate = date.trim();
+  const cleanTime = time.trim();
+  return cleanDate ? `${cleanDate}${cleanTime ? `T${cleanTime.slice(0, 8)}` : ""}` : "";
+}
+
 export async function GET(request: NextRequest) {
   const city = request.nextUrl.searchParams.get("city") ?? "Amsterdam";
   const place = findDemoPlace(city);
@@ -127,8 +133,8 @@ export async function GET(request: NextRequest) {
   const events: DemoEvent[] = featureRows(payload).flatMap((row) => {
     const title = text(row.titel ?? row.title ?? row.naam);
     const description = text(row.omschrijving ?? row.description);
-    const start = text(row.startdatum ?? row.start_at ?? row.start);
-    const end = text(row.einddatum ?? row.end_at ?? row.end) || start;
+    const start = text(row.start_at ?? row.start) || localDateTime(text(row.startdatum), text(row.starttijd));
+    const end = text(row.end_at ?? row.end) || localDateTime(text(row.einddatum), text(row.eindtijd)) || start;
     const url = text(row.url ?? row.website_url);
     const position = eventPosition(row);
     if (!title || !position || !start || !Number.isFinite(new Date(end).getTime()) || new Date(end).getTime() < now) return [];
