@@ -101,6 +101,8 @@ const serviceTypes = new Set([...SHOP_TYPES, "estate_agent",
   "church",
   "tourism",
   "dentist",
+  "physiotherapist",
+  "psychologist",
   "supermarket",
   "fuel",
   "charging",
@@ -320,6 +322,24 @@ function municipalReferenceSources(service: string, city: string, codeInsee: str
         { name: "Doctolib", url: `https://www.doctolib.fr/dentiste/${city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}` },
         { name: "Kaartgegevens OpenStreetMap", url: osm },
       ];
+    case "physiotherapist": {
+      const slug = city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      return [
+        { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
+        { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Doctolib — kinésithérapeutes", url: `https://www.doctolib.fr/masseur-kinesitherapeute/${slug}` },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    }
+    case "psychologist": {
+      const slug = city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      return [
+        { name: "Annuaire Santé — Agence du Numérique en Santé", url: annuaireSante },
+        { name: "Annuaire santé — Assurance Maladie", url: ameli },
+        { name: "Doctolib — psychologues", url: `https://www.doctolib.fr/psychologue/${slug}` },
+        { name: "Kaartgegevens OpenStreetMap", url: osm },
+      ];
+    }
     case "hospital":
       return [
         { name: "FINESS+ — officiële zorginstellingen", url: "https://www.data.gouv.fr/datasets/finess-structures-1" },
@@ -425,6 +445,8 @@ function osmCategory(tags: Record<string, string>): string | undefined {
   if (amenity === "hospital" || healthcare === "hospital") return "hospital";
   if (amenity === "pharmacy" || healthcare === "pharmacy") return "pharmacy";
   if (amenity === "dentist" || healthcare === "dentist") return "dentist";
+  if (amenity === "physiotherapist" || healthcare === "physiotherapist") return "physiotherapist";
+  if (["psychologist", "psychotherapist"].includes(amenity ?? "") || ["psychologist", "psychotherapist"].includes(healthcare ?? "")) return "psychologist";
   if (amenity === "doctors" || amenity === "clinic" || healthcare === "doctor" || healthcare === "clinic") return "doctor";
   if (amenity === "library") return "library";
   if (tags.tourism === "information" && ["office", "tourist_information"].includes(tags.information ?? "")) return "tourism";
@@ -461,6 +483,8 @@ const SIRENE_ACTIVITY_TYPES: Partial<Record<string, string>> = {
   hospital: "86.10Z",
   dentist: "86.23Z",
   pharmacy: "47.73Z",
+  physiotherapist: "86.90E",
+  psychologist: "86.90F",
 };
 
 function sireneAddress(establishment: SireneEstablishment): string | undefined {
@@ -486,6 +510,7 @@ async function fetchSireneHealthServices(
   distanceKm?: number;
   sourceUrl: string;
   sourceName: string;
+  extra?: string;
 }>> {
   const activityCode = SIRENE_ACTIVITY_TYPES[service];
   if (!codeInsee || !activityCode) return [];
@@ -542,6 +567,11 @@ async function fetchSireneHealthServices(
         inSelectedMunicipality: true,
         sourceUrl: `https://annuaire-entreprises.data.gouv.fr/etablissement/${establishment.siret}`,
         sourceName: "Annuaire des entreprises — données Sirene",
+        extra: service === "physiotherapist"
+          ? "De SIRENE-code omvat de bredere groep revalidatie- en paramedische beroepen. Controleer het concrete beroep in Annuaire Santé of rechtstreeks bij de praktijk."
+          : service === "psychologist"
+            ? "Deze SIRENE-activiteitscode omvat psychologische en enkele verwante gezondheidsactiviteiten. Controleer het concrete beroep in Annuaire Santé of rechtstreeks bij de praktijk."
+            : undefined,
       };
     });
   } catch {
@@ -665,7 +695,11 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = municipalCatalog(city, latitude, longitude, service, suppliedCodeInsee);
-  if (catalog.missingTypes.length === 0 || service==='estate_agent' || SHOP_TYPES.includes(service) || service === "all" && catalog.missingTypes.every(type=>SHOP_TYPES.includes(type))) return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
+  const dynamicallyEnrichedHealthService = service === "physiotherapist" || service === "psychologist";
+  const directoryRadiusKm = dynamicallyEnrichedHealthService ? 25 : catalog.radiusKm;
+  const serviceRadiusKm = (type: string) =>
+    service !== "all" && (type === "physiotherapist" || type === "psychologist") ? 25 : catalog.radiusKm;
+  if (!dynamicallyEnrichedHealthService && (catalog.missingTypes.length === 0 || service==='estate_agent' || SHOP_TYPES.includes(service) || service === "all" && catalog.missingTypes.every(type=>SHOP_TYPES.includes(type)))) return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
   const codeInsee = await resolveInseeCode(city, suppliedCodeInsee, latitude, longitude);
 
   const officialDirectoryPromise = service === "mairie" || service === "all"
@@ -673,7 +707,7 @@ export async function GET(request: NextRequest) {
     : Promise.resolve(null);
   const communeBoundaryPromise = fetchCommuneBoundary(codeInsee);
   const requestedServiceTypes = service === "all"
-    ? [...SHOP_TYPES, "estate_agent", "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"]
+    ? [...SHOP_TYPES, "estate_agent", "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "physiotherapist", "psychologist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"]
     : [service];
   const officialCountsPromise = service === "all"
     ? Promise.all(Object.keys(BPE_EQUIPMENT_TYPES).map((type) => fetchOfficialEquipmentCount(codeInsee, type)))
@@ -698,6 +732,8 @@ export async function GET(request: NextRequest) {
     church: 15000,
     tourism: 35000,
     dentist: 15000,
+    physiotherapist: 25000,
+    psychologist: 25000,
     supermarket: 25000,
     fuel: 25000,
     charging: 25000,
@@ -706,7 +742,7 @@ export async function GET(request: NextRequest) {
     disabled_parking: 25000,
   };
   for (const type of Object.keys(searchRadiusMeters)) {
-    if (type !== "mairie") searchRadiusMeters[type] = catalog.radiusKm * 1000;
+    if (type !== "mairie") searchRadiusMeters[type] = serviceRadiusKm(type) * 1000;
   }
   const osmFilters: Record<string, string[]> = {
     mairie: ['["amenity"="townhall"]'],
@@ -717,6 +753,8 @@ export async function GET(request: NextRequest) {
     church: ['["amenity"="place_of_worship"]', '["building"~"^(church|chapel|cathedral|basilica)$"]'],
     tourism: ['["tourism"="information"]["information"~"^(office|tourist_information)$"]'],
     dentist: ['["amenity"="dentist"]', '["healthcare"="dentist"]'],
+    physiotherapist: ['["amenity"="physiotherapist"]', '["healthcare"="physiotherapist"]'],
+    psychologist: ['["amenity"~"^(psychologist|psychotherapist)$"]', '["healthcare"~"^(psychologist|psychotherapist)$"]'],
     supermarket: ['["shop"="supermarket"]'],
     fuel: ['["amenity"="fuel"]'],
     charging: ['["amenity"="charging_station"]'],
@@ -742,7 +780,7 @@ export async function GET(request: NextRequest) {
     ? [`[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`]
     : service === "all"
       ? [
-        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"], 35)});out center tags;`,
+        `[out:json][timeout:18];(${buildNearbyQuery(["doctor", "library", "pharmacy", "church", "tourism", "dentist", "physiotherapist", "psychologist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"], 35)});out center tags;`,
         `[out:json][timeout:18];(${buildNearbyQuery(["hospital"], 60)});out center tags;`,
         `[out:json][timeout:15];(${communeSelector})->.selectedCommune;map_to_area .selectedCommune -> .selectedArea;(nwr(area.selectedArea)["amenity"="townhall"];);out center tags;`,
       ]
@@ -825,7 +863,8 @@ export async function GET(request: NextRequest) {
     // Keep the provider's real commune in the result and cap nearby curated
     // doctors at 15 km; this avoids showing Duras practitioners as Sainte-Foy's.
     const distanceKm = Math.round(distanceInKm(latitude, longitude, entry.latitude, entry.longitude) * 10) / 10;
-    if (distanceKm > (entry.type === "hospital" ? 60 : 15)) return [];
+    const entryRadiusKm = entry.type === "hospital" ? 60 : entry.type === "physiotherapist" || entry.type === "psychologist" ? serviceRadiusKm(entry.type) : 15;
+    if (distanceKm > entryRadiusKm) return [];
     return [{
       id: entry.id,
       type: entry.type,
@@ -886,7 +925,7 @@ export async function GET(request: NextRequest) {
     ...sireneServices,
     ...curatedLocalServices,
     ...nonDuplicateOfficialLibraries,
-  ];
+  ].filter((entry, index, entries) => entries.findIndex((candidate) => candidate.id === entry.id) === index);
 
   const osmElements = osmResult.status === "fulfilled" ? osmResult.value.elements ?? [] : [];
   const osmServices = osmElements.flatMap((element) => {
@@ -895,7 +934,7 @@ export async function GET(request: NextRequest) {
     if (!type) return [];
     if (service !== "all" && type !== service) return [];
     const distanceKm = osmDistance(latitude, longitude, element);
-    if (type !== "mairie" && distanceKm != null && distanceKm > catalog.radiusKm) return [];
+    if (type !== "mairie" && distanceKm != null && distanceKm > serviceRadiusKm(type)) return [];
     const name = mobilityName(tags) || tags.name || tags["name:fr"];
     if (!name && type !== "mairie") return [];
     const elementLat = element.lat ?? element.center?.lat;
@@ -927,22 +966,21 @@ export async function GET(request: NextRequest) {
     }];
   }).filter((candidate) => {
     if (!curatedServices.length) return true;
-    const element = osmElements.find((item) => `osm-${item.type}-${item.id}` === candidate.id);
-    const candidateLat = element?.lat ?? element?.center?.lat;
-    const candidateLon = element?.lon ?? element?.center?.lon;
     return !curatedServices.some((curated) => {
+      if (curated.type !== candidate.type) return false;
       const curatedName = normalizePlaceName(curated.name);
       const candidateName = normalizePlaceName(candidate.name);
-      if (curatedName === candidateName || curatedName.includes(candidateName) || candidateName.includes(curatedName)) return true;
-      if (typeof candidateLat !== "number" || typeof candidateLon !== "number") return false;
-      const curatedEntry = CURATED_HEALTH_SERVICES.find((item) => item.id === curated.id);
-      return curatedEntry != null && distanceInKm(candidateLat, candidateLon, curatedEntry.latitude, curatedEntry.longitude) < 0.4;
+      return curatedName === candidateName || Boolean(candidateName && curatedName && (curatedName.includes(candidateName) || candidateName.includes(curatedName)));
     });
   });
   // Use the sourced health listings first; OpenStreetMap remains an additional
   // nearby source, rather than the only place these services can be found.
   const curatedServiceIds = new Set(curatedServices.map((entry) => entry.id));
   const mergedServices = [...curatedServices, ...osmServices]
+    .filter((entry, index, entries) => {
+      const identity = `${entry.type}:${normalizePlaceName(entry.name)}:${normalizePlaceName(entry.address ?? "")}`;
+      return entries.findIndex((candidate) => `${candidate.type}:${normalizePlaceName(candidate.name)}:${normalizePlaceName(candidate.address ?? "")}` === identity) === index;
+    })
     .sort((left, right) => {
       const leftLocal = left.inSelectedMunicipality === true;
       const rightLocal = right.inSelectedMunicipality === true;
@@ -953,7 +991,7 @@ export async function GET(request: NextRequest) {
       return (left.distanceKm ?? Number.MAX_VALUE) - (right.distanceKm ?? Number.MAX_VALUE);
     });
   const services = (service === "all" ? requestedServiceTypes : [service]).flatMap((type) =>
-    mergedServices.filter((entry) => entry.type === type && (entry.distanceKm == null || entry.distanceKm <= catalog.radiusKm)),
+    mergedServices.filter((entry) => entry.type === type && (entry.distanceKm == null || entry.distanceKm <= serviceRadiusKm(type))),
   );
 
   const mairieFromMap = service === "mairie"
@@ -978,7 +1016,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(await decorateMunicipalDirectory({
     city,
-    radiusKm: catalog.radiusKm,
+    radiusKm: directoryRadiusKm,
     updatedAt: new Date().toISOString(),
     officialDirectoryAvailable: service === "mairie" && Boolean(officialRow),
     officialEquipmentCount,

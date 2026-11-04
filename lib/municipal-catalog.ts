@@ -23,7 +23,7 @@ export type CatalogService = {
   mayorSourceUrl?: string; mayorSourceName?: string;
   distanceKm?: number; inSelectedMunicipality?: boolean; sourceUrl: string; sourceName: string;
 };
-export const MUNICIPAL_TYPES = [...SHOP_TYPES, "estate_agent", "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"];
+export const MUNICIPAL_TYPES = [...SHOP_TYPES, "estate_agent", "mairie", "doctor", "hospital", "library", "pharmacy", "church", "tourism", "dentist", "physiotherapist", "psychologist", "supermarket", "fuel", "charging", "public_transport", "parking", "disabled_parking"];
 function parsed(value: unknown): unknown { try { return typeof value === "string" ? JSON.parse(value) : value; } catch { return value; } }
 function string(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value.trim() : undefined; }
 function contact(value: unknown): string | undefined {
@@ -53,6 +53,8 @@ function mapType(tags: Record<string,string>): string | undefined {
   if (tags.amenity === "hospital" || tags.healthcare === "hospital") return "hospital";
   if (tags.amenity === "pharmacy" || tags.healthcare === "pharmacy") return "pharmacy";
   if (tags.amenity === "dentist" || tags.healthcare === "dentist") return "dentist";
+  if (tags.amenity === "physiotherapist" || tags.healthcare === "physiotherapist") return "physiotherapist";
+  if (["psychologist", "psychotherapist"].includes(tags.amenity) || ["psychologist", "psychotherapist"].includes(tags.healthcare)) return "psychologist";
   if (["doctors","clinic"].includes(tags.amenity) || ["doctor","clinic"].includes(tags.healthcare)) return "doctor";
   if (tags.amenity === "library") return "library";
   if (tags.amenity === "place_of_worship" && /christian|catholic|protestant|orthodox/i.test(tags.religion ?? "")) return "church";

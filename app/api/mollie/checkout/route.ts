@@ -37,7 +37,10 @@ export async function POST(request:Request){
     const base=new URL(process.env.VERCEL_ENV==='preview'?request.url:(process.env.PUBLIC_SITE_URL??request.url)).origin;
     const returnBase=new URL(request.url).origin;
     if(!base.startsWith('https://')||!returnBase.startsWith('https://'))throw Error('De publieke betaalomgeving is nog niet ingesteld.');
-    const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':order.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(order.amount_cents/100).toFixed(2)},description:`Côte de Duras – ${placements.map(type=>labels[type]).join(' + ')} – ${order.months} maand(en)`,redirectUrl:returnBase+'/mijn-vermelding?betaling=terug',webhookUrl:base+'/api/mollie/webhook',metadata:{requestId:order.id},billingAddress:{givenName:order.details.name,familyName:order.details.company||order.details.name,streetAndNumber:order.details.address,postalCode:order.details.postcode,city:order.details.city,country:order.details.country.toUpperCase()},billingEmail:order.details.email})});
+    const redirectUrl=new URL('/mijn-vermelding',returnBase);
+    redirectUrl.searchParams.set('betaling','terug');
+    redirectUrl.searchParams.set('aanvraag',order.id);
+    const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':order.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(order.amount_cents/100).toFixed(2)},description:`Côte de Duras – ${placements.map(type=>labels[type]).join(' + ')} – ${order.months} maand(en)`,redirectUrl:redirectUrl.toString(),webhookUrl:base+'/api/mollie/webhook',metadata:{requestId:order.id},billingAddress:{givenName:order.details.name,familyName:order.details.company||order.details.name,streetAndNumber:order.details.address,postalCode:order.details.postcode,city:order.details.city,country:order.details.country.toUpperCase()},billingEmail:order.details.email})});
     if(!payment.id||!payment._links?.checkout?.href||!/^https:\/\/([a-z0-9-]+\.)*mollie\.com\//i.test(payment._links.checkout.href))throw Error('Ongeldige betaalverwijzing.');
     const saved=await client.from('advertising_requests').update({mollie_payment_id:payment.id,payment_status:'open'}).eq('id',order.id).eq('checkout_key',order.checkout_key);
     if(saved.error)throw Error('De betaalreferentie kon niet worden opgeslagen.');

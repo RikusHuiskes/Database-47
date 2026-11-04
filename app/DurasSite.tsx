@@ -91,7 +91,7 @@ type EventRow = {
 
 type LocalAreaOption = Omit<LocalAreaTown, "latitude" | "longitude"> & { latitude: number | null; longitude: number | null; distance_group?: string };
 type NearbyEvent = EventRow & { distance_km: number; distance_is_approximate: boolean };
-type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking" | "bakery" | "butcher" | "tobacco" | "souvenirs" | "shoes" | "florist" | "fashion" | "diy" | "jeweller" | "hairdresser" | "estate_agent";
+type MunicipalityServiceType = "all" | "mairie" | "doctor" | "hospital" | "library" | "pharmacy" | "church" | "tourism" | "emergency" | "dentist" | "physiotherapist" | "psychologist" | "supermarket" | "fuel" | "charging" | "public_transport" | "parking" | "disabled_parking" | "bakery" | "butcher" | "tobacco" | "souvenirs" | "shoes" | "florist" | "fashion" | "diy" | "jeweller" | "hairdresser" | "estate_agent";
 type MunicipalityServiceEntry = {
   highlighted?:boolean; image_url?:string; image_source_url?:string; image_credit?:string; image_license?:string; image_license_url?:string; managedEventId?:string;
   latitude?: number;
@@ -158,6 +158,8 @@ const municipalityServiceOptions: { id: MunicipalityServiceType; label: string }
   { id: "church", label: "Kerk & mis- of diensttijden" },
   { id: "tourism", label: "Office de tourisme" },
   { id: "dentist", label: "Tandarts" },
+  { id: "physiotherapist", label: "Fysiotherapie" },
+  { id: "psychologist", label: "Psychologische dienstverlening" },
   { id: "supermarket", label: "Supermarkten" },
   { id: "fuel", label: "Tankstations" },
   { id: "charging", label: "Laadpalen voor elektrische voertuigen" },
@@ -1653,6 +1655,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     tourism: 35,
     emergency: 0,
     dentist: 15,
+    physiotherapist: 25,
+    psychologist: 25,
     supermarket: 25,
     fuel: 25,
     charging: 25,
@@ -1683,7 +1687,10 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const municipalityServiceGroupTypes = municipalityServiceOptions.filter((option) => option.id !== "all");
   const municipalityMapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`;
   const municipalityLibrarySearchUrl = `https://ccfr.bnf.fr/portailccfr/jsp/query_direct.jsp?query=rnbcd_menu_inst_pub&VILLE=${encodeURIComponent(municipalityName)}`;
-  const municipalityDoctolibSearchUrl = `https://www.doctolib.fr/medecin-generaliste/${municipalityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+  const municipalityDoctolibSlug = municipalityName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const municipalityDoctolibSearchUrl = `https://www.doctolib.fr/medecin-generaliste/${municipalityDoctolibSlug}`;
+  const municipalityPhysiotherapistSearchUrl = `https://www.doctolib.fr/masseur-kinesitherapeute/${municipalityDoctolibSlug}`;
+  const municipalityPsychologistSearchUrl = `https://www.doctolib.fr/psychologue/${municipalityDoctolibSlug}`;
   const renderMunicipalityServiceCard = (service: MunicipalityServiceEntry, index: number, groupType: MunicipalityServiceType) => {
     const groupLabel = municipalityServiceOptions.find((option) => option.id === groupType)?.label ?? municipalityServiceLabel;
     return <article className={`municipality-service-card${service.highlighted?' municipality-service-highlighted':''}`} key={`${groupType}-${service.id}`}>
@@ -1710,6 +1717,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         <T>{(groupType === "mairie" || municipalityServiceType === "all" && service.type === "mairie") && safeHttpUrl(service.mayorSourceUrl) && <a href={safeHttpUrl(service.mayorSourceUrl)!} target="_blank" rel="noreferrer"><T>{"Bron burgemeester: "}</T><T>{service.mayorSourceName ?? "Ministerie van Binnenlandse Zaken"}</T> <span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
         <T>{safeHttpUrl(service.appointmentUrl) && <a href={safeHttpUrl(service.appointmentUrl)!} target="_blank" rel="noreferrer"><T>{"Afspraak via Maiia "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
         <T>{(groupType === "doctor" || municipalityServiceType === "all" && service.type === "doctor") && <a href={safeHttpUrl(service.doctolibUrl) ?? municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer"><T>{"Doctolib "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+        <T>{(groupType === "physiotherapist" || municipalityServiceType === "all" && service.type === "physiotherapist") && <a href={municipalityPhysiotherapistSearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek kinésithérapeutes op Doctolib "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+        <T>{(groupType === "psychologist" || municipalityServiceType === "all" && service.type === "psychologist") && <a href={municipalityPsychologistSearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek psychologues op Doctolib "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
         <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.latitude != null && service.longitude != null ? `${service.latitude},${service.longitude}` : `${service.name} ${service.address ?? municipalityName}`)}`} target="_blank" rel="noreferrer"><T>{"Kaart: Google Maps "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>
       </div>
     </article>;
@@ -2241,6 +2250,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                     <a href={municipalityMapSearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek op Google Maps "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>
                     <T>{municipalityServiceType === "library" && <a href={municipalityLibrarySearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek in het bibliotheekregister van de BnF "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
                     <T>{municipalityServiceType === "doctor" && <a href={municipalityDoctolibSearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek huisartsen op Doctolib "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                    <T>{municipalityServiceType === "physiotherapist" && <a href={municipalityPhysiotherapistSearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek kinésithérapeutes op Doctolib "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                    <T>{municipalityServiceType === "psychologist" && <a href={municipalityPsychologistSearchUrl} target="_blank" rel="noreferrer"><T>{"Zoek psychologues op Doctolib "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
                     <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${municipalityServiceLabel} ${municipalityName}`)}`} target="_blank" rel="noreferrer"><T>{"OpenStreetMap "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>
                   </div>
                 </div>}</T>

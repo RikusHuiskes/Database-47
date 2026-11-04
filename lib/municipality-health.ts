@@ -1,6 +1,6 @@
 export type CuratedHealthService = {
   id: string;
-  type: "doctor" | "hospital";
+  type: "doctor" | "hospital" | "physiotherapist" | "psychologist";
   municipality: string;
   name: string;
   address: string;
@@ -247,5 +247,43 @@ export const CURATED_HEALTH_SERVICES: CuratedHealthService[] = [
     extra: "De officiële ziekenhuiswebsite vermeldt de spoeddienst als 24 uur per dag, 7 dagen per week geopend. Bij medische spoed: bel 15 of 112.",
     latitude: 44.2049,
     longitude: 0.6212,
+  },
+  {
+    id: "physio-duras-corinne-chalard-hery",
+    type: "physiotherapist",
+    municipality: "Duras",
+    name: "Corinne Chalard-Héry — masseur-kinésithérapeute",
+    address: "Maison de santé, 4 avenue Aristide Briand, 47120 Duras",
+    phone: "05 53 84 50 15",
+    sourceUrl: "https://cc-paysdeduras.fr/fr/rb/1956320/maison-de-sante-de-duras",
+    sourceName: "Communauté de communes du Pays de Duras — Maison de santé de Duras",
+    extra: "De officiële lokale gezondheidsdirectory vermeldt ook 06 60 65 54 55. Bel de praktijk om beschikbaarheid en afspraken te bevestigen.",
+    latitude: 44.676249,
+    longitude: 0.184516,
+  },
+  {
+    id: "psychologist-duras-camille-ballot",
+    type: "psychologist",
+    municipality: "Duras",
+    name: "Camille Ballot — psychologue",
+    address: "Maison de santé, 4 avenue Aristide Briand, 47120 Duras",
+    phone: "07 68 62 58 28",
+    sourceUrl: "https://cc-paysdeduras.fr/fr/rb/1956320/maison-de-sante-de-duras",
+    sourceName: "Communauté de communes du Pays de Duras — Maison de santé de Duras",
+    extra: "De officiële lokale gezondheidsdirectory vermeldt ook de aanduiding hypnothérapeute. Bel voor actuele beschikbaarheid en afspraken.",
+    latitude: 44.676249,
+    longitude: 0.184516,
+  },
+  {
+    id: "psychologist-levignac-cecile-behar",
+    type: "psychologist",
+    municipality: "Lévignac-de-Guyenne",
+    name: "Cécile Béhar — psychologue",
+    address: "Maison de santé, Mauca, 47120 Lévignac-de-Guyenne",
+    phone: "06 58 98 19 66",
+    sourceUrl: "https://cc-paysdeduras.fr/fr/rb/1956346/maison-de-sante-de-levignac-de-guyenne",
+    sourceName: "Communauté de communes du Pays de Duras — Maison de santé de Lévignac",
+    latitude: 44.6296,
+    longitude: 0.1988,
   },
 ];

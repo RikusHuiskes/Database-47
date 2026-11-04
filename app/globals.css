@@ -1119,6 +1119,11 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .listing-upgrade-link { display: inline-flex; align-items: center; min-height: 44px; padding: 12px 18px; background: #285442; color: #fff !important; border-radius: 8px; text-decoration: none; font-weight: 700; }
 .listing-upgrade-invitation p { line-height: 1.6; }
 #listing-upgrade { scroll-margin-top: 24px; }
+.payment-return { margin: 24px 0; padding: 28px; border: 1px solid #cbd5c7; border-radius: 16px; background: #f3f6ef; }
+.payment-return h2 { margin-top: 0; color: #214f40; }
+.payment-return p { line-height: 1.6; }
+.payment-return-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.payment-return-actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; border: 1px solid #285442; border-radius: 8px; background: #285442; color: #fff; font-weight: 700; text-decoration: none; }
 /* Selectable advertising previews for existing listings. */
 .owner-advertising-options{border:0;padding:0;min-width:0;margin:28px 0}
 .owner-advertising-options legend{font-weight:700;margin-bottom:16px}
