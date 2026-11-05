@@ -49,6 +49,9 @@ async function ensureBucket(client: NonNullable<ReturnType<typeof serviceClient>
 }
 
 export async function POST(request: NextRequest) {
+  if (request.headers.get("origin") !== new URL(request.url).origin) {
+    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 403 });
+  }
   const client = serviceClient();
   if (!client) {
     return NextResponse.json({ error: "Foto-upload is nog niet beschikbaar op deze preview. Je kunt de evenementtip zonder foto versturen." }, { status: 503 });
@@ -98,6 +101,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (request.headers.get("origin") !== new URL(request.url).origin) {
+    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 403 });
+  }
   const client = serviceClient();
   if (!client) return NextResponse.json({ error: "Foto-opslag is niet beschikbaar." }, { status: 503 });
 
@@ -111,6 +117,16 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Foto niet gevonden." }, { status: 400 });
   }
 
+  // This endpoint only cleans up abandoned uploads. A public photo URL must
+  // never grant permission to delete the image of a saved listing.
+  const { data: publicPhoto } = client.storage.from(BUCKET).getPublicUrl(path);
+  const referenced = await client.from("events").select("id").eq("image_url", publicPhoto.publicUrl).limit(1);
+  if (referenced.error) {
+    return NextResponse.json({ error: "De foto kon niet veilig worden opgeruimd." }, { status: 503 });
+  }
+  if (referenced.data?.length) {
+    return NextResponse.json({ error: "Deze foto hoort bij een opgeslagen vermelding." }, { status: 409 });
+  }
   const { error } = await client.storage.from(BUCKET).remove([path]);
   if (error) return NextResponse.json({ error: "De niet-gebruikte foto kon niet worden opgeruimd." }, { status: 503 });
   return NextResponse.json({ removed: true });
