@@ -322,6 +322,36 @@ function safeHttpUrl(value?: string | null): string | null {
   }
 }
 
+function EventPhoto({
+  src,
+  className,
+  alt = "",
+}: {
+  src?: string | null;
+  className: string;
+  alt?: string;
+}) {
+  const photoUrl = safeHttpUrl(src);
+  const brandLogo = "/cote-de-duras-logo.webp";
+  const fallbackAlt = "Côte de Duras — foto niet beschikbaar";
+
+  return (
+    <img
+      className={`${className}${photoUrl ? "" : " event-image-brand-fallback"}`}
+      src={photoUrl ?? brandLogo}
+      alt={photoUrl ? alt : fallbackAlt}
+      loading="lazy"
+      onError={photoUrl ? (event) => {
+        const image = event.currentTarget;
+        image.onerror = null;
+        image.src = brandLogo;
+        image.alt = fallbackAlt;
+        image.classList.add("event-image-brand-fallback");
+      } : undefined}
+    />
+  );
+}
+
 function sourceLabel(value?: string | null): string {
   if (!value) return "Bron niet vermeld";
   try {
@@ -2092,9 +2122,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               <T>{hasAdvertisingPlacement(event,"highlight") && <div className="activity-highlight-banner"><T>{"Uitgelichte advertentie"}</T></div>}</T>
               <div className="activity-media">
                 <A><button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
-                  <T>{safeHttpUrl(event.image_url)
-                    ? <A><img className="activity-image" src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></A>
-                    : <span className="activity-image-placeholder"><span aria-hidden="true"><T>{"47"}</T></span><small><T>{"Ontdek dichtbij"}</T></small></span>}</T>
+                  <A><EventPhoto className="activity-image" src={event.image_url} /></A>
                 </button></A>
                 <span className="distance-pill"><T>{event.distance_is_approximate ? "ca. " : ""}</T><T>{event.distance_km}</T><T>{" km"}</T></span>
               </div>
@@ -2140,7 +2168,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             const date = formatCardDate(event.start_at);
             return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={"standard"} className={`featured-event-card${hasAdvertisingPlacement(event,"homepage") ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
               <A><button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
-                <T>{safeHttpUrl(event.image_url) ? <A><img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></A> : <span className="featured-image-art" aria-hidden="true"><T>{"47"}</T></span>}</T>
+                <A><EventPhoto className="featured-event-photo" src={event.image_url} /></A>
               </button></A>
               <div className="featured-event-body"><span className="date-tile"><strong><T>{date.day}</T></strong><small><T>{date.month}</T></small></span><div><T>{hasAdvertisingPlacement(event,"homepage") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}><T preserve={event.is_directory_entry===true}>{event.title}</T></button></h3><p><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{event.city || event.venue_name || "Lot-et-Garonne"}</T></p></div></div>
             </article>;
@@ -2915,7 +2943,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               <button className="event-detail-back" type="button" autoFocus onClick={closeVisitorEvent}><span aria-hidden="true"><T>{"←"}</T></span><T>{" Terug naar de agenda"}</T></button>
               <A><button className="event-detail-close" type="button" aria-label="Sluiten" onClick={closeVisitorEvent}><T>{"×"}</T></button></A>
             </div>
-            <T>{safeHttpUrl(selectedVisitorEvent.image_url) && <A><img className="event-detail-image" src={safeHttpUrl(selectedVisitorEvent.image_url)!} alt="" /></A>}</T>
+            <A><EventPhoto className="event-detail-image" src={selectedVisitorEvent.image_url} /></A>
             <div className="event-detail-content">
               <p className="event-detail-kicker"><T>{categories.find((category) => category.id === selectedVisitorEvent.category_id)?.name ?? "Activiteit in de streek"}</T></p>
               <h2 id="visitor-event-title"><T>{selectedVisitorEvent.title}</T></h2>

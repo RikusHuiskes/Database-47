@@ -386,6 +386,7 @@ body { background: var(--paper) !important; color: var(--ink) !important; }
 .activity-card:hover { transform: translateY(-4px); box-shadow: 0 18px 35px #1d42321a !important; }
 .activity-media { position: relative; height: 190px; overflow: hidden; background: linear-gradient(140deg, #f4dcaa, #d88b61 54%, #456d53); }
 .activity-image { display: block; width: 100% !important; height: 100% !important; min-height: 0 !important; max-height: none !important; border-radius: 0 !important; object-fit: cover; transition: transform 260ms ease; }
+.event-image-brand-fallback { object-fit: contain !important; padding: clamp(18px, 5vw, 34px); background-color: #f7f6ef !important; }
 .activity-card:hover .activity-image { transform: scale(1.035); }
 .activity-image-placeholder { display: grid; width: 100%; height: 100%; place-content: center; gap: 5px; background: radial-gradient(circle at 72% 28%, #ffe0a4 0 9%, transparent 9.5%), linear-gradient(145deg, #e7bb7c 0%, #d68b60 50%, #58785a 51%, #275443 100%); color: #fff8e9; text-align: center; }
 .activity-image-placeholder span { font-family: Georgia, serif; font-size: 45px; font-weight: 600; line-height: 1; opacity: .8; }
