@@ -1,11 +1,7 @@
 export const maxDuration=300;
-import {after} from 'next/server';
-import {processMailOutbox} from '../../../../lib/mail-outbox';
 import {listingTriage} from '../../../../lib/listing-triage';
 import {adminService} from '../../../../lib/admin-service';
 import {managedToken,tokenHash} from '../../../../lib/managed-events';
-import {sealManagementMail} from '../../../../lib/management-mail';
-import {mailConfiguration} from '../../../../lib/mail';
 export async function GET(request:Request) {
   const client=await adminService(request);
   if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
@@ -43,22 +39,14 @@ export async function POST(request:Request) {
     if(!reviewer.data.user)return Response.json({error:'Log opnieuw in.'},{status:403});
     const grants=['approved','reissued'].includes(body.action);
     const args={p_id:body.id,p_action:body.action,p_note:body.note??'',p_contact:body.contact??'',p_token_hash:tokenHash(token),p_reviewer:reviewer.data.user.id};
-    let eventId:string,mail:unknown;
+    let eventId:string;
     if(grants){
       const email=String(body.deliveryEmail??'').trim().toLowerCase();
       if(body.emailConfirmed!=='on'||! /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||email.length>254)throw Error('Controleer en bevestig het e-mailadres voor de persoonlijke beheerlink.');
-      if(!mailConfiguration().deliveryEnabled)throw Error('Automatische beheerlinkmail is niet ingesteld. Controleer eerst de Strato-mailverbinding; de goedkeuring is niet opgeslagen.');
-      const listing=await client.from('listing_requests').select('event_id').eq('id',body.id).single();
-      if(listing.error)throw Error('Aanvraag niet gevonden.');
-      eventId=listing.data.event_id;
-      const encrypted=sealManagementMail({eventId,token,origin:new URL(request.url).origin});
-      const result=await client.rpc('review_listing_request_with_mail',{...args,p_email:email,p_encrypted_secret:encrypted});
-      if(result.error)throw Error(result.error.message);
-      mail={id:result.data.mailId,state:'pending',recipient:email};
-    }else{
-      const result=await client.rpc('review_listing_request',args);if(result.error)throw Error(result.error.message);eventId=result.data;
     }
-    after(async()=>{await processMailOutbox().catch(()=>{});});
-    return Response.json({ok:true,manageFragment:grants?`${eventId}:${token}`:undefined,mail},{headers:{'Cache-Control':'no-store'}});
+    const result=await client.rpc('review_listing_request',args);
+    if(result.error)throw Error(result.error.message);
+    eventId=result.data;
+    return Response.json({ok:true,manageFragment:grants?`${eventId}:${token}`:undefined},{headers:{'Cache-Control':'no-store'}});
   }catch(e){return Response.json({error:e instanceof Error?e.message:'Verwerken mislukt.'},{status:400});}
 }
