@@ -83,7 +83,7 @@ export default function MyListing(){
     try{
       const payload={...event};
       if(photo){if(photo.size>5*1024*1024)throw Error('De foto mag maximaal 5 MB zijn.');const form=new FormData();form.set('photo',await prepareEventPhoto(photo));const response=await fetch('/api/visitor-event-photo',{method:'POST',body:form});const data=await response.json();if(!response.ok)throw Error(data.error);payload.image_url=data.imageUrl;path=data.path;}
-      const response=await fetch('/api/managed-event',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({id:access.id,event:payload,categoryId:category})});const data=await response.json();if(!response.ok)throw Error(data.error);complete=true;setEvent(payload);setPhoto(null);setMessage('Je wijzigingen zijn opgeslagen. De bestaande goedkeuringsstatus en advertentieafspraken zijn behouden.');
+      const response=await fetch('/api/managed-event',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({id:access.id,event:payload,categoryId:category})});const data=await response.json();if(!response.ok)throw Error(data.error);complete=true;setEvent({...payload,status:"pending",verified:false});setPhoto(null);setMessage('Je wijzigingen zijn opgeslagen en wachten op controle. De beheerder is geïnformeerd. Je advertentieafspraken en betaalhistorie blijven behouden.');
     }catch(error){setMessage(error instanceof Error?error.message:'Opslaan mislukt.');}
     finally{if(path&&!complete)await fetch('/api/visitor-event-photo',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})}).catch(()=>{});setBusy(false);setSaving(false);}
   }

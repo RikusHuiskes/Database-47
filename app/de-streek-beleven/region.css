@@ -1,0 +1,6 @@
+.region-guide section { padding: 4px 0 24px; border-bottom: 1px solid #e2e7dd; scroll-margin-top: 90px; }
+.region-guide .region-welcome { padding: 16px 20px; background: #eef2e8; border-radius: 12px; font-weight: 600; }
+.region-guide .region-action { display: inline-block; padding: 8px 0; font-weight: 700; }
+.region-guide .region-end { display: flex; align-items: center; flex-wrap: wrap; gap: 18px 26px; padding-top: 30px; }
+.region-guide a:focus-visible { outline: 3px solid #a65f17; outline-offset: 4px; }
+@media (max-width: 600px) { .region-guide .region-end { align-items: stretch; flex-direction: column; } }

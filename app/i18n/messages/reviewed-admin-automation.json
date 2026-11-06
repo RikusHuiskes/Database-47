@@ -1,0 +1,107 @@
+[
+  [
+    "Je wijziging wacht nu op controle. De beheerder ontvangt een e-mail. Na goedkeuring verschijnt de vermelding weer in de agenda of gemeentegids. Je advertentieafspraken en betaalhistorie blijven bewaard.",
+    "Your change now awaits review. The administrator receives an email. After approval, your listing appears again in the calendar or local directory. Your advertising arrangements and payment history are retained.",
+    "Votre modification est en attente de vérification. L’administrateur reçoit un e-mail. Après validation, votre annonce réapparaît dans l’agenda ou l’annuaire local. Vos conditions publicitaires et votre historique de paiement sont conservés."
+  ],
+  [
+    "Klik op de importknop om op te slaan. Nieuwe vermeldingen uit de geselecteerde bronnen worden direct goedgekeurd. Handmatig aangeleverde sociale berichten blijven in Wacht op controle. Met BEWERKEN kun je gegevens of categorieën corrigeren.",
+    "Click the import button to save. New listings from the selected sources are approved automatically. Manually supplied social posts stay in Awaiting review. Use EDIT to correct details or categories.",
+    "Cliquez sur le bouton d’importation pour enregistrer. Les nouvelles annonces des sources sélectionnées sont validées automatiquement. Les publications sociales saisies manuellement restent en attente de vérification. MODIFIER permet de corriger les informations ou catégories."
+  ],
+  [
+    "Controleer handmatige inzendingen en eigenaarswijzigingen afzonderlijk. Alle imports goedkeuren is bedoeld voor eventueel achtergebleven oude imports; lees eerst het bevestigingsvenster. Handmatige inzendingen blijven apart staan.",
+    "Review manual submissions and owner changes individually. Approve all imports is for any older imports still awaiting review; read the confirmation first. Manual submissions remain separate.",
+    "Vérifiez séparément les propositions manuelles et les modifications des propriétaires. Valider toutes les importations concerne les anciennes importations encore en attente ; lisez d’abord la confirmation. Les propositions manuelles restent séparées."
+  ],
+  [
+    "Dagelijkse update om 08.00 uur",
+    "Daily update at 08:00",
+    "Mise à jour quotidienne à 8 h"
+  ],
+  [
+    "Controleer bij Strato-mailverbinding of de dagelijkse planning actief is. Na inschakeling start de automatische import iedere ochtend om 08.00 uur Franse tijd, ook bij zomer- en wintertijd. De verwerking kan enkele minuten duren. Tourisme Duras, Eymet, SIRTAQUI, OpenAgenda, de geselecteerde gemeentelijke agenda’s en de vaste bronvermeldingen worden bijgewerkt. Nieuwe imports uit deze bronnen worden automatisch goedgekeurd. Bestaande vermeldingen worden niet vervangen; ontbrekende bronfoto’s kunnen worden aangevuld.",
+    "Check the Strato mail connection to see whether the daily schedule is active. Once enabled, automatic imports start every morning at 08:00 French local time, including daylight-saving changes. Processing may take a few minutes. Tourisme Duras, Eymet, SIRTAQUI, OpenAgenda, selected municipal calendars and permanent source listings are checked. New imports from these sources are approved automatically. Existing listings are not replaced; missing source photos may be added.",
+    "Vérifiez dans la connexion e-mail Strato si la programmation quotidienne est active. Une fois activées, les importations automatiques démarrent chaque matin à 8 h, heure française, y compris après les changements d’heure. Le traitement peut prendre quelques minutes. Tourisme Duras, Eymet, SIRTAQUI, OpenAgenda, les agendas municipaux sélectionnés et les adresses permanentes sont vérifiés. Les nouvelles importations de ces sources sont validées automatiquement. Les annonces existantes ne sont pas remplacées ; des photos sources manquantes peuvent être ajoutées."
+  ],
+  [
+    "Bij een actieve dagelijkse planning ontvang je op info@cotededuras.com een samenvatting. Een onbereikbare bron wordt opnieuw geprobeerd en als aandachtspunt vermeld. Nieuwe handmatige evenementen en bedrijfsvermeldingen, en wijzigingen via een persoonlijke beheerlink, blijven wachten op jouw goedkeuring.",
+    "When the daily schedule is active, you receive a summary at info@cotededuras.com. An unavailable source is retried and flagged. New manual event and business submissions, and changes made through a personal management link, await your approval.",
+    "Lorsque la programmation quotidienne est active, vous recevez un récapitulatif à info@cotededuras.com. Une source inaccessible fait l’objet d’une nouvelle tentative et est signalée. Les nouveaux événements et entreprises proposés manuellement, ainsi que les modifications via un lien personnel de gestion, attendent votre validation."
+  ],
+  [
+    "Meldingen voor de beheerder",
+    "Administrator notifications",
+    "Notifications de l’administrateur"
+  ],
+  [
+    "info@cotededuras.com ontvangt een bericht bij beheeraanvragen, correctiemeldingen, nieuwe handmatige inzendingen, inhoudelijke wijzigingen, advertentieaanvragen en bevestigde of mislukte betalingen. De mail noemt de vermelding en het onderdeel dat je moet openen. Facturen worden nog steeds alleen opgesteld wanneer jij daarvoor kiest.",
+    "info@cotededuras.com receives a notification for management requests, corrections, new manual submissions, content changes, advertising requests and confirmed or unsuccessful payments. Each email identifies the listing and the relevant admin section. Invoices are still issued only when you choose to create them.",
+    "info@cotededuras.com reçoit une notification pour les demandes de gestion, corrections, nouvelles propositions manuelles, modifications de contenu, demandes publicitaires et paiements confirmés ou non aboutis. Chaque e-mail indique l’annonce et la rubrique d’administration à ouvrir. Les factures sont toujours émises uniquement à votre initiative."
+  ],
+  [
+    "Berichten worden in een beveiligde wachtrij opgeslagen. Bij actieve automatische verwerking worden wachtende berichten iedere minuut gecontroleerd. Tijdelijke mailstoringen worden opnieuw geprobeerd. Controleer bij Strato-mailverbinding de planning, wachtrij en eventuele mislukte verzendingen. Daar kun je wachtende berichten ook handmatig laten versturen.",
+    "Messages are saved in a secure queue. When automatic processing is active, pending messages are checked every minute. Temporary mail failures are retried. Check the schedule, queue and unsuccessful deliveries under the Strato mail connection. You can also send queued messages manually there.",
+    "Les messages sont enregistrés dans une file sécurisée. Lorsque le traitement automatique est actif, les messages en attente sont vérifiés chaque minute. Les échecs temporaires font l’objet de nouvelles tentatives. Vérifiez la programmation, la file et les éventuels échecs dans la connexion e-mail Strato. Vous pouvez également y déclencher l’envoi manuel des messages en attente."
+  ],
+  [
+    "Je wijzigingen zijn opgeslagen en wachten op controle. De beheerder is geïnformeerd. Je advertentieafspraken en betaalhistorie blijven behouden.",
+    "Your changes have been saved and await review. The administrator has been notified. Your advertising arrangements and payment history are retained.",
+    "Vos modifications sont enregistrées et attendent une vérification. L’administrateur a été informé. Vos conditions publicitaires et votre historique de paiement sont conservés."
+  ],
+  [
+    "Geselecteerde bronimports worden automatisch goedgekeurd. Handmatig aangeleverde sociale berichten blijven wachten op controle. De bronlink blijft bewaard; aanpassen kan via BEWERKEN.",
+    "Selected source imports are approved automatically. Manually supplied social posts await review. The source link is retained; use EDIT for changes.",
+    "Les importations des sources sélectionnées sont validées automatiquement. Les publications sociales saisies manuellement attendent une vérification. Le lien source est conservé ; utilisez MODIFIER pour les corrections."
+  ],
+  [
+    "Importeer {0} activiteiten",
+    "Import {0} activities",
+    "Importer {0} activités"
+  ],
+  [
+    "{0} nieuwe activiteiten toegevoegd; {1} bestaande activiteiten behouden. Nieuwe activiteiten uit de geselecteerde bronnen zijn automatisch goedgekeurd.",
+    "{0} new activities added; {1} existing activities retained. New activities from the selected sources were approved automatically.",
+    "{0} nouvelles activités ajoutées ; {1} activités existantes conservées. Les nouvelles activités des sources sélectionnées ont été validées automatiquement."
+  ],
+  [
+    "Dagelijkse update om 08.00 uur Franse tijd is actief; wachtende e-mails worden iedere minuut gecontroleerd.",
+    "The daily update at 08:00 French local time is active; pending emails are checked every minute.",
+    "La mise à jour quotidienne à 8 h, heure française, est active ; les e-mails en attente sont vérifiés chaque minute."
+  ],
+  [
+    "De dagelijkse planning is nog niet actief.",
+    "The daily schedule is not active yet.",
+    "La programmation quotidienne n’est pas encore active."
+  ],
+  [
+    "Dagelijkse update en meldingen inschakelen",
+    "Enable daily updates and notifications",
+    "Activer la mise à jour quotidienne et les notifications"
+  ],
+  [
+    "De dagelijkse update start om 08.00 uur Franse tijd. Wachtende e-mails worden iedere minuut gecontroleerd.",
+    "Daily updates start at 08:00 French local time. Pending emails are checked every minute.",
+    "La mise à jour quotidienne démarre à 8 h, heure française. Les e-mails en attente sont vérifiés chaque minute."
+  ],
+  [
+    "Deze planning is alleen beschikbaar op de productiewebsite.",
+    "This schedule is only available on the live website.",
+    "Cette programmation est disponible uniquement sur le site en production."
+  ],
+  [
+    "De dagelijkse planning kon niet worden ingesteld. Controleer de database-inrichting.",
+    "The daily schedule could not be configured. Check the database setup.",
+    "La programmation quotidienne n’a pas pu être configurée. Vérifiez la configuration de la base de données."
+  ],
+  [
+    "Open Vermelding toevoegen / beheren →",
+    "Open Add / manage a listing →",
+    "Ouvrir Ajouter / gérer une annonce →"
+  ],
+  [
+    "Ga naar Vermelding toevoegen / beheren → Zoeken & aanvragen. Kies Evenementenkalender of Gemeentegids bij Zoeken in. Vul minimaal twee letters van de naam in. Voor de gemeentegids is de plaats verplicht; bij evenementen kun je de plaats gebruiken om verder te verfijnen. Klik op Zoek mijn vermelding en daarna op Kies deze vermelding.",
+    "Go to Add / manage a listing → Search & request access. Under Search in, choose Event calendar or Local directory. Enter at least two characters of the name. A town is required for the directory; for events it is optional. Select Find my listing, then Choose this listing.",
+    "Allez dans Ajouter / gérer une annonce → Rechercher et demander. Choisissez Agenda ou Annuaire local dans Rechercher dans. Saisissez au moins deux lettres du nom. La commune est obligatoire pour l’annuaire et facultative pour l’agenda. Cliquez sur Rechercher mon annonce, puis Choisir cette annonce."
+  ]
+]

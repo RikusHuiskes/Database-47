@@ -1541,7 +1541,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           inserted += Number(data?.inserted ?? 0); skipped += Number(data?.skipped ?? 0); processed += batch.length;
           setImportNotice(`${processed} van ${importPreview.length} gecontroleerd; ${inserted} toegevoegd, ${skipped} al aanwezig. Bestaande gegevens blijven behouden.`);
         }
-        setMessage(`${inserted} nieuwe activiteiten toegevoegd; ${skipped} bestaande activiteiten behouden. Nieuwe activiteiten wachten op controle.`);
+        setMessage(`${inserted} nieuwe activiteiten toegevoegd; ${skipped} bestaande activiteiten behouden. Nieuwe activiteiten uit de geselecteerde bronnen zijn automatisch goedgekeurd.`);
         setImportPreview([]);
         await loadData();
       } catch (cause) {
@@ -1601,7 +1601,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       if (!event.category_id) skippedWithoutCategory += 1;
       const { category_id, ...eventPayload } = event;
       const { error: insertError } = await supabase.rpc("submit_pending_event", {
-        p_event: eventPayload,
+        p_event: { ...eventPayload, submission_kind: "manual" },
         p_category_id: category_id || null,
       });
       if (insertError) {
@@ -2502,7 +2502,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <span className="import-preview-kicker"><T>{"Importvoorvertoning"}</T></span>
             <h3><T>{importSourceName}</T></h3>
             <p role="status"><T>{importNotice}</T></p>
-            <p><T>{"Nieuwe activiteiten komen na import eerst in "}</T><strong><T>{"Wacht op controle"}</T></strong><T>{". De bronlink blijft bewaard. Na import pas je per evenement de categorie aan met "}</T><strong><T>{"BEWERKEN"}</T></strong><T>{"."}</T></p>
+            <p><T>Geselecteerde bronimports worden automatisch goedgekeurd. Handmatig aangeleverde sociale berichten blijven wachten op controle. De bronlink blijft bewaard; aanpassen kan via BEWERKEN.</T></p>
           </div>
           <T>{categories.length === 0 && <p role="alert" style={{ color: "#9f1239" }}><T>{"Er zijn geen categorieën geladen. Importeer nog niet; de categorieën moeten eerst in deze database beschikbaar zijn."}</T></p>}</T>
           <T>{importPreview.length > 0 && (
@@ -2512,7 +2512,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               disabled={importing || !isAdmin || categories.length === 0}
               style={{ marginBottom: 14, padding: "12px 18px", border: 0, borderRadius: 8, background: importing ? "#94a3b8" : "#16734b", color: "white", cursor: importing ? "wait" : "pointer", fontSize: 15 }}
             >
-              <T>{importing ? "Importeren..." : `Importeer ${importPreview.length} activiteiten naar Wacht op controle`}</T>
+              <T>{importing ? "Importeren..." : `Importeer ${importPreview.length} activiteiten`}</T>
             </button>
           )}</T>
           <div className="import-preview-list">

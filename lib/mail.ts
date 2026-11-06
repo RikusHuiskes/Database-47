@@ -17,10 +17,26 @@ export function safeMailError(error:unknown){
  if(['ETIMEDOUT','ECONNECTION','ESOCKET','EDNS'].includes(code))return 'De beveiligde verbinding met Strato kon niet worden gemaakt. Controleer de server en probeer later opnieuw.';
  return 'De e-mail kon niet worden verzonden. Controleer de mailinstellingen of probeer later opnieuw.';
 }
-type Payload={audience?:string;kind?:string;status?:string;title?:string;reference?:string};
+type Payload={audience?:string;kind?:string;status?:string;title?:string;reference?:string;directory?:boolean;amountCents?:number;test?:boolean;summary?:string};
 export function listingMail(template:string,payload:Payload){
  const title=String(payload.title??'Je vermelding').slice(0,250),reference=String(payload.reference??'');
- if(payload.audience==='admin')return {subject:'Côte de Duras — nieuw verzoek om te beoordelen',text:`Er staat een nieuwe ${payload.kind==='claim'?'beheeraanvraag':'correctiemelding'} klaar.\n\nVermelding: ${title}\nReferentie: ${reference}\n\nOpen de website, log in als beheerder en open Beheeraanvragen & correctiemeldingen. Controleer de bevoegdheid onafhankelijk. Deze melding verleent geen beheerrechten.`};
+ if(payload.audience==='admin'){
+  const kinds:Record<string,[string,string]>={
+   claim:['Nieuwe beheeraanvraag','Beheeraanvragen & correctiemeldingen'],
+   correction:['Nieuwe correctiemelding','Beheeraanvragen & correctiemeldingen'],
+   submission:['Nieuwe handmatige aanmelding',payload.directory?'Gemeentegids · Bedrijven beheren':'Wacht op controle'],
+   change:['Vermelding gewijzigd',payload.directory?'Gemeentegids · Bedrijven beheren':'Wacht op controle / Alle evenementen'],
+   advertising:['Nieuwe advertentieaanvraag','Facturen en advertentieaanvragen'],
+   payment:['Betaalstatus bijgewerkt','Facturen en advertentieaanvragen'],
+   daily_import:['Dagelijkse import afgerond','Evenementen beheren'],
+   import_failure:['Dagelijkse import vraagt aandacht','Evenementen beheren'],
+  };
+  const [label,section]=kinds[payload.kind??'correction']??kinds.correction;
+  const states:Record<string,string>={paid:'Betaald',requested:'Aangevraagd',failed:'Mislukt',canceled:'Geannuleerd',expired:'Verlopen',refunded:'Terugbetaald'};
+  const amount=Number.isSafeInteger(payload.amountCents)?`\nBedrag: € ${((payload.amountCents??0)/100).toFixed(2).replace('.',',')}`:'';
+  const status=payload.status?`\nStatus: ${states[payload.status]??payload.status}`:'';
+  return {subject:`Côte de Duras — ${payload.test?'[TEST] ':''}${label}`,text:`${label}\n\nVermelding: ${title}\nReferentie: ${reference}${status}${amount}${payload.summary?'\n\n'+payload.summary:''}\n\nOpen https://www.cotededuras.com/ en log in als beheerder.\nOnderdeel: ${section}.\n\nControleer de gegevens en, bij een beheeraanvraag, de bevoegdheid onafhankelijk. Deze melding verleent geen beheerrechten.`};
+ }
  if(template==='received')return {subject:'Côte de Duras — je verzoek is ontvangen',text:`Beste bezoeker,\n\nJe ${payload.kind==='claim'?'beheeraanvraag':'correctiemelding'} voor “${title}” is ontvangen.\nReferentie: ${reference}\n\nWe controleren je verzoek. Deze bevestiging geeft geen beheerrechten en verandert niets aan de vermelding. Voor beheer controleren we eerst of je namens de organisatie mag handelen.\n\nMet vriendelijke groet,\nCôte de Duras\ninfo@cotededuras.com`};
  const outcomes:Record<string,string>={approved:'Je beheeraanvraag is na controle goedgekeurd. De beheerder verstrekt de persoonlijke beheerlink afzonderlijk via het onafhankelijk geverifieerde contactkanaal.',rejected:'Je verzoek is beoordeeld en niet goedgekeurd. Voor toelichting kun je op deze e-mail reageren.',resolved:'Je correctiemelding is door de beheerder afgehandeld. Voor vragen kun je op deze e-mail reageren.',revoked:'De eerder verleende beheerrechten zijn ingetrokken. De bijbehorende beheerlink geeft geen toegang meer.'};
  if(!outcomes[String(payload.status)])throw Error('Onbekend berichttype.');
