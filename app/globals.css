@@ -1263,3 +1263,5 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .visitor-manual .manual-route-table tbody tr:nth-child(even) { background: #f6f7f1; }
 .visitor-manual h3[id] { scroll-margin-top: 24px; }
 @media(max-width:680px) { .visitor-manual .manual-route-table { font-size: 14px; } .visitor-manual .manual-route-table th, .visitor-manual .manual-route-table td { padding: 12px 8px; } }
+
+.owner-start-options{margin:26px 0 36px;padding:24px;border:1px solid #d7dfd0;border-radius:18px;background:#f3f5ec}.owner-start-options h2{margin-top:0}.owner-start-options>div{display:grid;grid-template-columns:1fr 1fr;gap:16px}.owner-start-options a{display:grid;gap:8px;padding:20px;border:1px solid #bccfbf;border-radius:12px;background:#fffef9;text-decoration:none}.owner-start-options strong{font-size:1.15rem}.owner-start-options a:focus-visible{outline:3px solid #b76543;outline-offset:3px}.visitor-site .primary-nav{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap}@media(max-width:600px){.owner-start-options>div{grid-template-columns:1fr}.owner-start-options{padding:16px}}

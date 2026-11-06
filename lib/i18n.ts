@@ -1,6 +1,6 @@
 export type Locale='nl'|'en'|'fr';
 export const LOCALE_COOKIE='cdd-language';
-export function localeFrom(value:unknown):Locale{return value==='en'||value==='fr'?value:'nl';}
+export function localeFrom(value:unknown):Locale{return value==='en'||value==='nl'?value:'fr';}
 export const intlLocale:Record<Locale,string>={nl:'nl-NL',en:'en-GB',fr:'fr-FR'};
 export function normalizeMessage(text:string){return text.replace(/\s+/g,' ').trim();}
 // Stable key shared with the offline catalogue builder. No personal text is sent to a translator.

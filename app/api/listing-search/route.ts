@@ -3,6 +3,7 @@ import areas from '../../../lib/data/area-catalog.json';
 import {municipalCatalog} from '../../../lib/municipal-catalog';
 import {COMMERCIAL_SERVICE_TYPES} from '../../../lib/municipal-shops';
 import {normalizePlaceName} from '../../../lib/local-area';
+import {decorateMunicipalDirectory} from '../../../lib/municipal-advertising-server';
 
 export async function GET(request:Request){
  const params=new URL(request.url).searchParams;
@@ -13,7 +14,8 @@ export async function GET(request:Request){
  if(source==='directory'){
   const area=areas.areas.find(item=>normalizePlaceName(item.name)===normalizePlaceName(city));
   if(!area)return reply({error:'Kies voor de gemeentegids een plaats uit de lijst.'},400);
-  const results=municipalCatalog(area.name,area.latitude,area.longitude,'all',area.code_insee,false).services
+  const directory=await decorateMunicipalDirectory(municipalCatalog(area.name,area.latitude,area.longitude,'all',area.code_insee,false),area.code_insee,'all');
+  const results=directory.services
    .filter(item=>COMMERCIAL_SERVICE_TYPES.includes(item.type)&&normalizePlaceName(item.name).includes(normalizePlaceName(q)))
    .flatMap(item=>{
     const actual=areas.areas.find(candidate=>item.codeInsee?candidate.code_insee===item.codeInsee:normalizePlaceName(candidate.name)===normalizePlaceName(item.municipality??''));

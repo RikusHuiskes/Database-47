@@ -11,7 +11,7 @@ import './language.css';
 type LanguageContext={locale:Locale;setLocale:(locale:Locale)=>void;t:(text:string)=>string};
 const dictionaries:Record<Locale,Dictionary>={nl,en,fr};
 const knownPublicKeys=new Set(publicKeys);
-const Context=createContext<LanguageContext>({locale:'nl',setLocale:()=>{},t:text=>text});
+const Context=createContext<LanguageContext>({locale:'fr',setLocale:()=>{},t:text=>text});
 const contentCache:Record<Locale,Map<string,string|null>>={nl:new Map(),en:new Map(),fr:new Map()};
 const queues:Record<Locale,Set<string>>={nl:new Set(),en:new Set(),fr:new Set()};
 const listeners=new Set<()=>void>();let revision=0;

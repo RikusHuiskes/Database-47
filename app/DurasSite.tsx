@@ -2019,13 +2019,12 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} decoding="async" /></A></span>
             <span className="brand-name"><strong><T>{"CÔTE DE DURAS"}</T></strong></span>
           </a></A>
-          <a className="my-listing-link" href="/mijn-vermelding"><T>{"Mijn vermelding "}</T><span aria-hidden="true"><T>{"→"}</T></span></a>
+          <a className="my-listing-link" href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T><span aria-hidden="true"><T>{"→"}</T></span></a>
           <A><nav className="primary-nav" aria-label="Hoofdnavigatie">
             <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
             <a href="#agenda"><T>{"Agenda"}</T></a>
             <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
             <a href="#gemeenten"><T>{"Gemeente informatie"}</T></a>
-            <a href="/evenement/nieuw" onClick={openEventEntryForm}><T>{"Nieuw evenement/vermelding"}</T></a>
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
           </nav></A>
         </div>
@@ -2167,6 +2166,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         </div>
         <div className="municipality-directory">
           <p><a className="text-arrow-link" href="/gemeentegids/adverteren"><T>{"Voor ondernemers: bekijk adverteren in de gemeentegids →"}</T></a></p>
+          <p><a className="text-arrow-link" href="/gemeentegids/aanmelden"><T>Bedrijf aanmelden in de gemeentegids →</T></a></p>
           <form className="municipality-service-controls" onSubmit={findMunicipalityServices}>
             <label className="field-label"><T>{"Gemeente of dorp "}</T><select className="municipality-select" value={municipalityAreaId} onChange={(event) => {
                 setMunicipalityAreaId(event.target.value);
@@ -2287,7 +2287,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} loading="lazy" decoding="async" /></A></span>
           <span className="brand-name"><strong><T>{"CÔTE DE DURAS"}</T></strong><small><T>{"Evenementen en informatie binnen 50 kilometer"}</T></small></span>
         </a></A>
-        <div><a href="#agenda"><T>{"Agenda"}</T></a><a href="#gemeenten"><T>{"Gemeenten"}</T></a><a href="/disclaimer"><T>{"Disclaimer"}</T></a><a href="/contact"><T>{"Contactgegevens"}</T></a><a href="/handleiding"><T>{"Handleiding"}</T></a><a href="/evenement/nieuw" onClick={openEventEntryForm}><T>{"Nieuw evenement/vermelding"}</T></a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><T>{"Beheerderslogin"}</T></button></div>
+        <div><a href="#agenda"><T>{"Agenda"}</T></a><a href="#gemeenten"><T>{"Gemeenten"}</T></a><a href="/disclaimer"><T>{"Disclaimer"}</T></a><a href="/contact"><T>{"Contactgegevens"}</T></a><a href="/handleiding"><T>{"Handleiding"}</T></a><a href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T></a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><T>{"Beheerderslogin"}</T></button></div>
         <span className="footer-note"><T>{"Een streek vol verhalen, ontmoetingen en kleine ontdekkingen."}</T></span>
       </footer>
 
