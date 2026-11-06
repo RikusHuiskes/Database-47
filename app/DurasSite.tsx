@@ -399,6 +399,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const [adminEventPage, setAdminEventPage] = useState(1);
   const [bulkApproving,setBulkApproving]=useState(false);
   const [bulkApprovalNotice,setBulkApprovalNotice]=useState('');
+  const [bulkApprovalError,setBulkApprovalError]=useState('');
+  const [bulkApprovalCandidates,setBulkApprovalCandidates]=useState<EventRow[]|null>(null);
+  const bulkApprovalInFlight=useRef(false);
+  const bulkApprovalCancel=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{if(bulkApprovalCandidates)bulkApprovalCancel.current?.focus();},[bulkApprovalCandidates]);
   const [adminEventSearch,setAdminEventSearch]=useState('');
   const [adminCategoryFilter,setAdminCategoryFilter]=useState('all');
   const [adminContentMounted, setAdminContentMounted] = useState(false);
@@ -936,10 +941,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   }
 
   async function approveAllImports() {
-    if(!supabase||!isAdmin||bulkApproving||importing||updatingEventId)return;
-    const candidates=events.filter(isPendingImport);
+    if(!supabase||!isAdmin||bulkApprovalInFlight.current||importing||updatingEventId||!bulkApprovalCandidates)return;
+    const candidates=bulkApprovalCandidates;
     if(!candidates.length)return;
-    if(!window.confirm(t(`Alle ${candidates.length} wachtende imports goedkeuren? Ze worden openbaar zichtbaar. Dit geldt voor alle categorieën en alle pagina’s, ook buiten je zoekfilters. Handmatige inzendingen worden niet meegenomen.`)))return;
+    bulkApprovalInFlight.current=true;
+    setBulkApprovalCandidates(null);setBulkApprovalError('');
     setBulkApproving(true);setError('');setMessage('Imports goedkeuren…');setBulkApprovalNotice('Imports goedkeuren…');
     let approved=0;
     try{
@@ -955,8 +961,9 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     }catch(cause){
       await loadData();
       setBulkApprovalNotice(`Actie gestopt; ${approved} goedkeuringen bevestigd. Start opnieuw voor de resterende wachtende imports.`);
-      setError(`${approved} imports goedgekeurd. De actie is gestopt: ${cause instanceof Error?cause.message:'Verbindingsfout'}. Je kunt opnieuw starten voor de resterende wachtende imports.`);
-    }finally{setBulkApproving(false);}
+      const failure=`${approved} imports goedgekeurd. De actie is gestopt: ${cause instanceof Error?cause.message:'Verbindingsfout'}. Je kunt opnieuw starten voor de resterende wachtende imports.`;
+      setBulkApprovalError(failure);setError(failure);
+    }finally{bulkApprovalInFlight.current=false;setBulkApproving(false);}
   }
 
   async function setEventStatus(event: EventRow, status: "approved" | "rejected") {
@@ -2556,9 +2563,19 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             ><T>{"Alle evenementen ("}</T><T>{events.length}</T><T>{") "}</T></button>
           </div></A>
           <div style={{padding:14,marginBottom:16,background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:8}}>
-            <button type="button" disabled={loading||bulkApproving||importing||updatingEventId!==null||pendingImportCount===0} onClick={()=>void approveAllImports()} style={{padding:'10px 14px',border:0,borderRadius:7,background:'#16734b',color:'white',fontWeight:700}}><T>{bulkApproving?'Imports worden goedgekeurd…':`Alle imports goedkeuren (${pendingImportCount})`}</T></button>
+            <button type="button" aria-expanded={bulkApprovalCandidates!==null} aria-controls="bulk-import-confirmation" disabled={loading||bulkApproving||importing||updatingEventId!==null||pendingImportCount===0} onClick={()=>{setBulkApprovalNotice('');setBulkApprovalError('');setBulkApprovalCandidates(events.filter(isPendingImport));}} style={{padding:'10px 14px',border:0,borderRadius:7,background:'#16734b',color:'white',fontWeight:700}}><T>{bulkApproving?'Imports worden goedgekeurd…':`Alle imports goedkeuren (${pendingImportCount})`}</T></button>
             <p style={{margin:'8px 0 0'}}><T>{"Keur alle wachtende imports goed, in alle categorieën en op alle pagina’s. De vermeldingen worden openbaar zichtbaar. Handmatige inzendingen blijven apart ter controle."}</T></p>
+            {bulkApprovalCandidates&&<div id="bulk-import-confirmation" role="group" aria-labelledby="bulk-import-confirmation-title" style={{padding:16,marginTop:12,border:'1px solid #16734b',borderRadius:8,background:'white'}}>
+              <h3 id="bulk-import-confirmation-title" style={{marginTop:0}}><T>{"Imports openbaar maken"}</T></h3>
+              <p><T>{`Je gaat ${bulkApprovalCandidates.length} wachtende imports goedkeuren. Dit geldt voor alle categorieën en alle pagina’s, ook buiten je zoekfilters. Handmatige inzendingen blijven ter controle.`}</T></p>
+              <div style={{display:'flex',flexWrap:'wrap',gap:10}}>
+                <button type="button" ref={bulkApprovalCancel} onClick={()=>setBulkApprovalCandidates(null)}><T>{"Annuleren"}</T></button>
+                <button type="button" disabled={loading||bulkApproving||importing||updatingEventId!==null} onClick={()=>void approveAllImports()} style={{padding:'10px 14px',border:0,borderRadius:7,background:'#16734b',color:'white',fontWeight:700}}><T>{`Ja, keur ${bulkApprovalCandidates.length} imports goed`}</T></button>
+              </div>
+            </div>}
+            {!pendingImportCount&&!bulkApproving&&!bulkApprovalNotice&&<p role="status"><T>{"Er staan geen imports meer klaar om goed te keuren."}</T></p>}
             <T>{bulkApprovalNotice&&<p role="status" aria-live="polite"><T>{bulkApprovalNotice}</T></p>}</T>
+            {bulkApprovalError&&<p role="alert" style={{color:'#9f1239'}}><T>{bulkApprovalError}</T></p>}
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:14,alignItems:'end',marginBottom:16}}>
             <label style={{...labelStyle,flex:'1 1 240px'}}><T>{"Zoek op naam "}</T><A><input type="search" style={inputStyle} value={adminEventSearch} placeholder="Bijvoorbeeld Château of Café de la place" onChange={e=>{setAdminEventSearch(e.target.value);setAdminEventPage(1);}} /></A>

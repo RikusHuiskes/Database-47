@@ -1,0 +1,6 @@
+[
+  ["Imports openbaar maken", "Publish imported listings", "Publier les fiches importées"],
+  ["Je gaat {0} wachtende imports goedkeuren. Dit geldt voor alle categorieën en alle pagina’s, ook buiten je zoekfilters. Handmatige inzendingen blijven ter controle.", "You are about to approve {0} pending imports across all categories and pages, including outside your search filters. Manually submitted listings remain awaiting review.", "Vous allez approuver {0} imports en attente, dans toutes les catégories et toutes les pages, même en dehors de vos filtres. Les soumissions manuelles restent à vérifier."],
+  ["Ja, keur {0} imports goed", "Yes, approve {0} imports", "Oui, approuver {0} imports"],
+  ["Er staan geen imports meer klaar om goed te keuren.", "There are no more imports awaiting approval.", "Il ne reste aucun import à approuver."]
+]
