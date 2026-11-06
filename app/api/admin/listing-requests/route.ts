@@ -1,7 +1,11 @@
 export const maxDuration=300;
+import {after} from 'next/server';
 import {listingTriage} from '../../../../lib/listing-triage';
 import {adminService} from '../../../../lib/admin-service';
 import {managedToken,tokenHash} from '../../../../lib/managed-events';
+import {sealManagementMail} from '../../../../lib/management-mail';
+import {mailConfiguration} from '../../../../lib/mail';
+import {processMailOutbox} from '../../../../lib/mail-outbox';
 export async function GET(request:Request) {
   const client=await adminService(request);
   if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
@@ -40,13 +44,29 @@ export async function POST(request:Request) {
     const grants=['approved','reissued'].includes(body.action);
     const args={p_id:body.id,p_action:body.action,p_note:body.note??'',p_contact:body.contact??'',p_token_hash:tokenHash(token),p_reviewer:reviewer.data.user.id};
     let eventId:string;
+    let mail:{state:string;recipient:string}|undefined;
+    const deliveryEnabled=mailConfiguration().deliveryEnabled;
     if(grants){
       const email=String(body.deliveryEmail??'').trim().toLowerCase();
       if(body.emailConfirmed!=='on'||! /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||email.length>254)throw Error('Controleer en bevestig het e-mailadres voor de persoonlijke beheerlink.');
+      const listing=await client.from('listing_requests').select('event_id').eq('id',body.id).maybeSingle();
+      if(listing.error||!listing.data)throw Error('Aanvraag niet gevonden.');
+      const origin=new URL(request.url).origin;
+      if(!origin.startsWith('https://'))throw Error('Open de beveiligde website om een beheerlink te versturen.');
+      const result=await client.rpc('review_listing_request_with_mail',{
+        ...args,p_email:email,
+        p_encrypted_secret:sealManagementMail({eventId:listing.data.event_id,token,origin})
+      });
+      if(result.error)throw Error(result.error.message);
+      eventId=result.data.eventId;
+      mail={state:'pending',recipient:email};
+    }else{
+      const result=await client.rpc('review_listing_request',args);
+      if(result.error)throw Error(result.error.message);
+      eventId=result.data;
     }
-    const result=await client.rpc('review_listing_request',args);
-    if(result.error)throw Error(result.error.message);
-    eventId=result.data;
-    return Response.json({ok:true,manageFragment:grants?`${eventId}:${token}`:undefined},{headers:{'Cache-Control':'no-store'}});
+    // A mail failure must not turn an already committed decision into a failed save.
+    if(deliveryEnabled)after(async()=>{try{await processMailOutbox(10);}catch{console.error('De opgeslagen beheerbeslissing wacht nog op mailverwerking.');}});
+    return Response.json({ok:true,manageFragment:grants?`${eventId}:${token}`:undefined,mail,mailDeliveryEnabled:deliveryEnabled},{headers:{'Cache-Control':'no-store'}});
   }catch(e){return Response.json({error:e instanceof Error?e.message:'Verwerken mislukt.'},{status:400});}
 }
