@@ -41,7 +41,7 @@ export default function AdvertisingRequests({client}:{client:SupabaseClient|null
   }catch(e){setError(e instanceof Error?e.message:'De actie is niet afgerond.');}
   finally{setBusy(false);}
  };
- const saveSettings=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();void action({action:'save-settings',settings:{tax_mode:draft.tax_mode,vat_rate:Number(draft.vat_rate),vat_number:draft.vat_number.trim().toUpperCase(),tax_note:draft.tax_note.trim(),price_basis:draft.price_basis?'tax_inclusive':''}});};
+ const saveSettings=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();void action({action:'save-settings',settings:{tax_mode:draft.tax_mode,vat_rate:draft.tax_mode==='franchise_exempt'?0:Number(draft.vat_rate),vat_number:draft.tax_mode==='franchise_exempt'?'':draft.vat_number.trim().toUpperCase(),tax_note:draft.tax_note.trim(),price_basis:draft.price_basis?'tax_inclusive':''}});};
  const summary=data?.summary??zero;
  return <section className="advertising-admin advertising-billing-admin">
   <div className="advertising-admin-summary">
