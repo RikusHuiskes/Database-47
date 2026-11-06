@@ -1,0 +1,442 @@
+[
+  [
+    "Vind je weg in Côte de Duras: zoeken, foto’s, Mijn vermelding, adverteren, betalingen, facturen en de beheerdersmodule.",
+    "Find your way around Côte de Duras: search, photos, My listing, advertising, payments, invoices and administration.",
+    "Retrouvez les fonctions de Côte de Duras : recherche, photos, Mon annonce, publicité, paiements, factures et administration."
+  ],
+  [
+    "Bijgewerkt op 6 november 2026.",
+    "Updated on 6 November 2026.",
+    "Mis à jour le 6 novembre 2026."
+  ],
+  [
+    " Alle handelingen voor een adverteerder komen samen onder Mijn vermelding. Hieronder vind je de routes voor bezoekers, eigenaren en beheerders, inclusief foto’s, betalingen, facturen en e-mail.",
+    " All advertiser actions are brought together under My listing. Below are the routes for visitors, owners and administrators, including photos, payments, invoices and email.",
+    " Toutes les démarches des annonceurs sont réunies dans Mon annonce. Retrouvez ci-dessous les parcours des visiteurs, propriétaires et administrateurs, y compris les photos, paiements, factures et e-mails."
+  ],
+  [
+    "5, 10, 25 of 50 kilometer",
+    "5, 10, 25 or 50 kilometres",
+    "5, 10, 25 ou 50 kilomètres"
+  ],
+  [
+    "Hotels, B&B’s & vakantiehuizen",
+    "Hotels, B&Bs & holiday homes",
+    "Hôtels, chambres d’hôtes et locations de vacances"
+  ],
+  [
+    "De zoekafstand begint op 5 kilometer. De resultaten staan direct onder het zoekscherm en worden aangepast aan de gekozen categorie, afstand, plaats en overige filters. De teller hoort bij die combinatie. Kijk in de resultaatmelding welke plaats of locatie als middelpunt wordt gebruikt.",
+    "The search radius starts at 5 kilometres. Results appear directly below the search panel and follow the selected category, distance, town and other filters. The count reflects that combination. Check the results message to see which town or location is used as the centre.",
+    "Le rayon de recherche commence à 5 kilomètres. Les résultats apparaissent directement sous la recherche et correspondent à la catégorie, la distance, la commune et aux autres filtres choisis. Le compteur reflète cette combinaison. Le message des résultats indique la commune ou la position utilisée comme centre."
+  ],
+  [
+    "10. Andere onderdelen en hulp",
+    "10. Other sections and help",
+    "10. Autres rubriques et aide"
+  ],
+  [
+    "11. Voor beheerders",
+    "11. For administrators",
+    "11. Pour les administrateurs"
+  ],
+  [
+    "Betalingen, Mollie en je factuur",
+    "Payments, Mollie and your invoice",
+    "Paiements, Mollie et votre facture"
+  ],
+  [
+    "Waar vind ik wat?",
+    "Where can I find it?",
+    "Où trouver chaque fonction ?"
+  ],
+  [
+    "Gebruik deze wegwijzer om meteen naar de juiste plek te gaan. De uitleg voor een taak staat verderop in deze handleiding.",
+    "Use these shortcuts to go straight to the right place. Instructions for each task appear further down this guide.",
+    "Ces raccourcis vous conduisent directement au bon endroit. Les étapes de chaque démarche sont expliquées plus bas."
+  ],
+  [
+    "Ik wil…",
+    "I want to…",
+    "Je souhaite…"
+  ],
+  [
+    "Hier moet je zijn",
+    "Go here",
+    "Où aller"
+  ],
+  [
+    "Een activiteit vinden",
+    "Find an activity",
+    "Trouver une activité"
+  ],
+  [
+    "Agenda → zoekscherm onder de foto",
+    "Agenda → search panel below the photo",
+    "Agenda → recherche sous la photo"
+  ],
+  [
+    "Een voorziening of bedrijf zoeken",
+    "Find a service or business",
+    "Trouver un service ou une entreprise"
+  ],
+  [
+    "Gemeente informatie → gemeente en rubriek kiezen",
+    "Local information → choose town and category",
+    "Informations communales → choisir la commune et la rubrique"
+  ],
+  [
+    "Een nieuwe vermelding insturen",
+    "Submit a new listing",
+    "Proposer une nouvelle annonce"
+  ],
+  [
+    "Nieuw evenement/vermelding",
+    "New event/listing",
+    "Nouvel événement/annonce"
+  ],
+  [
+    "Mijn gegevens of foto aanpassen",
+    "Edit my details or photo",
+    "Modifier mes informations ou ma photo"
+  ],
+  [
+    "Mijn vermelding → Gegevens wijzigen",
+    "My listing → Edit details",
+    "Mon annonce → Modifier les informations"
+  ],
+  [
+    "Een beheerlink aanvragen of herstellen",
+    "Request or recover a management link",
+    "Demander ou récupérer un lien de gestion"
+  ],
+  [
+    "Mijn vermelding → Zoeken & aanvragen of Beheerlink & hulp",
+    "My listing → Search & request access or Management link & help",
+    "Mon annonce → Rechercher et demander l’accès ou Lien de gestion et aide"
+  ],
+  [
+    "Adverteren of mijn betaling bekijken",
+    "Advertise or view my payment",
+    "Faire de la publicité ou consulter mon paiement"
+  ],
+  [
+    "Mijn vermelding → Adverteren / Betalingen",
+    "My listing → Advertise / Payments",
+    "Mon annonce → Publicité / Paiements"
+  ],
+  [
+    "Imports controleren en goedkeuren",
+    "Review and approve imports",
+    "Contrôler et approuver les imports"
+  ],
+  [
+    "Beheerderslogin → Wacht op controle",
+    "Administrator sign-in → Awaiting review",
+    "Connexion administrateur → En attente de contrôle"
+  ],
+  [
+    "Facturen en gefactureerde bedragen zien",
+    "View invoices and invoiced totals",
+    "Consulter les factures et montants facturés"
+  ],
+  [
+    "Beheerderslogin → Facturen & advertentieaanvragen",
+    "Administrator sign-in → Invoices & advertising requests",
+    "Connexion administrateur → Factures et demandes publicitaires"
+  ],
+  [
+    "De verzending van beheermails controleren",
+    "Check management email delivery",
+    "Contrôler l’envoi des e-mails de gestion"
+  ],
+  [
+    "Beheerderslogin → Strato-mailverbinding",
+    "Administrator sign-in → Strato email connection",
+    "Connexion administrateur → Connexion e-mail Strato"
+  ],
+  [
+    "Bezoekers en advertentiebereik bekijken",
+    "View visits and advertising reach",
+    "Consulter les visites et la portée publicitaire"
+  ],
+  [
+    "Beheerderslogin → Bezoekers & advertentiebereik",
+    "Administrator sign-in → Visitors & advertising reach",
+    "Connexion administrateur → Visiteurs et portée publicitaire"
+  ],
+  [
+    "Ontbreekt een foto of kan die niet geladen worden? In de agenda verschijnt dan het logo van Côte de Duras. Dat verandert niets aan de inhoud van de vermelding.",
+    "If a photo is missing or cannot load, the agenda shows the Côte de Duras logo instead. The listing details remain unchanged.",
+    "Si une photo manque ou ne se charge pas, l’agenda affiche le logo de Côte de Duras. Le contenu de l’annonce reste disponible."
+  ],
+  [
+    "Ook Fysiotherapie en Psychologische dienstverlening zijn aparte rubrieken in de gemeentegids. Kies steeds de gewenste gemeente en rubriek; de gids vermeldt de werkelijke locatie van de gevonden dienst.",
+    "Physiotherapy and Psychological services are also separate categories in the local directory. Select the town and category you need; the directory shows the actual location of the service found.",
+    "La kinésithérapie et les services psychologiques sont aussi des rubriques distinctes de l’annuaire. Choisissez la commune et la rubrique souhaitées ; le lieu réel du service trouvé est indiqué."
+  ],
+  [
+    "Mijn vermelding is de centrale ingang voor eigenaren en adverteerders, voor zowel de agenda als de gemeentegids. Bij openbare evenementdetails staat alleen een verwijzing naar deze omgeving. Zoeken of op een advertentie klikken geeft geen toegang tot privégegevens of betalingen.",
+    "My listing is the central entry point for owners and advertisers, for both the agenda and local directory. Public event details only link to this area. Searching or clicking an advertisement does not grant access to private details or payments.",
+    "Mon annonce est le point d’entrée des propriétaires et annonceurs, pour l’agenda comme pour l’annuaire. Les fiches publiques renvoient simplement vers cet espace. Une recherche ou un clic sur une publicité ne donne pas accès aux données privées ni aux paiements."
+  ],
+  [
+    "Zonder beheerlink kun je kiezen uit Beheerlink openen, Zoeken & aanvragen en Beheerlink & hulp. Na het openen van je persoonlijke link zie je vier onderdelen voor jouw vermelding:",
+    "Without a management link, choose Open management link, Search & request access or Management link & help. After opening your personal link, you see four sections for your listing:",
+    "Sans lien de gestion, choisissez Ouvrir le lien de gestion, Rechercher et demander l’accès ou Lien de gestion et aide. Après avoir ouvert votre lien personnel, quatre rubriques apparaissent pour votre annonce :"
+  ],
+  [
+    "Gegevens wijzigen: tekst, contactgegevens en foto aanpassen en opslaan.",
+    "Edit details: update and save text, contact details and photos.",
+    "Modifier les informations : mettre à jour et enregistrer les textes, coordonnées et photos."
+  ],
+  [
+    "Adverteren: advertentievormen kiezen, voorbeelden bekijken en een aanvraag met betaling starten.",
+    "Advertise: choose placements, view examples and start an advertising order with payment.",
+    "Publicité : choisir les formules, consulter les exemples et lancer une commande avec paiement."
+  ],
+  [
+    "Betalingen: aanvragen, bedragen, perioden en betaalstatussen bekijken en zo nodig een betaling hervatten.",
+    "Payments: view orders, amounts, periods and payment statuses, and resume a payment if needed.",
+    "Paiements : consulter les demandes, montants, périodes et statuts, et reprendre un paiement si nécessaire."
+  ],
+  [
+    "Beheerlink & hulp: je persoonlijke link kopiëren of bewaren, hulp bij herstel en correcties voor niet-bewerkbare gegevens.",
+    "Management link & help: copy or save your personal link, get recovery help and request corrections to fields you cannot edit.",
+    "Lien de gestion et aide : copier ou conserver votre lien, demander sa récupération et signaler des corrections aux champs non modifiables."
+  ],
+  [
+    "Controleer bovenaan de titel van de vermelding die je beheert. Met Andere vermelding openen wissel je naar een andere persoonlijke beheerlink. Sla wijzigingen eerst op; kies daarna een ander onderdeel of verlaat de pagina.",
+    "Check the listing title at the top. Use Open another listing to switch to a different personal management link. Save edits before switching sections or leaving the page.",
+    "Vérifiez le titre de l’annonce en haut. Ouvrir une autre annonce permet de changer de lien personnel. Enregistrez vos modifications avant de changer de rubrique ou de quitter la page."
+  ],
+  [
+    "Plak bij ",
+    "Paste under ",
+    "Collez dans "
+  ],
+  [
+    "Kies Beheerlink openen. Plak bij ",
+    "Choose Open management link. Under ",
+    "Choisissez Ouvrir le lien de gestion. Dans "
+  ],
+  [
+    "Kies Gegevens wijzigen. Pas de gewenste gegevens aan, bijvoorbeeld de titel, beschrijving, datum, prijs, contactgegevens of website.",
+    "Choose Edit details. Update the title, description, date, price, contact details or website as needed.",
+    "Choisissez Modifier les informations. Mettez à jour le titre, la description, la date, le prix, les coordonnées ou le site selon vos besoins."
+  ],
+  [
+    "Kies Beheerlink & hulp en open Beheerlink kwijt of nooit ontvangen?",
+    "Choose Management link & help and open Lost your management link or never received it?",
+    "Choisissez Lien de gestion et aide, puis Lien de gestion perdu ou jamais reçu ?"
+  ],
+  [
+    "Ga naar Mijn vermelding → Zoeken & aanvragen. Kies Evenementenkalender of Gemeentegids bij Zoeken in. Vul minimaal twee letters van de naam in. Voor de gemeentegids is de plaats verplicht; bij evenementen kun je de plaats gebruiken om verder te verfijnen. Klik op Zoek mijn vermelding en daarna op Kies deze vermelding.",
+    "Go to My listing → Search & request access. Under Search in, choose Event calendar or Local directory. Enter at least two characters of the name. A town is required for the directory; for events it is an optional filter. Select Find my listing, then Choose this listing.",
+    "Allez dans Mon annonce → Rechercher et demander l’accès. Dans Rechercher dans, choisissez Agenda ou Annuaire communal. Saisissez au moins deux caractères du nom. La commune est obligatoire pour l’annuaire et facultative pour les événements. Cliquez sur Rechercher mon annonce, puis Choisir cette annonce."
+  ],
+  [
+    "De zoekfunctie toont openbare vermeldingen. Een nieuwe inzending die nog wacht op controle vind je via de beheerlink die je bij het insturen hebt gekregen.",
+    "Search shows public listings. To access a new submission still awaiting review, use the management link provided when you submitted it.",
+    "La recherche affiche les annonces publiques. Pour une nouvelle proposition encore en attente de contrôle, utilisez le lien de gestion reçu lors de l’envoi."
+  ],
+  [
+    "Heb je je eigen vermelding al geopend met een beheerlink? Ga dan naar Beheerlink & hulp voor een correctie aan gegevens die je niet zelf kunt wijzigen. Een correctieverzoek wordt eerst beoordeeld en wijzigt de openbare informatie niet direct.",
+    "Already opened your own listing with a management link? Go to Management link & help to request a correction to details you cannot edit. A correction request is reviewed first and does not immediately change public information.",
+    "Vous avez déjà ouvert votre annonce avec un lien de gestion ? Allez dans Lien de gestion et aide pour corriger les informations que vous ne pouvez pas modifier. Une demande est d’abord examinée et ne change pas immédiatement la fiche publique."
+  ],
+  [
+    "9. Betalingen, Mollie en je factuur",
+    "9. Payments, Mollie and your invoice",
+    "9. Paiements, Mollie et votre facture"
+  ],
+  [
+    "Open Mijn vermelding met je persoonlijke beheerlink en kies Betalingen. Dit overzicht hoort alleen bij de geopende vermelding. Je ziet per aanvraag de advertentievormen, periode, het bedrag en de actuele betaalstatus.",
+    "Open My listing with your personal management link and choose Payments. This overview belongs only to the listing you opened. Each order shows its advertising placements, period, amount and current payment status.",
+    "Ouvrez Mon annonce avec votre lien personnel et choisissez Paiements. Cet aperçu concerne uniquement l’annonce ouverte. Chaque demande indique les formules publicitaires, la période, le montant et le statut du paiement."
+  ],
+  [
+    "Nog te betalen: gebruik Betalen via Mollie om naar de betaalomgeving te gaan.",
+    "Awaiting payment: use Pay with Mollie to open checkout.",
+    "À payer : cliquez sur Payer avec Mollie pour ouvrir le paiement."
+  ],
+  [
+    "Betaling gestart: gebruik Betaling hervatten via Mollie om de openstaande betaling af te ronden.",
+    "Payment started: use Resume payment with Mollie to complete the open payment.",
+    "Paiement commencé : utilisez Reprendre le paiement avec Mollie pour le terminer."
+  ],
+  [
+    "Betaallink verlopen, Betaling mislukt of Betaling afgebroken: je kunt vanuit dezelfde aanvraag opnieuw naar Mollie zolang de advertentieperiode niet voorbij is. Maak geen dubbele vermelding aan.",
+    "Payment link expired, Payment failed or Payment cancelled: restart checkout from the same order while its advertising period has not ended. Do not create a duplicate listing.",
+    "Lien de paiement expiré, Paiement échoué ou Paiement interrompu : relancez le paiement depuis la même demande tant que sa période publicitaire n’est pas terminée. Ne créez pas d’annonce en double."
+  ],
+  [
+    "Betaald: de betaling is bevestigd. De advertentie moet daarnaast zijn goedgekeurd en binnen de gekozen periode vallen. Terugbetaald betekent dat de betaling is teruggestort.",
+    "Paid: payment is confirmed. The advertisement must also be approved and within its selected period. Refunded means the payment has been returned.",
+    "Payé : le paiement est confirmé. La publicité doit aussi être approuvée et se situer dans la période choisie. Remboursé indique que le paiement a été restitué."
+  ],
+  [
+    "Bij In verwerking of twijfel over de status: klik op Betaalstatus controleren voordat je opnieuw probeert te betalen.",
+    "If the status is Processing or you are unsure, select Check payment status before trying to pay again.",
+    "Si le statut est En cours de traitement ou en cas de doute, cliquez sur Vérifier le statut du paiement avant de réessayer de payer."
+  ],
+  [
+    "Na terugkeer van Mollie",
+    "After returning from Mollie",
+    "Au retour de Mollie"
+  ],
+  [
+    "Na een bevestigde betaling verschijnt Bedankt voor je bestelling en betaling. Met Mijn betalingen bekijken ga je terug naar je eigen overzicht; met Terug naar Côte de Duras ga je naar de website. Is de betaling nog niet bevestigd, gebruik dan Betaalstatus opnieuw controleren. Alleen terugkeren naar de website is geen betaalbevestiging.",
+    "A confirmed payment shows Thank you for your order and payment. View my payments returns to your own overview; Back to Côte de Duras opens the website. If payment is not yet confirmed, use Check payment status again. Returning to the website alone is not proof of payment.",
+    "Un paiement confirmé affiche Merci pour votre commande et votre paiement. Consulter mes paiements ouvre votre aperçu ; Retour à Côte de Duras ouvre le site. Si le paiement n’est pas encore confirmé, utilisez Vérifier à nouveau le statut du paiement. Le simple retour sur le site ne confirme pas le paiement."
+  ],
+  [
+    "Werkt een betaal-QR-code of oude betaallink niet? Controleer eerst de betaalstatus in Mijn vermelding → Betalingen. Open een nog te betalen aanvraag opnieuw via de beschikbare Mollie-knop. Een QR-code voor de website opent de homepage en is geen betaalcode.",
+    "If a payment QR code or old payment link does not work, first check its status in My listing → Payments. Reopen an unpaid order using the available Mollie button. A QR code for the website opens the homepage and is not a payment code.",
+    "Si un QR code de paiement ou un ancien lien ne fonctionne pas, vérifiez d’abord le statut dans Mon annonce → Paiements. Rouvrez une demande impayée avec le bouton Mollie disponible. Un QR code du site ouvre la page d’accueil et n’est pas un code de paiement."
+  ],
+  [
+    "Waar ontvang je de factuur?",
+    "Where do you receive the invoice?",
+    "Où recevez-vous la facture ?"
+  ],
+  [
+    "Factureren staat los van betalen. Wanneer de beheerder de factuur opstelt, krijgt die een opvolgend factuurnummer en wordt de factuur als PDF naar het opgegeven factuur-e-mailadres verzonden. Het betaaloverzicht is geen factuur en bevat momenteel geen downloadknop voor facturen. Vraag bij een ontbrekende factuur hulp via info@cotededuras.com, met de naam van je vermelding en de aanvraagreferentie. Controleer ook je spammap.",
+    "Invoicing is separate from payment. When the administrator issues an invoice, it receives a sequential number and is emailed as a PDF to the billing email address supplied. The payment overview is not an invoice and currently has no invoice download button. For a missing invoice, contact info@cotededuras.com with your listing name and order reference. Also check your spam folder.",
+    "La facturation est distincte du paiement. Lorsque l’administrateur établit la facture, elle reçoit un numéro séquentiel et est envoyée en PDF à l’adresse e-mail de facturation indiquée. L’aperçu des paiements n’est pas une facture et ne propose actuellement pas de téléchargement de facture. Si elle manque, contactez info@cotededuras.com avec le nom de votre annonce et la référence de la demande. Vérifiez aussi les indésirables."
+  ],
+  [
+    "Open Mijn betalingen →",
+    "Open My payments →",
+    "Ouvrir Mes paiements →"
+  ],
+  [
+    "De rechterkolom toont uitgelichte partners. Op een smal scherm kunnen deze kaarten onder de inhoud staan. De carrousel met betaalde vermeldingen kan advertenties uit de agenda én de gemeentegids tonen. Een kaart met het label Voorbeeld is een demonstratie; Ontdek brengt je daar naar de advertentiemogelijkheden.",
+    "The right column shows featured partners. On narrow screens these cards may appear below the content. The paid-listing carousel can show advertisements from both the agenda and local directory. A card labelled Example is a demonstration; its Discover button opens the advertising options.",
+    "La colonne de droite présente les partenaires mis en avant. Sur un écran étroit, ces cartes peuvent apparaître sous le contenu. Le carrousel des annonces payantes peut réunir l’agenda et l’annuaire. Une carte marquée Exemple est une démonstration ; son bouton Découvrir ouvre les possibilités publicitaires."
+  ],
+  [
+    "Evenementen controleren en wijzigen",
+    "Review and edit events",
+    "Contrôler et modifier les événements"
+  ],
+  [
+    "De Beheerderslogin staat onderaan de website. Open na het inloggen Wacht op controle voor nog niet gepubliceerde inzendingen of Alle evenementen voor het volledige beheeroverzicht. Gebruik Zoek op naam, Categorie in beheer en de paginaknoppen om een vermelding te vinden. Met Zoekfilters wissen begin je opnieuw.",
+    "Administrator sign-in is in the website footer. After signing in, open Awaiting review for unpublished submissions or All events for the full administration list. Use Search by name, Category in administration and the page controls to find a listing. Clear search filters resets the search.",
+    "La Connexion administrateur se trouve en bas du site. Après connexion, ouvrez En attente de contrôle pour les propositions non publiées ou Tous les événements pour la liste complète. Utilisez la recherche par nom, la catégorie et les commandes de pagination. Effacer les filtres réinitialise la recherche."
+  ],
+  [
+    "BEWERKEN opent de gegevens en foto van een vermelding. Sla de aanpassing op en controleer de melding. GOEDKEUREN maakt een gecontroleerde inzending zichtbaar voor bezoekers. VERWIJDEREN is voor vermeldingen die niet mogen blijven staan. De inhoud goedkeuren is iets anders dan een betaling bevestigen; een betaalde promotie volgt ook de betaalstatus en advertentieperiode.",
+    "EDIT opens a listing’s details and photo. Save changes and check the confirmation. APPROVE makes a reviewed submission visible to visitors. DELETE removes listings that should not remain. Approving content is separate from confirming payment; paid promotion also follows payment status and its advertising period.",
+    "MODIFIER ouvre les informations et la photo. Enregistrez puis vérifiez la confirmation. APPROUVER rend une proposition contrôlée visible aux visiteurs. SUPPRIMER retire les annonces qui ne doivent pas rester. L’approbation du contenu est distincte de la confirmation du paiement ; la promotion payante dépend aussi du statut et de sa période."
+  ],
+  [
+    "Het totaal in beheer kan hoger zijn dan de bezoekersteller: beheer bevat ook inzendingen die wachten op controle, verlopen evenementen en resultaten buiten de gekozen plaats, afstand of categorie. Een vermelding zonder bruikbare locatie kan niet worden meegenomen in een afstandszoekopdracht.",
+    "The administration total may exceed the visitor count: it also includes submissions awaiting review, expired events and listings outside the chosen town, radius or category. Listings without usable location information cannot be included in a radius search.",
+    "Le total d’administration peut dépasser celui des visiteurs : il comprend aussi les propositions en attente, les événements expirés et les fiches hors de la commune, du rayon ou de la catégorie choisis. Une fiche sans localisation exploitable ne peut pas entrer dans une recherche par distance."
+  ],
+  [
+    "Importeren: voorvertonen, opslaan en goedkeuren",
+    "Import: preview, save and approve",
+    "Importer : prévisualiser, enregistrer et approuver"
+  ],
+  [
+    "Vernieuwen haalt de opgeslagen vermeldingen opnieuw op. Alles verversen en de importknoppen voor bijvoorbeeld Tourisme Duras of de Eymet-agenda halen brongegevens op voor een importvoorvertoning.",
+    "Refresh reloads saved listings. Refresh all and the source import buttons, such as Tourisme Duras or Eymet agenda, fetch source data for an import preview.",
+    "Actualiser recharge les annonces enregistrées. Tout actualiser et les boutons d’import, par exemple Tourisme Duras ou l’agenda d’Eymet, récupèrent les données pour une prévisualisation."
+  ],
+  [
+    "Controleer in de voorvertoning de titels, datums, foto’s en voorgestelde categorieën. Het aantal gevonden activiteiten betekent hier nog niet dat ze zijn opgeslagen.",
+    "Review titles, dates, photos and suggested categories in the preview. The number found does not yet mean the activities have been saved.",
+    "Contrôlez les titres, dates, photos et catégories proposées. Le nombre d’activités trouvées ne signifie pas encore qu’elles sont enregistrées."
+  ],
+  [
+    "Gebruik Importeer … activiteiten naar Wacht op controle om de import op te slaan. Bekijk daarna Wacht op controle en corrigeer onjuiste gegevens of categorieën met BEWERKEN.",
+    "Use Import … activities to Awaiting review to save the import. Then open Awaiting review and correct details or categories using EDIT.",
+    "Utilisez Importer … activités vers En attente de contrôle pour enregistrer l’import. Ouvrez ensuite cette liste et corrigez les informations ou catégories avec MODIFIER."
+  ],
+  [
+    "Keur passende inzendingen afzonderlijk goed, of kies Alle imports goedkeuren. Lees het bevestigingsvenster: deze opdracht geldt voor alle wachtende imports, ook buiten de huidige pagina of categoriefilter. Handmatig ingestuurde vermeldingen blijven apart ter controle staan.",
+    "Approve suitable submissions individually, or choose Approve all imports. Read the confirmation: this covers all pending imports, including those outside the current page or category filter. Manually submitted listings remain for separate review.",
+    "Approuvez les propositions individuellement ou choisissez Approuver tous les imports. La confirmation précise que cela concerne tous les imports en attente, y compris hors de la page ou du filtre courant. Les envois manuels restent à contrôler séparément."
+  ],
+  [
+    "Bevestig met Ja, keur … imports goed en wacht op het resultaat. Bij een gedeeltelijke fout lees je hoeveel zijn goedgekeurd en hoeveel overblijven; controleer dit voordat je opnieuw probeert.",
+    "Confirm with Yes, approve … imports and wait for the result. If only part succeeds, read how many were approved and remain before retrying.",
+    "Confirmez avec Oui, approuver … imports et attendez le résultat. En cas de succès partiel, vérifiez le nombre approuvé et restant avant de réessayer."
+  ],
+  [
+    "Sociale post voorvertonen werkt met de link en tekst van één concreet Facebook- of Instagrambericht. Controleer de datum, plaats en categorie en maak een voorvertoning voordat je importeert. Dit formulier scant geen besloten groepen automatisch en vraagt geen Facebook-wachtwoord.",
+    "Preview social post uses the link and text of one specific Facebook or Instagram post. Check its date, town and category and preview it before importing. This form does not automatically scan private groups or ask for a Facebook password.",
+    "Prévisualiser une publication sociale utilise le lien et le texte d’une publication précise Facebook ou Instagram. Vérifiez la date, la commune et la catégorie avant l’import. Ce formulaire ne parcourt pas automatiquement les groupes privés et ne demande pas de mot de passe Facebook."
+  ],
+  [
+    "Met Wijzigingsgeschiedenis bekijken zie je recente wijzigingen aan de vermelding, met de vastgelegde oude en nieuwe gegevens.",
+    "View change history shows recent listing edits, including the recorded old and new values.",
+    "Consulter l’historique des modifications affiche les changements récents, avec les anciennes et nouvelles valeurs enregistrées."
+  ],
+  [
+    "Facturen, bedragen en testaanvragen",
+    "Invoices, totals and test requests",
+    "Factures, montants et demandes de test"
+  ],
+  [
+    "Open Facturen & advertentieaanvragen en kies Open factuuroverzicht. Het venster Facturen en advertentieaanvragen heeft een eigen schuifbalk en paginaknoppen; sluit het met het kruisje. Persoonlijke factuur- en contactgegevens horen bij het beheer en worden niet openbaar getoond.",
+    "Open Invoices & advertising requests, then Open invoice overview. The Invoices and advertising requests window has its own scrollbar and pagination; close it with the cross. Personal billing and contact information is restricted to management and is not public.",
+    "Ouvrez Factures et demandes publicitaires, puis Ouvrir l’aperçu des factures. La fenêtre possède son propre défilement et sa pagination ; fermez-la avec la croix. Les coordonnées et données de facturation sont réservées à la gestion et ne sont pas publiques."
+  ],
+  [
+    "Totaal gefactureerd telt de uitgegeven, niet-geannuleerde facturen zonder testfacturen. Nog zonder factuur toont aanvragen waarvoor nog geen factuur is opgesteld. Testaanvragen en de E-mailwachtrij hebben eigen tellers. Een Mollie-betaalstatus en een factuurstatus zijn twee verschillende zaken.",
+    "Total invoiced counts issued, non-cancelled invoices excluding test invoices. Not yet invoiced shows requests with no invoice issued. Test requests and the Email queue have separate counters. Mollie payment status and invoice status are different things.",
+    "Total facturé compte les factures émises non annulées, hors tests. Sans facture indique les demandes non encore facturées. Les demandes de test et la file d’e-mails disposent de compteurs distincts. Le statut Mollie et celui de la facture sont deux éléments différents."
+  ],
+  [
+    "Open bij Factuurgegevens Côte de Duras de Factuurinstellingen aanpassen. Kies het juiste Btw-regime en vul de bijbehorende gegevens in. Bij Vrijgesteld van btw vul je de toepasselijke vrijstellingsvermelding in.",
+    "Under Côte de Duras invoice details, open Edit invoice settings. Choose the correct VAT regime and enter its required details. For VAT exemption, enter the applicable exemption statement.",
+    "Dans Coordonnées de facturation Côte de Duras, ouvrez Modifier les paramètres. Choisissez le régime de TVA approprié et renseignez les données requises. En cas d’exonération, saisissez la mention applicable."
+  ],
+  [
+    "Controleer de bevestiging over het factuurtotaal, klik op Factuurinstellingen opslaan en wacht op de bevestiging. Opnieuw openen laat de opgeslagen instellingen zien.",
+    "Check the invoice-total confirmation, select Save invoice settings and wait for confirmation. Reopening shows the saved settings.",
+    "Vérifiez la confirmation du total, cliquez sur Enregistrer les paramètres de facturation et attendez la confirmation. La réouverture affiche les paramètres enregistrés."
+  ],
+  [
+    "Controleer per echte aanvraag de naam, periode, het bedrag, factuuradres en e-mailadres. Kies pas daarna Factuur opstellen en versturen. Dit geeft de factuur een opvolgend nummer en zet de PDF-mail klaar voor verzending. Een betaling bij Mollie maakt deze factuur niet automatisch.",
+    "For each real order, check its name, period, amount, billing address and email. Then choose Issue and send invoice. This assigns a sequential number and prepares the PDF email for sending. A Mollie payment does not automatically issue this invoice.",
+    "Pour chaque demande réelle, vérifiez le nom, la période, le montant, l’adresse et l’e-mail de facturation. Choisissez ensuite Établir et envoyer la facture. Un numéro séquentiel est attribué et l’e-mail PDF est préparé. Un paiement Mollie n’établit pas automatiquement cette facture."
+  ],
+  [
+    "Controleer de verzendstatus. E-mails opnieuw proberen verwerkt opnieuw maximaal tien wachtende of mislukte factuurmails; dit maakt geen nieuwe facturen of factuurnummers aan. Vernieuwen haalt de actuele lijst op.",
+    "Check delivery status. Retry emails processes up to ten pending or failed invoice emails; it does not create new invoices or numbers. Refresh reloads the current list.",
+    "Contrôlez le statut d’envoi. Réessayer les e-mails traite jusqu’à dix e-mails de facture en attente ou en échec, sans créer de nouvelle facture ni de numéro. Actualiser recharge la liste."
+  ],
+  [
+    "Testaanvraag uit lijst verwijderen is alleen beschikbaar voor aanvragen die als test zijn geregistreerd. Alleen TEST in de titel zetten is niet voldoende. Uitgegeven facturen blijven bewaard; de nummerreeks wordt niet opnieuw gebruikt of gewist.",
+    "Remove test request from list is available only for requests registered as tests. Adding TEST to a title is not enough. Issued invoices are retained; their numbers are not reused or erased.",
+    "Supprimer la demande de test est disponible uniquement pour les demandes enregistrées comme tests. Écrire TEST dans le titre ne suffit pas. Les factures émises sont conservées et leurs numéros ne sont ni réutilisés ni effacés."
+  ],
+  [
+    "E-mailverbinding en wachtende berichten",
+    "Email connection and queued messages",
+    "Connexion e-mail et messages en attente"
+  ],
+  [
+    "Bij Strato-mailverbinding gebruik je Verbinding controleren om de verbinding te testen. Testmail stuurt een bericht naar het getoonde eigen adres. Controleer of de pagina verzending als ingeschakeld of uitgeschakeld meldt. Alleen een geslaagde verbinding betekent nog niet dat de ontvanger een bericht heeft ontvangen.",
+    "Under Strato email connection, use Check connection to test it. Test email sends a message to the own address displayed. Check whether the page reports sending enabled or disabled. A successful connection alone does not mean a recipient has received a message.",
+    "Dans Connexion e-mail Strato, utilisez Vérifier la connexion. E-mail de test envoie un message à votre propre adresse affichée. Vérifiez si l’envoi est indiqué actif ou désactivé. Une connexion réussie ne prouve pas à elle seule la réception d’un message."
+  ],
+  [
+    "Verzend maximaal 10 wachtende berichten verwerkt de wachtrij voor aanvragen en persoonlijke beheerlinks. De factuurwachtrij behandel je apart in het factuuroverzicht met E-mails opnieuw proberen. Door Strato geaccepteerd betekent geaccepteerd door de mailserver, niet gelezen of gegarandeerd in de inbox. Controleer bij problemen de status en spammap voordat je opnieuw verstuurt.",
+    "Send up to 10 queued messages processes request and personal management-link emails. Invoice emails have a separate queue in the invoice overview, handled by Retry emails. Accepted by Strato means accepted by the mail server, not read or guaranteed in the inbox. Check status and spam folders before resending.",
+    "Envoyer jusqu’à 10 messages en attente traite les e-mails de demande et de lien personnel. Les factures ont une file distincte dans leur aperçu, traitée par Réessayer les e-mails. Accepté par Strato signifie accepté par le serveur, pas lu ni garanti dans la boîte de réception. Vérifiez le statut et les indésirables avant de renvoyer."
+  ],
+  [
+    "Adverteren",
+    "Advertise",
+    "Publicité"
+  ],
+  [
+    "Facturen & advertentieaanvragen",
+    "Invoices & advertising requests",
+    "Factures et demandes publicitaires"
+  ]
+]

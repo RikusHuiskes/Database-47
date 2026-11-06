@@ -1254,3 +1254,12 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 /* The inline mobile rail keeps its footprint while suppressed, preventing
    anchor jumps when the municipal guide enters the viewport. */
 @media(max-width:899px){.promotion-sidebar-slot .promotion-sidebar[hidden]{display:block;visibility:hidden;pointer-events:none}}
+
+/* Handbook: task-to-location shortcuts, with a readable narrow-screen layout. */
+.visitor-manual .manual-route-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 16px; line-height: 1.55; }
+.visitor-manual .manual-route-table th, .visitor-manual .manual-route-table td { padding: 14px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid #dce4d7; overflow-wrap: anywhere; }
+.visitor-manual .manual-route-table thead th { background: #eaf0e4; color: #204c40; }
+.visitor-manual .manual-route-table tbody th { width: 40%; font-weight: 600; }
+.visitor-manual .manual-route-table tbody tr:nth-child(even) { background: #f6f7f1; }
+.visitor-manual h3[id] { scroll-margin-top: 24px; }
+@media(max-width:680px) { .visitor-manual .manual-route-table { font-size: 14px; } .visitor-manual .manual-route-table th, .visitor-manual .manual-route-table td { padding: 12px 8px; } }

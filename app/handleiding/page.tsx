@@ -3,31 +3,45 @@ import {localizeMetadata} from '../i18n/server';
 import {T, A} from '../i18n/Language';
 import type {Metadata} from 'next';
 
-const sourceMetadata:Metadata={title:'Handleiding | Côte de Duras',description:'Uitleg over de nieuwe invoerpagina, visuele advertentievoorbeelden, gecombineerde betaling, agenda, gemeentegids en beheer.'};
+const sourceMetadata:Metadata={title:'Handleiding | Côte de Duras',description:'Vind je weg in Côte de Duras: zoeken, foto’s, Mijn vermelding, adverteren, betalingen, facturen en de beheerdersmodule.'};
 export async function generateMetadata(){return localizeMetadata(sourceMetadata);}
 
-const chapters=[['zoeken','Een activiteit of adres zoeken'],['gemeentegids','De gemeentegids gebruiken'],['toevoegen','Een evenement of vermelding toevoegen'],['wijzigen','Je eigen vermelding wijzigen'],['beheer-aanvragen','Beheer aanvragen zonder beheerlink'],['correctie','Een fout doorgeven'],['advertenties','Adverteren met een evenement of bestaande vermelding'],['adverteren-gemeentegids','Adverteren in de gemeentegids'],['hulp','Andere onderdelen en hulp'],['voor-beheerders','Voor beheerders: aanvragen, bedrijven en rapportages']];
+const chapters=[['zoeken','Een activiteit of adres zoeken'],['gemeentegids','De gemeentegids gebruiken'],['toevoegen','Een evenement of vermelding toevoegen'],['wijzigen','Je eigen vermelding wijzigen'],['beheer-aanvragen','Beheer aanvragen zonder beheerlink'],['correctie','Een fout doorgeven'],['advertenties','Adverteren met een evenement of bestaande vermelding'],['adverteren-gemeentegids','Adverteren in de gemeentegids'],['betalingen','Betalingen, Mollie en je factuur'],['hulp','Andere onderdelen en hulp'],['voor-beheerders','Voor beheerders: aanvragen, bedrijven en rapportages']];
 
 export default function VisitorGuide(){return <main className="region-introduction visitor-manual" id="handleiding-top">
   <A><nav aria-label="Navigatie"><a href="/"><T>{"← Côte de Duras"}</T></a><a href="/#agenda"><T>{"Naar de agenda →"}</T></a></nav></A>
   <p className="section-kicker"><T>{"Hulp bij het gebruik van de website"}</T></p><h1><T>{"Handleiding van Côte de Duras"}</T></h1>
   <p className="intro-lead"><T>{"Met Côte de Duras vind je evenementen, activiteiten, accommodaties en praktische voorzieningen in de streek rond Duras. Je kunt de website doorzoeken zonder een account aan te maken."}</T></p>
   <p className="manual-tip"><T>{"Kies bovenaan de website Nederlands, English of Français. Je taalkeuze blijft bewaard wanneer je een andere pagina opent. Wisselen van taal wist je ingevulde vermelding en advertentiekeuzes niet. Bedrijfsnamen, plaatsnamen, adressen en contactgegevens blijven herkenbaar in hun oorspronkelijke vorm."}</T></p>
-  <p className="manual-tip"><strong><T>{"Bijgewerkt op 2 november 2026."}</T></strong><T>{" Deze handleiding beschrijft de nieuwe invoerpagina met dezelfde rustige opbouw als de gemeentegids: een introductie met je vermelding, advertentiekeuzes, meebewegende voorbeelden en één gezamenlijk betaaloverzicht. De uitleg voor beheerders staat apart onderaan."}</T></p>
+  <p className="manual-tip"><strong><T>{"Bijgewerkt op 6 november 2026."}</T></strong><T>{" Alle handelingen voor een adverteerder komen samen onder Mijn vermelding. Hieronder vind je de routes voor bezoekers, eigenaren en beheerders, inclusief foto’s, betalingen, facturen en e-mail."}</T></p>
+<section className="manual-quickstart" id="wegwijzer"><h2><T>{"Waar vind ik wat?"}</T></h2>
+<p><T>{"Gebruik deze wegwijzer om meteen naar de juiste plek te gaan. De uitleg voor een taak staat verderop in deze handleiding."}</T></p>
+<table className="manual-route-table"><thead><tr><th scope="col"><T>{"Ik wil…"}</T></th><th scope="col"><T>{"Hier moet je zijn"}</T></th></tr></thead><tbody><tr><th scope="row"><T>{"Een activiteit vinden"}</T></th><td><a href="/#agenda"><T>{"Agenda → zoekscherm onder de foto"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Een voorziening of bedrijf zoeken"}</T></th><td><a href="/#gemeenten"><T>{"Gemeente informatie → gemeente en rubriek kiezen"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Een nieuwe vermelding insturen"}</T></th><td><a href="/evenement/nieuw"><T>{"Nieuw evenement/vermelding"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Mijn gegevens of foto aanpassen"}</T></th><td><a href="/mijn-vermelding"><T>{"Mijn vermelding → Gegevens wijzigen"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Een beheerlink aanvragen of herstellen"}</T></th><td><a href="#beheer-aanvragen"><T>{"Mijn vermelding → Zoeken & aanvragen of Beheerlink & hulp"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Adverteren of mijn betaling bekijken"}</T></th><td><a href="/mijn-vermelding?onderdeel=betalingen"><T>{"Mijn vermelding → Adverteren / Betalingen"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Imports controleren en goedkeuren"}</T></th><td><a href="#importeren-beheer"><T>{"Beheerderslogin → Wacht op controle"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Facturen en gefactureerde bedragen zien"}</T></th><td><a href="#facturen-beheer"><T>{"Beheerderslogin → Facturen & advertentieaanvragen"}</T></a></td></tr>
+<tr><th scope="row"><T>{"De verzending van beheermails controleren"}</T></th><td><a href="#mail-beheer"><T>{"Beheerderslogin → Strato-mailverbinding"}</T></a></td></tr>
+<tr><th scope="row"><T>{"Bezoekers en advertentiebereik bekijken"}</T></th><td><a href="#rapportages-beheer"><T>{"Beheerderslogin → Bezoekers & advertentiebereik"}</T></a></td></tr>
+</tbody></table></section>
   <A><nav className="manual-contents" aria-label="Inhoud van de handleiding"><h2><T>{"Waar wil je hulp bij?"}</T></h2><ol><T>{chapters.map(([id,title])=><li key={id}><a href={'#'+id}><T>{title}</T></a></li>)}</T></ol></nav></A>
 
   <section id="zoeken"><h2><T>{"1. Een activiteit of adres zoeken"}</T></h2><ol>
     <li><T>{"Klik bovenaan in het menu op "}</T><strong><T>{"Agenda"}</T></strong><T>{". Je komt bij het zoekscherm "}</T><strong><T>{"Vind jouw volgende uitje"}</T></strong><T>{"."}</T></li>
     <li><T>{"Kies bij "}</T><strong><T>{"Plaats"}</T></strong><T>{" de gemeente van waaruit je wilt zoeken."}</T></li>
-    <li><T>{"Kies bij "}</T><strong><T>{"Zoek binnen"}</T></strong><T>{" een afstand van "}</T><strong><T>{"10, 25 of 50 kilometer"}</T></strong><T>{"."}</T></li>
+    <li><T>{"Kies bij "}</T><strong><T>{"Zoek binnen"}</T></strong><T>{" een afstand van "}</T><strong><T>{"5, 10, 25 of 50 kilometer"}</T></strong><T>{"."}</T></li>
     <li><T>{"Wil je rond je huidige locatie zoeken? Klik dan op "}</T><strong><T>{"Gebruik mijn locatie"}</T></strong><T>{" en geef je browser toestemming. Je kunt ook gewoon een gemeente blijven gebruiken. Ligt je browserlocatie buiten het gebied van de streekgids of worden daar geen vermeldingen gevonden? Dan zoekt de website rond de gekozen plaats en verschijnt daarover een melding. Je afstand en categorie blijven behouden."}</T></li>
     <li><T>{"Vul eventueel bij "}</T><strong><T>{"Zoek op activiteit"}</T></strong><T>{" een zoekwoord in, bijvoorbeeld ‘markt’ of ‘concert’."}</T></li>
-    <li><T>{"Bij "}</T><strong><T>{"Soort activiteit"}</T></strong><T>{" staat "}</T><strong><T>{"Alle soorten"}</T></strong><T>{" bovenaan; de overige categorieën staan alfabetisch. Kies een categorie, bijvoorbeeld "}</T><strong><T>{"Restaurants & Gastronomie"}</T></strong><T>{", "}</T><strong><T>{"Wijnhuizen"}</T></strong><T>{" of "}</T><strong><T>{"Hotels & Chambres d’hôtes & Gîtes"}</T></strong><T>{"."}</T></li>
+    <li><T>{"Bij "}</T><strong><T>{"Soort activiteit"}</T></strong><T>{" staat "}</T><strong><T>{"Alle soorten"}</T></strong><T>{" bovenaan; de overige categorieën staan alfabetisch. Kies een categorie, bijvoorbeeld "}</T><strong><T>{"Restaurants & Gastronomie"}</T></strong><T>{", "}</T><strong><T>{"Wijnhuizen"}</T></strong><T>{" of "}</T><strong><T>{"Hotels, B&B’s & vakantiehuizen"}</T></strong><T>{"."}</T></li>
     <li><T>{"Vink "}</T><strong><T>{"Alleen gratis activiteiten"}</T></strong><T>{" aan als je uitsluitend activiteiten zonder toegangsprijs wilt zien."}</T></li>
-  </ol><p><T>{"De resultaten worden automatisch aangepast. Onder de zoekvelden zie je hoeveel activiteiten bij je keuzes passen."}</T></p>
+  </ol><p><T>{"De zoekafstand begint op 5 kilometer. De resultaten staan direct onder het zoekscherm en worden aangepast aan de gekozen categorie, afstand, plaats en overige filters. De teller hoort bij die combinatie. Kijk in de resultaatmelding welke plaats of locatie als middelpunt wordt gebruikt."}</T></p>
   <p className="manual-tip"><strong><T>{"Geen geschikt resultaat?"}</T></strong><T>{" Verwijder je zoekwoord, kies "}</T><strong><T>{"Alle soorten"}</T></strong><T>{", schakel het filter voor gratis activiteiten uit of vergroot de afstand."}</T></p>
   <p><T>{"Scroll door de resultaten. Met "}</T><strong><T>{"Toon meer activiteiten"}</T></strong><T>{" laad je extra vermeldingen. Actieve vetomrande advertenties staan vóór de gewone zoekresultaten en zijn herkenbaar aan het advertentielabel. Bij "}</T><strong><T>{"Binnenkort in de buurt"}</T></strong><T>{" staat de eerstvolgende evenementdatum vooraan."}</T></p>
-  <h3><T>{"De details bekijken"}</T></h3><ol>
+  <p><T>{"Ontbreekt een foto of kan die niet geladen worden? In de agenda verschijnt dan het logo van Côte de Duras. Dat verandert niets aan de inhoud van de vermelding."}</T></p>
+<h3><T>{"De details bekijken"}</T></h3><ol>
     <li><T>{"Klik op de titel, de foto of "}</T><strong><T>{"Bekijk evenementdetails"}</T></strong><T>{"."}</T></li>
     <li><T>{"Lees de beschrijving, datum, locatie en eventuele prijs."}</T></li>
     <li><T>{"Gebruik, indien aanwezig: "}</T><strong><T>{"Reserveren"}</T></strong><T>{" om naar de reserveringspagina te gaan; "}</T><strong><T>{"Website organisator"}</T></strong><T>{" voor de website van de aanbieder."}</T></li>
@@ -42,7 +56,8 @@ export default function VisitorGuide(){return <main className="region-introducti
     <li><T>{"Klik op "}</T><strong><T>{"Toon informatie"}</T></strong><T>{" en wacht op de resultaten onder de zoekvelden."}</T></li>
     <li><T>{"Gebruik de getoonde telefoon-, e-mail-, website- en kaartlinks voor contact of een route. Adressen en openingstijden worden getoond wanneer een bron die vermeldt."}</T></li>
   </ol><p><T>{"In het complete overzicht staan ook de rubrieken alfabetisch. Per rubriek zie je het aantal vermeldingen en hoeveel daarvan een foto hebben."}</T></p>
-  <h3><T>{"Foto’s en bronnen"}</T></h3><p><T>{"Waar een passende foto is gevonden, staat die bij de vermelding. Onder een bronfoto vind je de bronlink en, waar van toepassing, de fotograaf en licentie. Staande foto’s worden volledig getoond. Een door de eigenaar opgeslagen foto krijgt voorrang op een gevonden bronfoto."}</T></p><p><strong><T>{"Foto nog niet beschikbaar"}</T></strong><T>{" betekent dat er geen geschikte bevestigde foto getoond kan worden. De vermelding en contactgegevens blijven gewoon beschikbaar. De fotodekking verschilt per gemeente en rubriek; niet iedere vermelding heeft al een foto."}</T></p>
+  <p><T>{"Ook Fysiotherapie en Psychologische dienstverlening zijn aparte rubrieken in de gemeentegids. Kies steeds de gewenste gemeente en rubriek; de gids vermeldt de werkelijke locatie van de gevonden dienst."}</T></p>
+<h3><T>{"Foto’s en bronnen"}</T></h3><p><T>{"Waar een passende foto is gevonden, staat die bij de vermelding. Onder een bronfoto vind je de bronlink en, waar van toepassing, de fotograaf en licentie. Staande foto’s worden volledig getoond. Een door de eigenaar opgeslagen foto krijgt voorrang op een gevonden bronfoto."}</T></p><p><strong><T>{"Foto nog niet beschikbaar"}</T></strong><T>{" betekent dat er geen geschikte bevestigde foto getoond kan worden. De vermelding en contactgegevens blijven gewoon beschikbaar. De fotodekking verschilt per gemeente en rubriek; niet iedere vermelding heeft al een foto."}</T></p>
   <h3><T>{"Plaats, afstand en ontbrekende informatie"}</T></h3><p><T>{"Let op de werkelijke plaats en afstand. Een resultaat met "}</T><strong><T>{"omgeving"}</T></strong><T>{" kan buiten de gekozen gemeente liggen. De zoekafstand voor voorzieningen kan verschillen van de gekozen afstand in de evenementenkalender."}</T></p><p><T>{"Een ontbrekend resultaat of adres betekent niet automatisch dat de voorziening niet bestaat. Gebruik de aanvullende zoeklinks of vraag informatie bij het gemeentehuis. "}</T><strong><T>{"Noodnummers"}</T></strong><T>{" is een informatierubriek met de Franse noodnummers, geen lijst met bedrijven."}</T></p><p><T>{"Voor een andere gemeente of rubriek pas je je keuze aan en klik je opnieuw op "}</T><strong><T>{"Toon informatie"}</T></strong><T>{"."}</T></p>
   <h3><T>{"Je eigen bedrijf beheren of adverteren"}</T></h3><p><T>Gebruik Mijn vermelding om je bedrijf te zoeken, beheer of een correctie aan te vragen en met je persoonlijke beheerlink gegevens, advertenties en betalingen te beheren. De link bij een bedrijfsvermelding brengt je naar dezelfde centrale omgeving. Een gidsbedrijf wordt door adverteren geen nieuw evenement.</T></p><p><T>{"Lees "}</T><a href="#beheer-aanvragen"><T>{"beheer aanvragen"}</T></a><T>{" of "}</T><a href="#adverteren-gemeentegids"><T>{"adverteren in de gemeentegids"}</T></a><T>{" voor de vervolgstappen."}</T></p><a className="manual-action" href="/#gemeenten"><T>{"Open de gemeentegids →"}</T></a></section>
 
@@ -75,11 +90,18 @@ export default function VisitorGuide(){return <main className="region-introducti
     <li><T>{"Met "}</T><strong><T>{"Mijn vermelding beheren"}</T></strong><T>{" open je het wijzigingsformulier. Op dit apparaat bewaarde vermeldingen zijn ook terug te vinden via "}</T><strong><T>{"Mijn vermelding"}</T></strong><T>{", zolang de browsergegevens bewaard blijven."}</T></li>
   </ul><p className="manual-tip"><T>{"Bewaar de link als een wachtwoord. Iedereen die de volledige link heeft, kan jouw vermelding beheren. Vertrouw niet uitsluitend op de opslag in je browser. De eerste beheerlink van een nieuwe inzending wordt niet automatisch gemaild; dit verschilt van een later goedgekeurde beheeraanvraag."}</T></p><a className="manual-action" href="/evenement/nieuw"><T>{"Open de nieuwe invoerpagina →"}</T></a></section>
 
-  <section id="wijzigen"><h2><T>{"4. Een eigen vermelding of evenement wijzigen"}</T></h2><h3><T>{"Je hebt al een persoonlijke beheerlink"}</T></h3><ol>
+  <section id="wijzigen"><h2><T>{"4. Een eigen vermelding of evenement wijzigen"}</T></h2><p><T>{"Mijn vermelding is de centrale ingang voor eigenaren en adverteerders, voor zowel de agenda als de gemeentegids. Bij openbare evenementdetails staat alleen een verwijzing naar deze omgeving. Zoeken of op een advertentie klikken geeft geen toegang tot privégegevens of betalingen."}</T></p>
+<p><T>{"Zonder beheerlink kun je kiezen uit Beheerlink openen, Zoeken & aanvragen en Beheerlink & hulp. Na het openen van je persoonlijke link zie je vier onderdelen voor jouw vermelding:"}</T></p>
+<ul><li><T>{"Gegevens wijzigen: tekst, contactgegevens en foto aanpassen en opslaan."}</T></li>
+<li><T>{"Adverteren: advertentievormen kiezen, voorbeelden bekijken en een aanvraag met betaling starten."}</T></li>
+<li><T>{"Betalingen: aanvragen, bedragen, perioden en betaalstatussen bekijken en zo nodig een betaling hervatten."}</T></li>
+<li><T>{"Beheerlink & hulp: je persoonlijke link kopiëren of bewaren, hulp bij herstel en correcties voor niet-bewerkbare gegevens."}</T></li>
+</ul><p><T>{"Controleer bovenaan de titel van de vermelding die je beheert. Met Andere vermelding openen wissel je naar een andere persoonlijke beheerlink. Sla wijzigingen eerst op; kies daarna een ander onderdeel of verlaat de pagina."}</T></p>
+<h3><T>{"Je hebt al een persoonlijke beheerlink"}</T></h3><ol>
     <li><T>{"Open je bewaarde beheerlink rechtstreeks, of klik in het menu op "}</T><strong><T>{"Mijn vermelding"}</T></strong><T>{"."}</T></li>
-    <li><T>{"Plak bij "}</T><strong><T>{"Persoonlijke beheerlink"}</T></strong><T>{" de volledige link."}</T></li>
+    <li><T>{"Kies Beheerlink openen. Plak bij "}</T><strong><T>{"Persoonlijke beheerlink"}</T></strong><T>{" de volledige link."}</T></li>
     <li><T>{"Klik op "}</T><strong><T>{"Open mijn vermelding"}</T></strong><T>{"."}</T></li>
-    <li><T>{"Pas de gewenste gegevens aan, bijvoorbeeld de titel, beschrijving, datum, prijs, contactgegevens of website."}</T></li>
+    <li><T>{"Kies Gegevens wijzigen. Pas de gewenste gegevens aan, bijvoorbeeld de titel, beschrijving, datum, prijs, contactgegevens of website."}</T></li>
     <li><T>{"Klik onderaan op "}</T><strong><T>{"Wijzigingen opslaan"}</T></strong><T>{"."}</T></li>
     <li><T>{"Wacht op de bevestiging direct onder de knop."}</T></li>
     <li><T>{"Open de vermelding opnieuw in de agenda of gemeentegids. Vernieuw de pagina als je nog de vorige gegevens ziet."}</T></li>
@@ -95,14 +117,17 @@ export default function VisitorGuide(){return <main className="region-introducti
   </ol><p className="manual-tip"><T>{"Een foto kiezen is nog niet hetzelfde als opslaan. Gebruik een eigen foto of een foto die je mag publiceren. Bij een gemeentegidsbedrijf vervangt je opgeslagen foto de gevonden bronfoto in de openbare weergave."}</T></p>
   <h3><T>{"Je beheerlink kwijt?"}</T></h3><ol>
     <li><T>{"Klik in het menu op "}</T><strong><T>{"Mijn vermelding"}</T></strong><T>{"."}</T></li>
-    <li><T>{"Open "}</T><strong><T>{"Beheerlink kwijt of nooit ontvangen?"}</T></strong></li>
+    <li><T>{"Kies Beheerlink & hulp en open Beheerlink kwijt of nooit ontvangen?"}</T></li>
+
     <li><T>{"Controleer eerst of de link nog op je apparaat of in je bewaarde bestand staat."}</T></li>
     <li><T>{"Vul anders de titel, plaats en het oorspronkelijke contact-e-mailadres in."}</T></li>
     <li><T>{"Klik op "}</T><strong><T>{"E-mail met herstelverzoek opstellen"}</T></strong><T>{"."}</T></li>
     <li><T>{"Je e-mailprogramma opent een concept. Verstuur dat bericht daar zelf."}</T></li>
   </ol><p><T>{"De beheerder controleert je bevoegdheid voordat opnieuw toegang wordt verstrekt."}</T></p><a className="manual-action" href="/mijn-vermelding"><T>{"Open Mijn vermelding →"}</T></a></section>
 
-  <section id="beheer-aanvragen"><h2><T>{"5. Een bestaande vermelding beheren zonder beheerlink"}</T></h2><p><T>{"Sommige vermeldingen zijn uit externe bronnen overgenomen. Je krijgt niet automatisch toegang omdat je naam of bedrijf erbij staat."}</T></p><ol>
+  <section id="beheer-aanvragen"><h2><T>{"5. Een bestaande vermelding beheren zonder beheerlink"}</T></h2><p><T>{"Ga naar Mijn vermelding → Zoeken & aanvragen. Kies Evenementenkalender of Gemeentegids bij Zoeken in. Vul minimaal twee letters van de naam in. Voor de gemeentegids is de plaats verplicht; bij evenementen kun je de plaats gebruiken om verder te verfijnen. Klik op Zoek mijn vermelding en daarna op Kies deze vermelding."}</T></p>
+<p><T>{"De zoekfunctie toont openbare vermeldingen. Een nieuwe inzending die nog wacht op controle vind je via de beheerlink die je bij het insturen hebt gekregen."}</T></p>
+<p><T>{"Sommige vermeldingen zijn uit externe bronnen overgenomen. Je krijgt niet automatisch toegang omdat je naam of bedrijf erbij staat."}</T></p><ol>
     <li><T>Open Mijn vermelding en kies Zoeken & aanvragen. Zoek op de naam van je evenement of bedrijf en kies de juiste vermelding.</T></li>
     <li><T>{"Klik op "}</T><strong><T>{"Deze vermelding beheren"}</T></strong><T>{"."}</T></li>
     <li><T>{"Vul je naam, e-mailadres, organisatie, eventueel telefoonnummer en "}</T><strong><T>{"Jouw functie en toelichting"}</T></strong><T>{" in. Leg uit waarom je namens de organisatie mag handelen."}</T></li>
@@ -111,7 +136,8 @@ export default function VisitorGuide(){return <main className="region-introducti
     <li><T>{"Bewaar de referentie die in de ontvangstmelding verschijnt."}</T></li>
   </ol><p><T>{"Je aanvraag geeft nog geen wijzigingsrechten. De beheerder controleert eerst of je namens de organisatie mag handelen, via onafhankelijk gevonden officiële contactgegevens. Na goedkeuring wordt de persoonlijke beheerlink naar het door de beheerder gecontroleerde e-mailadres gemaild. Open die link om je gegevens te beheren of advertenties te kiezen. Controleer ook je spammap als de mail niet aankomt en neem zo nodig contact op met je aanvraagreferentie."}</T></p><h3><T>{"Voor een bedrijf in de gemeentegids"}</T></h3><p><T>Kies binnen Mijn vermelding bij Zoeken & aanvragen de Gemeentegids. Vul de bedrijfsnaam en plaats in. Kies je vermelding en daarna Beheer of correctie aanvragen.</T></p><p><T>{"Je hoeft het bedrijf niet opnieuw toe te voegen. Voor een nieuwe inzending die je zelf hebt aangemaakt, bewaar je de beheerlink die direct na het insturen op het scherm verschijnt; die eerste link wordt niet automatisch gemaild."}</T></p></section>
 
-  <section id="correctie"><h2><T>{"6. Een fout doorgeven zonder beheerrechten"}</T></h2><p><T>{"Wil je alleen verkeerde informatie melden?"}</T></p><ol>
+  <section id="correctie"><h2><T>{"6. Een fout doorgeven zonder beheerrechten"}</T></h2><p><T>{"Heb je je eigen vermelding al geopend met een beheerlink? Ga dan naar Beheerlink & hulp voor een correctie aan gegevens die je niet zelf kunt wijzigen. Een correctieverzoek wordt eerst beoordeeld en wijzigt de openbare informatie niet direct."}</T></p>
+<p><T>{"Wil je alleen verkeerde informatie melden?"}</T></p><ol>
     <li><T>Open Mijn vermelding en kies Zoeken & aanvragen. Zoek op de naam van je evenement of bedrijf en kies de juiste vermelding.</T></li>
     <li><T>{"Klik op "}</T><strong><T>{"Correctie doorgeven"}</T></strong><T>{"."}</T></li>
     <li><T>{"Vul je naam en e-mailadres in."}</T></li>
@@ -146,15 +172,39 @@ export default function VisitorGuide(){return <main className="region-introducti
     <li><T>Bekijk daarna onder Betalingen je aanvragen, bedragen, perioden en betaalstatus. Hier kun je ook een openstaande betaling hervatten.</T></li>
   </ol><p><T>{"Je bedrijf blijft in de normale gidsresultaten staan, ook als je rubriekpartner of gemeentepartner bent. De beschikbaarheid voor partners wordt gecontroleerd per gemeente en, bij rubriekpartners, per rubriek. Plaatsing volgt na goedkeuring en betaalbevestiging binnen de gekozen periode."}</T></p><a className="manual-action" href="/mijn-vermelding"><T>{"Open Mijn vermelding →"}</T></a></section>
 
-  <section id="hulp"><h2><T>{"9. Andere onderdelen en hulp"}</T></h2><ul>
+<section id="betalingen"><h2><T>{"9. Betalingen, Mollie en je factuur"}</T></h2><p><T>{"Open Mijn vermelding met je persoonlijke beheerlink en kies Betalingen. Dit overzicht hoort alleen bij de geopende vermelding. Je ziet per aanvraag de advertentievormen, periode, het bedrag en de actuele betaalstatus."}</T></p>
+<ul><li><T>{"Nog te betalen: gebruik Betalen via Mollie om naar de betaalomgeving te gaan."}</T></li>
+<li><T>{"Betaling gestart: gebruik Betaling hervatten via Mollie om de openstaande betaling af te ronden."}</T></li>
+<li><T>{"Betaallink verlopen, Betaling mislukt of Betaling afgebroken: je kunt vanuit dezelfde aanvraag opnieuw naar Mollie zolang de advertentieperiode niet voorbij is. Maak geen dubbele vermelding aan."}</T></li>
+<li><T>{"Betaald: de betaling is bevestigd. De advertentie moet daarnaast zijn goedgekeurd en binnen de gekozen periode vallen. Terugbetaald betekent dat de betaling is teruggestort."}</T></li>
+<li><T>{"Bij In verwerking of twijfel over de status: klik op Betaalstatus controleren voordat je opnieuw probeert te betalen."}</T></li>
+</ul><h3><T>{"Na terugkeer van Mollie"}</T></h3>
+<p><T>{"Na een bevestigde betaling verschijnt Bedankt voor je bestelling en betaling. Met Mijn betalingen bekijken ga je terug naar je eigen overzicht; met Terug naar Côte de Duras ga je naar de website. Is de betaling nog niet bevestigd, gebruik dan Betaalstatus opnieuw controleren. Alleen terugkeren naar de website is geen betaalbevestiging."}</T></p>
+<p><T>{"Werkt een betaal-QR-code of oude betaallink niet? Controleer eerst de betaalstatus in Mijn vermelding → Betalingen. Open een nog te betalen aanvraag opnieuw via de beschikbare Mollie-knop. Een QR-code voor de website opent de homepage en is geen betaalcode."}</T></p>
+<h3><T>{"Waar ontvang je de factuur?"}</T></h3>
+<p><T>{"Factureren staat los van betalen. Wanneer de beheerder de factuur opstelt, krijgt die een opvolgend factuurnummer en wordt de factuur als PDF naar het opgegeven factuur-e-mailadres verzonden. Het betaaloverzicht is geen factuur en bevat momenteel geen downloadknop voor facturen. Vraag bij een ontbrekende factuur hulp via info@cotededuras.com, met de naam van je vermelding en de aanvraagreferentie. Controleer ook je spammap."}</T></p>
+<a className="manual-action" href="/mijn-vermelding?onderdeel=betalingen"><T>{"Open Mijn betalingen →"}</T></a></section>
+  <section id="hulp"><h2><T>{"10. Andere onderdelen en hulp"}</T></h2><p><T>{"De rechterkolom toont uitgelichte partners. Op een smal scherm kunnen deze kaarten onder de inhoud staan. De carrousel met betaalde vermeldingen kan advertenties uit de agenda én de gemeentegids tonen. Een kaart met het label Voorbeeld is een demonstratie; Ontdek brengt je daar naar de advertentiemogelijkheden."}</T></p>
+<ul>
     <li><strong><T>{"De streek beleven:"}</T></strong><T>{" uitleg over de website en de regio. Met "}</T><strong><T>{"Ontdek de agenda"}</T></strong><T>{" ga je naar het zoekscherm."}</T></li>
     <li><strong><T>{"Ontdekken:"}</T></strong><T>{" snel naar de agenda of gemeentegids."}</T></li>
     <li><strong><T>{"Contactgegevens:"}</T></strong><T>{" onderaan de website vind je hoe je Côte de Duras kunt bereiken."}</T></li>
     <li><strong><T>{"Statistiekvoorkeuren:"}</T></strong><T>{" onderaan de website kun je je keuze voor het meten van websitegebruik aanpassen."}</T></li>
   </ul><p><T>{"Voor hulp kun je mailen naar "}</T><a href="mailto:info@cotededuras.com"><T>{"info@cotededuras.com"}</T></a><T>{". Vermeld de titel van de betreffende vermelding en eventueel je aanvraagreferentie. Stuur je persoonlijke beheerlink niet mee in een openbaar bericht."}</T></p></section>
-  <section id="voor-beheerders"><h2><T>{"10. Voor beheerders"}</T></h2><p><T>{"De onderstaande handelingen zijn alleen beschikbaar na de "}</T><strong><T>{"Beheerderslogin"}</T></strong><T>{". Een bezoeker met een persoonlijke beheerlink beheert uitsluitend de eigen vermelding."}</T></p>
+  <section id="voor-beheerders"><h2><T>{"11. Voor beheerders"}</T></h2><p><T>{"De onderstaande handelingen zijn alleen beschikbaar na de "}</T><strong><T>{"Beheerderslogin"}</T></strong><T>{". Een bezoeker met een persoonlijke beheerlink beheert uitsluitend de eigen vermelding."}</T></p>
+<h3 id="evenementen-beheer"><T>{"Evenementen controleren en wijzigen"}</T></h3>
+<p><T>{"De Beheerderslogin staat onderaan de website. Open na het inloggen Wacht op controle voor nog niet gepubliceerde inzendingen of Alle evenementen voor het volledige beheeroverzicht. Gebruik Zoek op naam, Categorie in beheer en de paginaknoppen om een vermelding te vinden. Met Zoekfilters wissen begin je opnieuw."}</T></p>
+<p><T>{"BEWERKEN opent de gegevens en foto van een vermelding. Sla de aanpassing op en controleer de melding. GOEDKEUREN maakt een gecontroleerde inzending zichtbaar voor bezoekers. VERWIJDEREN is voor vermeldingen die niet mogen blijven staan. De inhoud goedkeuren is iets anders dan een betaling bevestigen; een betaalde promotie volgt ook de betaalstatus en advertentieperiode."}</T></p>
+<p><T>{"Het totaal in beheer kan hoger zijn dan de bezoekersteller: beheer bevat ook inzendingen die wachten op controle, verlopen evenementen en resultaten buiten de gekozen plaats, afstand of categorie. Een vermelding zonder bruikbare locatie kan niet worden meegenomen in een afstandszoekopdracht."}</T></p>
+<h3 id="importeren-beheer"><T>{"Importeren: voorvertonen, opslaan en goedkeuren"}</T></h3>
+<ol><li><T>{"Vernieuwen haalt de opgeslagen vermeldingen opnieuw op. Alles verversen en de importknoppen voor bijvoorbeeld Tourisme Duras of de Eymet-agenda halen brongegevens op voor een importvoorvertoning."}</T></li>
+<li><T>{"Controleer in de voorvertoning de titels, datums, foto’s en voorgestelde categorieën. Het aantal gevonden activiteiten betekent hier nog niet dat ze zijn opgeslagen."}</T></li>
+<li><T>{"Gebruik Importeer … activiteiten naar Wacht op controle om de import op te slaan. Bekijk daarna Wacht op controle en corrigeer onjuiste gegevens of categorieën met BEWERKEN."}</T></li>
+<li><T>{"Keur passende inzendingen afzonderlijk goed, of kies Alle imports goedkeuren. Lees het bevestigingsvenster: deze opdracht geldt voor alle wachtende imports, ook buiten de huidige pagina of categoriefilter. Handmatig ingestuurde vermeldingen blijven apart ter controle staan."}</T></li>
+<li><T>{"Bevestig met Ja, keur … imports goed en wacht op het resultaat. Bij een gedeeltelijke fout lees je hoeveel zijn goedgekeurd en hoeveel overblijven; controleer dit voordat je opnieuw probeert."}</T></li>
+</ol><p><T>{"Sociale post voorvertonen werkt met de link en tekst van één concreet Facebook- of Instagrambericht. Controleer de datum, plaats en categorie en maak een voorvertoning voordat je importeert. Dit formulier scant geen besloten groepen automatisch en vraagt geen Facebook-wachtwoord."}</T></p>
   <h3><T>{"De juiste website kiezen"}</T></h3><p><T>{"Controleer na inloggen "}</T><strong><T>{"Je bewerkt nu"}</T></strong><T>{". Kies zo nodig bij "}</T><strong><T>{"Welke evenementenkalender wil je beheren?"}</T></strong><T>{" een andere website en klik op "}</T><strong><T>{"Open beheer van …"}</T></strong><T>{". Je opent de eigen omgeving van die site; vermeldingen worden niet verplaatst. Omgevingen met het label "}</T><strong><T>{"demo"}</T></strong><T>{" zijn voorbeelden waarvan wijzigingen lokaal in je browser blijven."}</T></p>
-  <h3><T>{"Een beheeraanvraag goedkeuren en de sleutel mailen"}</T></h3><ol>
+  <h3 id="aanvragen-beheer"><T>{"Een beheeraanvraag goedkeuren en de sleutel mailen"}</T></h3><ol>
     <li><T>{"Open "}</T><strong><T>{"Beheeraanvragen & correctiemeldingen"}</T></strong><T>{" en bekijk de aanvraag."}</T></li>
     <li><T>{"Controleer de bevoegdheid via contactgegevens die je zelf op de officiële website of in de oorspronkelijke bron vindt."}</T></li>
     <li><T>{"Kies de passende beslissing. Voor beheer verlenen of herstellen leg je het gecontroleerde contactkanaal, de officiële bron en de uitgevoerde controle vast."}</T></li>
@@ -162,14 +212,26 @@ export default function VisitorGuide(){return <main className="region-introducti
     <li><T>{"Klik op "}</T><strong><T>{"Beslissing vastleggen"}</T></strong><T>{". Na een geslaagde goedkeuring sluit het formulier en wordt de beheerlinkmail naar de gecontroleerde ontvanger verstuurd."}</T></li>
     <li><T>{"Lees de bevestiging en verzendstatus. "}</T><strong><T>{"Door Strato geaccepteerd"}</T></strong><T>{" is een verzendbevestiging, geen bewijs dat de ontvanger de mail al heeft gelezen. Bij een fout controleer je de actuele aanvraagstatus voordat je opnieuw opslaat."}</T></li>
   </ol><p><T>{"Herstel van een beheerlink maakt oude links ongeldig. Een correctiemelding afhandelen verandert de inhoud niet automatisch: pas een evenement aan bij "}</T><strong><T>{"Alle evenementen"}</T></strong><T>{" of een gidsbedrijf bij "}</T><strong><T>{"Gemeentegids · Bedrijven beheren"}</T></strong><T>{" en rond daarna de melding af."}</T></p>
-  <h3><T>{"Gemeentegidsbedrijven en foto’s aanpassen"}</T></h3><ol>
+<p><T>{"Met Wijzigingsgeschiedenis bekijken zie je recente wijzigingen aan de vermelding, met de vastgelegde oude en nieuwe gegevens."}</T></p>
+  <h3 id="bedrijven-beheer"><T>{"Gemeentegidsbedrijven en foto’s aanpassen"}</T></h3><ol>
     <li><T>{"Open "}</T><strong><T>{"Gemeentegids · Bedrijven beheren"}</T></strong><T>{"."}</T></li>
     <li><T>{"Filter op "}</T><strong><T>{"Gemeente"}</T></strong><T>{" en "}</T><strong><T>{"Rubriek"}</T></strong><T>{". Gebruik "}</T><strong><T>{"Vorige"}</T></strong><T>{" en "}</T><strong><T>{"Volgende"}</T></strong><T>{" voor de overige pagina’s."}</T></li>
     <li><T>{"Kies "}</T><strong><T>{"Bedrijfsgegevens aanpassen"}</T></strong><T>{". Pas naam, adres, telefoon, zakelijk e-mailadres, openingstijden, website of beschrijving aan."}</T></li>
     <li><T>{"Voor een eigen of toegestane bronfoto vul je een volledig foto-adres in bij "}</T><strong><T>{"Foto-adres (eigen foto of toegestane bron)"}</T></strong><T>{". Dit is een afbeeldingsadres, geen gewone webpagina. Een eigenaar kan via de persoonlijke beheerpagina ook een fotobestand uploaden."}</T></li>
     <li><T>{"Klik op "}</T><strong><T>{"Opslaan"}</T></strong><T>{" en controleer de openbare weergave in de juiste gemeentegidsrubriek."}</T></li>
-  </ol><p><T>{"Dit overzicht bevat de voor beheer geregistreerde bedrijven. Niet iedere openbare bronvermelding hoeft daar al geregistreerd te zijn. Gemeentegidsbedrijven staan apart van de evenementenkalender. Advertentieaanvragen en betalingen controleer je bij "}</T><strong><T>{"Advertentieaanvragen"}</T></strong><T>{"."}</T></p>
-  <h3><T>{"Een rapport opslaan"}</T></h3><ol>
+  </ol><p><T>{"Dit overzicht bevat de voor beheer geregistreerde bedrijven. Niet iedere openbare bronvermelding hoeft daar al geregistreerd te zijn. Gemeentegidsbedrijven staan apart van de evenementenkalender. Advertentieaanvragen en betalingen controleer je bij "}</T><strong><T>{"Facturen & advertentieaanvragen"}</T></strong><T>{"."}</T></p>
+<h3 id="facturen-beheer"><T>{"Facturen, bedragen en testaanvragen"}</T></h3>
+<p><T>{"Open Facturen & advertentieaanvragen en kies Open factuuroverzicht. Het venster Facturen en advertentieaanvragen heeft een eigen schuifbalk en paginaknoppen; sluit het met het kruisje. Persoonlijke factuur- en contactgegevens horen bij het beheer en worden niet openbaar getoond."}</T></p>
+<p><T>{"Totaal gefactureerd telt de uitgegeven, niet-geannuleerde facturen zonder testfacturen. Nog zonder factuur toont aanvragen waarvoor nog geen factuur is opgesteld. Testaanvragen en de E-mailwachtrij hebben eigen tellers. Een Mollie-betaalstatus en een factuurstatus zijn twee verschillende zaken."}</T></p>
+<ol><li><T>{"Open bij Factuurgegevens Côte de Duras de Factuurinstellingen aanpassen. Kies het juiste Btw-regime en vul de bijbehorende gegevens in. Bij Vrijgesteld van btw vul je de toepasselijke vrijstellingsvermelding in."}</T></li>
+<li><T>{"Controleer de bevestiging over het factuurtotaal, klik op Factuurinstellingen opslaan en wacht op de bevestiging. Opnieuw openen laat de opgeslagen instellingen zien."}</T></li>
+<li><T>{"Controleer per echte aanvraag de naam, periode, het bedrag, factuuradres en e-mailadres. Kies pas daarna Factuur opstellen en versturen. Dit geeft de factuur een opvolgend nummer en zet de PDF-mail klaar voor verzending. Een betaling bij Mollie maakt deze factuur niet automatisch."}</T></li>
+<li><T>{"Controleer de verzendstatus. E-mails opnieuw proberen verwerkt opnieuw maximaal tien wachtende of mislukte factuurmails; dit maakt geen nieuwe facturen of factuurnummers aan. Vernieuwen haalt de actuele lijst op."}</T></li>
+<li><T>{"Testaanvraag uit lijst verwijderen is alleen beschikbaar voor aanvragen die als test zijn geregistreerd. Alleen TEST in de titel zetten is niet voldoende. Uitgegeven facturen blijven bewaard; de nummerreeks wordt niet opnieuw gebruikt of gewist."}</T></li>
+</ol><h3 id="mail-beheer"><T>{"E-mailverbinding en wachtende berichten"}</T></h3>
+<p><T>{"Bij Strato-mailverbinding gebruik je Verbinding controleren om de verbinding te testen. Testmail stuurt een bericht naar het getoonde eigen adres. Controleer of de pagina verzending als ingeschakeld of uitgeschakeld meldt. Alleen een geslaagde verbinding betekent nog niet dat de ontvanger een bericht heeft ontvangen."}</T></p>
+<p><T>{"Verzend maximaal 10 wachtende berichten verwerkt de wachtrij voor aanvragen en persoonlijke beheerlinks. De factuurwachtrij behandel je apart in het factuuroverzicht met E-mails opnieuw proberen. Door Strato geaccepteerd betekent geaccepteerd door de mailserver, niet gelezen of gegarandeerd in de inbox. Controleer bij problemen de status en spammap voordat je opnieuw verstuurt."}</T></p>
+  <h3 id="rapportages-beheer"><T>{"Een rapport opslaan"}</T></h3><ol>
     <li><T>{"Open "}</T><strong><T>{"Bezoekers & advertentiebereik"}</T></strong><T>{" en kies de periode."}</T></li>
     <li><T>{"Klik zo nodig op "}</T><strong><T>{"Vernieuwen"}</T></strong><T>{" en wacht tot het rapport geladen is."}</T></li>
     <li><T>{"Kies "}</T><strong><T>{"Excel opslaan als…"}</T></strong><T>{" of "}</T><strong><T>{"CSV opslaan als…"}</T></strong><T>{" en sla het bestand op je apparaat op. Er hoeft geen nieuwe webpagina te openen."}</T></li>
