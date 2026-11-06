@@ -1,0 +1,267 @@
+[
+  [
+    "Alles voor je vermelding op één plek: gegevens en foto wijzigen, adverteren, betalingen bekijken en hulp bij je beheerlink.",
+    "Everything for your listing in one place: edit details and photos, advertise, view payments and get help with your management link.",
+    "Tout pour votre annonce au même endroit : modifier les informations et photos, faire de la publicité, consulter les paiements et obtenir de l’aide pour votre lien de gestion."
+  ],
+  [
+    "Beheerlink openen",
+    "Open management link",
+    "Ouvrir le lien de gestion"
+  ],
+  [
+    "Zoeken & aanvragen",
+    "Search & request access",
+    "Rechercher et demander l’accès"
+  ],
+  [
+    "Beheerlink & hulp",
+    "Management link & help",
+    "Lien de gestion et aide"
+  ],
+  [
+    "Gekozen vermelding",
+    "Selected listing",
+    "Annonce sélectionnée"
+  ],
+  [
+    "Andere vermelding zoeken",
+    "Find another listing",
+    "Rechercher une autre annonce"
+  ],
+  [
+    "Open je persoonlijke beheeromgeving",
+    "Open your personal management area",
+    "Ouvrir votre espace de gestion personnel"
+  ],
+  [
+    "Gebruik de beheerlink uit je e-mail of de link die je bij het insturen hebt bewaard. Bewaar deze als een wachtwoord.",
+    "Use the management link in your email or the link you saved when submitting. Keep it as securely as a password.",
+    "Utilisez le lien de gestion reçu par e-mail ou enregistré lors de l’envoi. Conservez-le comme un mot de passe."
+  ],
+  [
+    "Nog geen beheerlink? Zoek je vermelding",
+    "No management link yet? Find your listing",
+    "Pas encore de lien de gestion ? Recherchez votre annonce"
+  ],
+  [
+    "Gegevens wijzigen",
+    "Edit details",
+    "Modifier les informations"
+  ],
+  [
+    "Betalingen",
+    "Payments",
+    "Paiements"
+  ],
+  [
+    "Beheer je vermelding",
+    "Manage your listing",
+    "Gérer votre annonce"
+  ],
+  [
+    "Betalingen en aanvragen",
+    "Payments and requests",
+    "Paiements et demandes"
+  ],
+  [
+    "Hier vind je alle advertentieaanvragen voor deze vermelding, met het bedrag, de periode en de betaalstatus. Een verlopen betaallink kun je hier opnieuw openen.",
+    "Find all advertising requests for this listing, including the amount, period and payment status. You can reopen an expired payment link here.",
+    "Retrouvez toutes les demandes publicitaires de cette annonce, avec le montant, la période et le statut du paiement. Vous pouvez rouvrir ici un lien de paiement expiré."
+  ],
+  [
+    "Je hebt nog geen advertentieaanvragen voor deze vermelding.",
+    "You have no advertising requests for this listing yet.",
+    "Vous n’avez pas encore de demande publicitaire pour cette annonce."
+  ],
+  [
+    "Betaling hervatten via Mollie",
+    "Resume payment via Mollie",
+    "Reprendre le paiement via Mollie"
+  ],
+  [
+    "Vragen over een betaling of factuur?",
+    "Questions about a payment or invoice?",
+    "Des questions sur un paiement ou une facture ?"
+  ],
+  [
+    "Advertentievormen bekijken",
+    "View advertising options",
+    "Voir les options publicitaires"
+  ],
+  [
+    "Je persoonlijke beheerlink geeft toegang tot deze vermelding en de bijbehorende betalingen. Deel deze niet met anderen.",
+    "Your personal management link provides access to this listing and its payments. Do not share it with others.",
+    "Votre lien de gestion personnel donne accès à cette annonce et à ses paiements. Ne le partagez pas."
+  ],
+  [
+    "Kun je een gegeven niet zelf aanpassen? Geef hieronder een correctie door aan de beheerder.",
+    "Unable to change a detail yourself? Send a correction to the administrator below.",
+    "Vous ne pouvez pas modifier une information vous-même ? Signalez une correction à l’administrateur ci-dessous."
+  ],
+  [
+    "Beheerlink gekopieerd. Bewaar deze als een wachtwoord.",
+    "Management link copied. Keep it as securely as a password.",
+    "Lien de gestion copié. Conservez-le comme un mot de passe."
+  ],
+  [
+    "Kopiëren lukt niet. Bewaar je beheerlink als bestand.",
+    "Unable to copy. Save your management link as a file.",
+    "Impossible de copier le lien. Enregistrez-le dans un fichier."
+  ],
+  [
+    "Nieuwe vermelding aanmaken →",
+    "Create a new listing →",
+    "Créer une nouvelle annonce →"
+  ],
+  [
+    "Mijn betalingen bekijken",
+    "View my payments",
+    "Consulter mes paiements"
+  ],
+  [
+    "Mijn vermelding: beheren of een correctie doorgeven →",
+    "My listing: manage or suggest a correction →",
+    "Mon annonce : gérer ou signaler une correction →"
+  ],
+  [
+    "Mijn vermelding →",
+    "My listing →",
+    "Mon annonce →"
+  ],
+  [
+    "Zoek je bestaande vermelding",
+    "Find your existing listing",
+    "Rechercher votre annonce existante"
+  ],
+  [
+    "Kies je vermelding om beheer aan te vragen of een correctie door te geven. Een aanvraag geeft nog geen wijzigingsrechten.",
+    "Select your listing to request management access or suggest a correction. A request does not grant editing rights.",
+    "Choisissez votre annonce pour demander sa gestion ou signaler une correction. Une demande ne donne pas de droits de modification."
+  ],
+  [
+    "Zoeken in",
+    "Search in",
+    "Rechercher dans"
+  ],
+  [
+    "Naam van je evenement of bedrijf",
+    "Name of your event or business",
+    "Nom de votre événement ou entreprise"
+  ],
+  [
+    "Plaats (optioneel)",
+    "Town (optional)",
+    "Commune (facultatif)"
+  ],
+  [
+    "Zoek mijn vermelding",
+    "Find my listing",
+    "Rechercher mon annonce"
+  ],
+  [
+    "Kies deze vermelding",
+    "Select this listing",
+    "Choisir cette annonce"
+  ],
+  [
+    "Geen openbare vermelding gevonden. Probeer een deel van de naam. Voor een nog niet goedgekeurde inzending gebruik je je persoonlijke beheerlink.",
+    "No public listing found. Try part of the name. Use your personal management link for a submission awaiting approval.",
+    "Aucune annonce publique trouvée. Essayez une partie du nom. Pour une annonce en attente d’approbation, utilisez votre lien de gestion personnel."
+  ],
+  [
+    "Vul minstens twee letters van de naam in en kies een geldige plaats.",
+    "Enter at least two letters of the name and choose a valid town.",
+    "Saisissez au moins deux lettres du nom et choisissez une commune valide."
+  ],
+  [
+    "Kies voor de gemeentegids een plaats uit de lijst.",
+    "Choose a town from the list for the local directory.",
+    "Pour le guide communal, choisissez une commune dans la liste."
+  ],
+  [
+    "Zoeken is tijdelijk niet beschikbaar.",
+    "Search is temporarily unavailable.",
+    "La recherche est temporairement indisponible."
+  ],
+  [
+    "Vermeldingen konden niet worden geladen. Probeer het opnieuw.",
+    "Unable to load listings. Please try again.",
+    "Impossible de charger les annonces. Réessayez."
+  ],
+  [
+    "Deze beheerlink hoort bij een andere vermelding. Kies de juiste beheerlink.",
+    "This management link belongs to another listing. Choose the correct link.",
+    "Ce lien de gestion correspond à une autre annonce. Choisissez le bon lien."
+  ],
+  [
+    "Nog te betalen",
+    "Awaiting payment",
+    "À payer"
+  ],
+  [
+    "Betaling gestart",
+    "Payment started",
+    "Paiement commencé"
+  ],
+  [
+    "Betaald",
+    "Paid",
+    "Payé"
+  ],
+  [
+    "Betaallink verlopen",
+    "Payment link expired",
+    "Lien de paiement expiré"
+  ],
+  [
+    "Betaling mislukt",
+    "Payment failed",
+    "Échec du paiement"
+  ],
+  [
+    "Betaling afgebroken",
+    "Payment cancelled",
+    "Paiement annulé"
+  ],
+  [
+    "Terugbetaald",
+    "Refunded",
+    "Remboursé"
+  ],
+  [
+    "In verwerking",
+    "Processing",
+    "En cours de traitement"
+  ],
+  [
+    "Status wordt gecontroleerd",
+    "Checking status",
+    "Vérification du statut"
+  ],
+  [
+    "’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je bij Gegevens wijzigen iets aangepast? Sla dat eerst op.",
+    "’ into a paid advertisement. Your existing text, photo, date and management link are retained. If you changed anything under Edit details, save it first.",
+    " » une publicité payante. Le texte, la photo, la date et le lien de gestion existants sont conservés. Si vous avez modifié des informations, enregistrez-les d’abord."
+  ],
+  [
+    "Open Mijn vermelding en kies Zoeken & aanvragen. Zoek op de naam van je evenement of bedrijf en kies de juiste vermelding.",
+    "Open My listing and choose Search & request access. Search for your event or business name and select the correct listing.",
+    "Ouvrez Mon annonce et choisissez Rechercher et demander l’accès. Recherchez le nom de votre événement ou entreprise et sélectionnez la bonne annonce."
+  ],
+  [
+    "Kies binnen Mijn vermelding bij Zoeken & aanvragen de Gemeentegids. Vul de bedrijfsnaam en plaats in. Kies je vermelding en daarna Beheer of correctie aanvragen.",
+    "In My listing, choose Search & request access, then Local directory. Enter the business name and town. Select your listing, then Request management or a correction.",
+    "Dans Mon annonce, choisissez Rechercher et demander l’accès, puis Guide communal. Saisissez le nom de l’entreprise et la commune. Choisissez votre annonce, puis demandez sa gestion ou une correction."
+  ],
+  [
+    "Open Mijn vermelding met je persoonlijke beheerlink en kies Adverteren. Heb je gegevens gewijzigd? Sla die eerst op bij Gegevens wijzigen.",
+    "Open My listing with your personal management link and choose Advertise. If you edited any details, save them under Edit details first.",
+    "Ouvrez Mon annonce avec votre lien de gestion personnel et choisissez Faire de la publicité. Si vous avez modifié des informations, enregistrez-les d’abord."
+  ],
+  [
+    "Alle aanvragen en betaalstatussen vind je binnen Mijn vermelding onder Betalingen. Daar kun je een openstaande betaling hervatten of een verlopen betaallink opnieuw openen.",
+    "Find all requests and payment statuses under Payments in My listing. You can resume a pending payment or reopen an expired payment link there.",
+    "Retrouvez toutes vos demandes et les statuts des paiements dans Mon annonce, rubrique Paiements. Vous pouvez y reprendre un paiement ou rouvrir un lien expiré."
+  ]
+]

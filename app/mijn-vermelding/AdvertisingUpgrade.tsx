@@ -52,7 +52,7 @@ export default function AdvertisingUpgrade({access,event,advertising,advertiseme
  const change=(key:keyof AdvertiserDetails,value:string|number)=>setDetails(previous=>({...previous,[key]:value}));
  return <section id="listing-upgrade" className="owner-advertising-upgrade" aria-labelledby="upgrade-heading">
   <h2 id="upgrade-heading"><T>{"Meer bereik voor deze vermelding"}</T></h2>
-  <p><T>{"Maak van ‘"}</T><T>{String(event.title)}</T><T>{"’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je hierboven gegevens gewijzigd? Sla die eerst op."}</T></p>
+  <p><T>{"Maak van ‘"}</T><T>{String(event.title)}</T><T>{"’ een betaalde advertentie. Je bestaande tekst, foto, datum en beheerlink blijven behouden. Heb je bij Gegevens wijzigen iets aangepast? Sla dat eerst op."}</T></p>
   <p><T>{"Je kunt alle drie de advertentievormen combineren voor dezelfde vermelding. Vink je gewenste vormen aan en betaal het totaal in één keer via Mollie. Je vermelding blijft ook in de normale resultaten staan; actieve vetomrande vermeldingen komen bovenaan de zoekresultaten."}</T></p>
   <fieldset className="owner-advertising-options" disabled={busy||submitting}>
    <legend><T>{"Kies één of meer advertentievormen"}</T></legend>
