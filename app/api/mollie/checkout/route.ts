@@ -1,6 +1,7 @@
 import {managedAccess} from '../../../../lib/managed-events';
 import {mollieRequest,verifiedPaymentState} from '../../../../lib/mollie';
 import {advertisingOrderTypes,ADVERTISING_LABELS} from '../../../../lib/advertising';
+import {isPaymentCheckoutUrl} from '../../../../lib/payment-checkout-url';
 export const runtime='nodejs';
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
@@ -19,7 +20,10 @@ export async function POST(request:Request){
       const state=verifiedPaymentState(previous,order);
       if(state==='paid'){const done=await client.rpc('settle_advertising_payment',{p_payment_id:previous.id,p_state:state});if(done.error)throw Error('De betaalstatus kon niet worden bijgewerkt.');return Response.json({error:'Deze aanvraag is betaald. Vernieuw de pagina.'},{status:409});}
       if(state==='refunded')return Response.json({error:'Deze aanvraag is terugbetaald. Neem contact op voor een nieuwe aanvraag.'},{status:409});
-      if(state==='open'&&previous._links?.checkout?.href)return Response.json({checkoutUrl:previous._links.checkout.href});
+      if(state==='open'&&previous._links?.checkout?.href){
+        if(!isPaymentCheckoutUrl(previous._links.checkout.href))throw Error('Ongeldige betaalverwijzing.');
+        return Response.json({checkoutUrl:previous._links.checkout.href});
+      }
       await client.from('advertising_requests').update({mollie_payment_id:null,checkout_key:crypto.randomUUID(),payment_status:'requested'}).eq('id',order.id).eq('mollie_payment_id',order.mollie_payment_id);
       const refreshed=await client.from('advertising_requests').select('*').eq('id',order.id).single();if(refreshed.error)throw Error('Aanvraag kon niet worden geladen.');order=refreshed.data;
     }
@@ -41,11 +45,7 @@ export async function POST(request:Request){
     redirectUrl.searchParams.set('betaling','terug');
     redirectUrl.searchParams.set('aanvraag',order.id);
     const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':order.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(order.amount_cents/100).toFixed(2)},description:`Côte de Duras – ${placements.map(type=>labels[type]).join(' + ')} – ${order.months} maand(en)`,redirectUrl:redirectUrl.toString(),webhookUrl:base+'/api/mollie/webhook',metadata:{requestId:order.id},billingAddress:{givenName:order.details.name,familyName:order.details.company||order.details.name,streetAndNumber:order.details.address,postalCode:order.details.postcode,city:order.details.city,country:order.details.country.toUpperCase()},billingEmail:order.details.email})});
-    if(!payment.id||!payment._links?.checkout?.href||!/^https:\/\/([a-z0-9-]+\.)*mollie\.com\//i.test(payment._links.checkout.href)){
-      let checkoutHost='missing';try{checkoutHost=new URL(payment._links?.checkout?.href).hostname;}catch{}
-      console.error('mollie_checkout_reference_rejected',{hasPaymentId:typeof payment.id==='string',hasCheckout:typeof payment._links?.checkout?.href==='string',checkoutHost});
-      throw Error('Ongeldige betaalverwijzing. Betaaldomein: '+checkoutHost+'.');
-    }
+    if(!payment.id||!isPaymentCheckoutUrl(payment._links?.checkout?.href))throw Error('Ongeldige betaalverwijzing.');
     const saved=await client.from('advertising_requests').update({mollie_payment_id:payment.id,payment_status:'open'}).eq('id',order.id).eq('checkout_key',order.checkout_key);
     if(saved.error)throw Error('De betaalreferentie kon niet worden opgeslagen.');
     return Response.json({checkoutUrl:payment._links.checkout.href});
