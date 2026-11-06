@@ -263,5 +263,35 @@
     "Alle aanvragen en betaalstatussen vind je binnen Mijn vermelding onder Betalingen. Daar kun je een openstaande betaling hervatten of een verlopen betaallink opnieuw openen.",
     "Find all requests and payment statuses under Payments in My listing. You can resume a pending payment or reopen an expired payment link there.",
     "Retrouvez toutes vos demandes et les statuts des paiements dans Mon annonce, rubrique Paiements. Vous pouvez y reprendre un paiement ou rouvrir un lien expiré."
+  ],
+  [
+    "Gebruik Mijn vermelding om je bedrijf te zoeken, beheer of een correctie aan te vragen en met je persoonlijke beheerlink gegevens, advertenties en betalingen te beheren. De link bij een bedrijfsvermelding brengt je naar dezelfde centrale omgeving. Een gidsbedrijf wordt door adverteren geen nieuw evenement.",
+    "Use My listing to find your business, request management or a correction, and use your personal management link to manage details, advertising and payments. The link on a business listing opens the same central area. Advertising a directory business does not create a new event.",
+    "Utilisez Mon annonce pour trouver votre entreprise, demander la gestion ou une correction, puis gérer les informations, la publicité et les paiements avec votre lien personnel. Le lien d’une fiche d’entreprise mène au même espace central. Faire de la publicité pour une entreprise de l’annuaire ne crée pas un nouvel événement."
+  ],
+  [
+    "Kies Mijn vermelding. Open je persoonlijke beheerlink, of zoek eerst je bedrijf via Zoeken & aanvragen en Gemeentegids.",
+    "Choose My listing. Open your personal management link, or find your business through Search & request access and Local directory.",
+    "Choisissez Mon annonce. Ouvrez votre lien de gestion personnel ou trouvez votre entreprise via Rechercher et demander l’accès, puis Annuaire local."
+  ],
+  [
+    "Heb je nog geen beheerlink? Kies je bedrijf en Beheer of correctie aanvragen. Na controle ontvang je de persoonlijke link per e-mail.",
+    "No management link yet? Select your business and Request management or a correction. After verification, you will receive your personal link by email.",
+    "Vous n’avez pas encore de lien de gestion ? Sélectionnez votre entreprise puis Demander la gestion ou une correction. Après vérification, vous recevrez votre lien personnel par e-mail."
+  ],
+  [
+    "Open Adverteren binnen je beheeromgeving. Kies één of meer advertentievormen, de begindatum en de looptijd. Bekijk de voorbeelden van je eigen bedrijf en het totaalbedrag.",
+    "Open Advertise in your management area. Choose one or more advertising options, a start date and a duration. Review your business previews and the total amount.",
+    "Ouvrez Faire de la publicité dans votre espace de gestion. Choisissez une ou plusieurs formules, la date de début et la durée. Consultez les aperçus de votre entreprise et le montant total."
+  ],
+  [
+    "Controleer je factuurgegevens en kies Verder naar Mollie om de gekozen vormen gezamenlijk te betalen.",
+    "Check your billing details and choose Continue to Mollie to pay for the selected options together.",
+    "Vérifiez vos coordonnées de facturation et choisissez Continuer vers Mollie pour régler les formules sélectionnées en un seul paiement."
+  ],
+  [
+    "Bekijk daarna onder Betalingen je aanvragen, bedragen, perioden en betaalstatus. Hier kun je ook een openstaande betaling hervatten.",
+    "Then view your requests, amounts, periods and payment status under Payments. You can also resume a pending payment there.",
+    "Consultez ensuite vos demandes, montants, périodes et statuts dans Paiements. Vous pouvez également y reprendre un paiement en attente."
   ]
 ]
