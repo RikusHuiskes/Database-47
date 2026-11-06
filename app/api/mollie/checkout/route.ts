@@ -41,7 +41,11 @@ export async function POST(request:Request){
     redirectUrl.searchParams.set('betaling','terug');
     redirectUrl.searchParams.set('aanvraag',order.id);
     const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':order.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(order.amount_cents/100).toFixed(2)},description:`Côte de Duras – ${placements.map(type=>labels[type]).join(' + ')} – ${order.months} maand(en)`,redirectUrl:redirectUrl.toString(),webhookUrl:base+'/api/mollie/webhook',metadata:{requestId:order.id},billingAddress:{givenName:order.details.name,familyName:order.details.company||order.details.name,streetAndNumber:order.details.address,postalCode:order.details.postcode,city:order.details.city,country:order.details.country.toUpperCase()},billingEmail:order.details.email})});
-    if(!payment.id||!payment._links?.checkout?.href||!/^https:\/\/([a-z0-9-]+\.)*mollie\.com\//i.test(payment._links.checkout.href))throw Error('Ongeldige betaalverwijzing.');
+    if(!payment.id||!payment._links?.checkout?.href||!/^https:\/\/([a-z0-9-]+\.)*mollie\.com\//i.test(payment._links.checkout.href)){
+      let checkoutHost='missing';try{checkoutHost=new URL(payment._links?.checkout?.href).hostname;}catch{}
+      console.error('mollie_checkout_reference_rejected',{hasPaymentId:typeof payment.id==='string',hasCheckout:typeof payment._links?.checkout?.href==='string',checkoutHost});
+      throw Error('Ongeldige betaalverwijzing. Betaaldomein: '+checkoutHost+'.');
+    }
     const saved=await client.from('advertising_requests').update({mollie_payment_id:payment.id,payment_status:'open'}).eq('id',order.id).eq('checkout_key',order.checkout_key);
     if(saved.error)throw Error('De betaalreferentie kon niet worden opgeslagen.');
     return Response.json({checkoutUrl:payment._links.checkout.href});
