@@ -2092,7 +2092,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         <div className="results-summary" role="status" aria-live="polite">
           <span className="results-indicator" aria-hidden="true" />
           <strong><T>{nearbyLoading ? "We zoeken iets leuks voor je…" : visibleNearbyEvents.length===1?`${visibleNearbyEvents.length} activiteit gevonden`:`${visibleNearbyEvents.length} activiteiten gevonden`}</T></strong>
-          <T>{!nearbyLoading && <span><T>{"binnen "}</T><T>{radiusKm}</T><T>{" km van "}</T><T>{categoryFilter !== "all" || dateFilter.range || freeOnly ? " met je huidige filters" : ""}</T></span>}</T>
+          <T>{!nearbyLoading && <span><T>{"binnen "}</T><T>{radiusKm}</T><T>{" km van "}</T><T>{searchLabel}</T><T>{categoryFilter !== "all" || dateFilter.range || freeOnly ? " met je huidige filters" : ""}</T></span>}</T>
           {dateFilter.range && <span className="results-date-range"><T>{"Periode: "}</T>{new Date(dateFilter.range.start+'T12:00:00').toLocaleDateString(intlLocale[locale])}{dateFilter.range.end!==dateFilter.range.start && <> – {new Date(dateFilter.range.end+'T12:00:00').toLocaleDateString(intlLocale[locale])}</>}</span>}
         </div>
         <T>{visitorLocation && <p className="location-note"><T>{"Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. "}</T><button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}><T>{"Zoek weer rond "}</T><T>{selectedArea?.name ?? "de gekozen plaats"}</T></button></p>}</T>
