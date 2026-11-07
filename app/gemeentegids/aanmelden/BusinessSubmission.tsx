@@ -14,7 +14,7 @@ export default function BusinessSubmission(){
   const fields=Object.fromEntries(new FormData(e.currentTarget).entries());let uploadPath='';
   try{
    if(photo){const body=new FormData();body.set('photo',await prepareEventPhoto(photo));const response=await fetch('/api/visitor-event-photo',{method:'POST',body});const result=await response.json();if(!response.ok)throw Error(result.error);fields.image_url=result.imageUrl;uploadPath=result.path;}
-   const response=await fetch('/api/municipal-submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fields)});
+   const response=await fetch('/api/municipal-submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...fields,locale})});
    const result=await response.json();if(!response.ok)throw Error(result.error);
    setFragment(result.manageFragment);setTitle(String(fields.title));uploadPath='';
    try{const previous=JSON.parse(localStorage.getItem('cdd-managed-links')||'[]');localStorage.setItem('cdd-managed-links',JSON.stringify([{title:String(fields.title),fragment:result.manageFragment},...(Array.isArray(previous)?previous:[])].slice(0,30)));}catch{/* The downloadable link remains available when storage is disabled. */}
@@ -27,6 +27,7 @@ export default function BusinessSubmission(){
   {fragment?<section role="status" className={s.success}>
    <h2><T>Je bedrijfsvermelding is ontvangen.</T></h2><p><strong>{title}</strong></p><p><T>De beheerder controleert je aanmelding voordat deze in de gemeentegids verschijnt. Je kunt je gegevens en foto nu al beheren.</T></p>
    <p><T>Bewaar je persoonlijke beheerlink als een wachtwoord. Deze geeft toegang tot jouw gegevens, advertenties en betalingen.</T></p>
+   <p><T>Na goedkeuring ontvang je ook een e-mail met je persoonlijke beheerlink.</T></p>
    <div className={s.links}><a className={s.primary} href={manageUrl}><T>Mijn vermelding beheren →</T></a><a href={'/mijn-vermelding?upgrade=1#'+fragment}><T>Optioneel: advertentie kiezen →</T></a></div>
    <div className={s.links}><button type="button" onClick={()=>void navigator.clipboard.writeText(window.location.origin+manageUrl).then(()=>setCopied(true)).catch(()=>setError('Kopiëren lukt niet. Bewaar je beheerlink als bestand.'))}><T>{copied?'Beheerlink gekopieerd.':'Beheerlink kopiëren'}</T></button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent(window.location.origin+manageUrl)}><T>Beheerlink bewaren als bestand</T></a></div>
   </section>:<>
@@ -34,6 +35,7 @@ export default function BusinessSubmission(){
    <p><T>Staat je bedrijf al in de gids? Zoek het eerst via Mijn vermelding en vraag beheer aan om een dubbele vermelding te voorkomen.</T> <a href="/mijn-vermelding"><T>Mijn bedrijf zoeken →</T></a></p>
    <form onSubmit={submit} className={s.form}>
     <fieldset disabled={busy}><legend><T>Bedrijfsgegevens</T></legend><div className={s.grid}>
+     <label><T>Je e-mailadres voor de beheerlink</T> *<input name="ownerEmail" type="email" required maxLength={254} autoComplete="email"/><small><T>Na goedkeuring ontvang je hier automatisch je persoonlijke beheerlink. Dit e-mailadres wordt niet openbaar getoond.</T></small></label>
      <label><T>Bedrijfsnaam</T> *<input name="title" required maxLength={250} autoComplete="organization"/></label>
      <label><T>Rubriek</T> *<select name="municipal_type" required defaultValue=""><option value="" disabled>{t('Kies een rubriek')}</option>{Object.entries(MUNICIPAL_BUSINESS_LABELS).sort((a,b)=>t(a[1]).localeCompare(t(b[1]),locale)).map(([value,label])=><option key={value} value={value}>{t(label)}</option>)}</select></label>
      <label><T>Adres</T> *<input name="address" required maxLength={250} autoComplete="street-address"/></label>

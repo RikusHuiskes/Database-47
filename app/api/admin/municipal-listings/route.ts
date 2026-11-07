@@ -2,6 +2,7 @@ import {municipalAdminCatalog,municipalAdminResults,type MunicipalAdminItem} fro
 import {canonicalMunicipalBusiness} from '../../../../lib/municipal-business';
 import {COMMERCIAL_SERVICE_TYPES} from '../../../../lib/municipal-shops';
 import {adminService} from '../../../../lib/admin-service';
+import {scheduleListingMail} from '../../../../lib/schedule-listing-mail';
 const fields='id,title,city,address,municipal_key,municipal_code,municipal_type,municipal_email,municipal_hours,contact_phone,website_url,description,promotion_status,image_url,status,verified';
 export async function GET(request:Request){
  const client=await adminService(request);if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
@@ -25,6 +26,7 @@ export async function POST(request:Request){
   const result=await client.from('events').update({status:body.decision,verified:body.decision==='approved',updated_at:new Date().toISOString()}).eq('id',body.id).not('municipal_key','is',null).eq('status','pending').select('id').maybeSingle();
   if(result.error)throw Error('De beslissing kon niet worden opgeslagen.');
   if(!result.data)return Response.json({error:'Deze aanmelding is al behandeld. Vernieuw de lijst.'},{status:409});
+  if(body.decision==='approved')scheduleListingMail(body.id);
   return Response.json({ok:true,id:body.id});
  }
  const patch:Record<string,string|null>={};for(const field of ['title','address','contact_phone','municipal_email','municipal_hours','website_url','description','image_url']){if(typeof body[field]!=='string')continue;const value=body[field].trim();if(value.length>(field==='description'?12000:1000))throw Error('Een veld is te lang.');patch[field]=value||null;}

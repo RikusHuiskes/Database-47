@@ -460,6 +460,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   }, [selectedVisitorEvent]);
 
   const [title, setTitle] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
   const [shortDescription, setShortDescription] = useState("");
   const [description, setDescription] = useState("");
   const [startAt, setStartAt] = useState("");
@@ -984,32 +985,14 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     setMessage("");
     setUpdatingEventId(event.id);
 
-    const { data, error: updateError } = await supabase
-      .from("events")
-      .update({ status, verified: status === "approved" })
-      .eq("id", event.id)
-      .select("id,promotion_status")
-      .maybeSingle();
-
-    if (updateError) {
-      setError("Wijzigen mislukt: " + updateError.message);
-      setUpdatingEventId(null);
-      return;
-    }
-
-    if (!data) {
-      setError("Er is niets gewijzigd. Controleer of je als beheerder bent ingelogd.");
-      setUpdatingEventId(null);
-      return;
-    }
-
-    setEvents(current => current.map(item => item.id === event.id ? {...item, status, verified: status === "approved",promotion_status:data.promotion_status} : item));
-    setMessage(
-      status === "approved"
-        ? `“${event.title}” is goedgekeurd.`
-        : `“${event.title}” is afgewezen.`
-    );
-    setUpdatingEventId(null);
+    try {
+      const session=await supabase.auth.getSession();
+      const response=await fetch('/api/admin/event-review',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.data.session?.access_token},body:JSON.stringify({id:event.id,status})});
+      const data=await response.json();if(!response.ok)throw Error(data.error||'De beslissing kon niet worden opgeslagen.');
+      setEvents(current => current.map(item => item.id === event.id ? {...item, status, verified: status === "approved",promotion_status:data.promotion_status} : item));
+      setMessage(status === "approved" ? `“${event.title}” is goedgekeurd.` : `“${event.title}” is afgewezen.`);
+    } catch(cause) {setError(cause instanceof Error?cause.message:'De beslissing kon niet worden opgeslagen.');}
+    finally {setUpdatingEventId(null);}
   }
 
   async function setPromotionStatus(event: EventRow, status: "active" | "ended") {
@@ -1262,6 +1245,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
 
   function resetForm() {
     setTitle("");
+    setOwnerEmail("");
     setShortDescription("");
     setDescription("");
     setStartAt("");
@@ -1385,7 +1369,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         verified: false,
       };
 
-      const response = await fetch("/api/visitor-events", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:payload,categoryId:categoryId||null,placements:promotionTypes,advertiser:promotionType==='none'?null:advertiser})});
+      const response = await fetch("/api/visitor-events", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:payload,categoryId:categoryId||null,placements:promotionTypes,advertiser:promotionType==='none'?null:advertiser,ownerEmail,locale})});
       const result = await readApiJson<{error?:string;manageFragment?:string;advertising?:ListingPaymentSummary|null}>(response);
       if(!response.ok||!result.manageFragment)throw new Error(result.error||"De vermelding kon niet worden opgeslagen.");
       const privateLink=window.location.origin+"/mijn-vermelding#"+result.manageFragment;
@@ -1760,6 +1744,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         >
           <section className={entry.identity} aria-labelledby="entry-identity-heading"><h2 id="entry-identity-heading"><T>{"Jouw vermelding"}</T></h2><p><T>{"Begin met de naam en categorie. Deze gegevens zie je terug in je voorbeelden."}</T></p>
           <label style={labelStyle}><T>{"Wat wil je invoeren?"}</T><select style={inputStyle} value={entryKind} onChange={e=>setEntryKind(e.target.value)}><option value="event"><T>{"Evenement met datum"}</T></option><option value="directory"><T>{"Vaste vermelding / bedrijf / accommodatie"}</T></option></select></label>
+          <label style={labelStyle}><T>Je e-mailadres voor de beheerlink</T> *<input style={inputStyle} type="email" required maxLength={254} autoComplete="email" value={ownerEmail} onChange={e=>setOwnerEmail(e.target.value)}/><small><T>Na goedkeuring ontvang je hier automatisch je persoonlijke beheerlink. Dit e-mailadres wordt niet openbaar getoond.</T></small></label>
           <div>
             <label htmlFor="event-entry-field-1" style={labelStyle}><T>{"Titel *"}</T></label>
             <A><input id="event-entry-field-1"
@@ -2013,7 +1998,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         <button className="button button-dark" type="button" disabled={checkoutStarting} onClick={() => void payForSubmittedListing(submissionPayment.manageFragment)}><T>{checkoutStarting ? 'Mollie wordt geopend…' : `Verder naar Mollie · ${formatAdvertisingAmount(submissionPayment.amountCents)}`}</T> <span aria-hidden="true"><T>{"→"}</T></span></button>
         <p className="submission-payment-note"><T>{"De advertentie verschijnt na goedkeuring en betaalbevestiging, uitsluitend binnen de gekozen periode. De beheerlink hieronder is voor latere wijzigingen."}</T></p>
       </section>}</T>
-      <T>{managementLink && <aside className="management-link-notice" aria-labelledby="management-confirmation-title"><h3 id="management-confirmation-title"><T>{"Je vermelding is ingestuurd — bewaar je beheerlink"}</T></h3><p><T>{"Met deze persoonlijke link kun je zelf de tekst, datum, contactgegevens en foto wijzigen, zonder account. Bewaar de link als een wachtwoord en deel hem niet met anderen."}</T></p><a className="button button-dark" href={managementLink}><T>{"Mijn vermelding beheren →"}</T></a><label><T>{"Persoonlijke link"}</T><input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><div className="management-link-actions"><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}><T>{"Beheerlink kopiëren"}</T></button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent('Persoonlijke beheerlink Côte de Duras\n\n'+managementLink+'\n\nBewaar deze link als een wachtwoord. Iedereen met deze link kan je vermelding wijzigen.\n')}><T>{"Beheerlink bewaren als bestand"}</T></a></div><p><T>{"Ook terug te vinden onder ‘Beheer je vermelding’ op dit apparaat, zolang de browsergegevens bewaard blijven. Er wordt nog geen automatische e-mail verstuurd."}</T></p></aside>}</T>
+      <T>{managementLink && <aside className="management-link-notice" aria-labelledby="management-confirmation-title"><h3 id="management-confirmation-title"><T>{"Je vermelding is ingestuurd — bewaar je beheerlink"}</T></h3><p><T>{"Met deze persoonlijke link kun je zelf de tekst, datum, contactgegevens en foto wijzigen, zonder account. Bewaar de link als een wachtwoord en deel hem niet met anderen."}</T></p><a className="button button-dark" href={managementLink}><T>{"Mijn vermelding beheren →"}</T></a><label><T>{"Persoonlijke link"}</T><input readOnly value={managementLink} onFocus={e=>e.target.select()}/></label><div className="management-link-actions"><button type="button" onClick={()=>void navigator.clipboard.writeText(managementLink).catch(()=>setSubmissionError("Selecteer en kopieer de persoonlijke link hierboven."))}><T>{"Beheerlink kopiëren"}</T></button><a download="Cote-de-Duras-beheerlink.txt" href={'data:text/plain;charset=utf-8,'+encodeURIComponent('Persoonlijke beheerlink Côte de Duras\n\n'+managementLink+'\n\nBewaar deze link als een wachtwoord. Iedereen met deze link kan je vermelding wijzigen.\n')}><T>{"Beheerlink bewaren als bestand"}</T></a></div><p><T>{"Na goedkeuring ontvang je ook een e-mail met je persoonlijke beheerlink."}</T></p></aside>}</T>
       <T>{submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}><T>{submissionNotice}</T></p>}</T>
 
 </>;

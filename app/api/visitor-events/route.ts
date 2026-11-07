@@ -2,6 +2,7 @@ import {createServiceClient} from '../../../lib/supabase-server';
 import {managedToken,tokenHash} from '../../../lib/managed-events';
 import {visitorEventInput} from '../../../lib/visitor-event-input';
 import {validateAdvertiser,advertisingSelectionQuote} from '../../../lib/advertising';
+import {submissionContact} from '../../../lib/submission-contact';
 export const runtime='nodejs';
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
@@ -22,7 +23,8 @@ export async function POST(request:Request){
       ad={...quote,details:{...checked.details,placements:quote.placements}};
     }
     const token=managedToken();
-    const {data,error}=await service.rpc(combined&&ad?'submit_managed_event_selection':'submit_managed_event',{p_event:event,p_category_id:category,p_token_hash:tokenHash(token),p_ad:ad});
+    const contact=submissionContact(input.ownerEmail??ad?.details.email,input.locale,token,new URL(request.url).origin);
+    const {data,error}=await service.rpc('submit_managed_event_with_contact',{p_event:event,p_category_id:category,p_token_hash:tokenHash(token),p_ad:ad,p_contact:contact});
     if(error)throw Error('De vermelding kon niet worden opgeslagen. '+error.message);
     if(ad&&process.env.MOLLIE_API_KEY?.startsWith('test_')){
       const marked=await service.from('advertising_requests').update({is_test_mode:true}).eq('event_id',data).eq('payment_status','requested');
