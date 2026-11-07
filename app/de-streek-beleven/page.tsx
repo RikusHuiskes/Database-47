@@ -19,7 +19,7 @@ export default function RegionIntroduction(){return <main className="region-intr
   <p className="region-welcome"><T>{"Gratis ontdekken, zonder account. Kies bovenaan Frans, Engels of Nederlands."}</T></p>
   <section id="agenda">
     <h2><T>{"Vind iets dat bij jouw dag past"}</T></h2>
-    <p><T>{"Markten en brocantes, muziek, workshops, natuur, cultuur of gastronomie: in de agenda vind je evenementen én vaste adressen, zoals restaurants en accommodaties. Kies je plaats en categorie, zoek op een trefwoord en bepaal je afstand: 5, 10, 25 of 50 kilometer rond de gekozen plaats. De zoekopdracht begint op 5 kilometer."}</T></p><p><T>{"Liever vlak bij waar je nu bent? Gebruik je locatie. Met Alleen gratis activiteiten vind je de als gratis vermelde activiteiten binnen je selectie. De resultaten verschijnen direct onder het zoekblok."}</T></p>
+    <p><T>{"Markten en brocantes, muziek, workshops, natuur, cultuur of gastronomie: in de agenda vind je evenementen én vaste adressen, zoals restaurants en accommodaties. Kies je plaats en categorie en bepaal je afstand: 5, 10, 25 of 50 kilometer. De zoekopdracht begint op 5 kilometer. Kies een datum of een begin- en einddatum om evenementen tijdens jouw bezoek te vinden. Wis de datums om ook vaste adressen te bekijken."}</T></p><p><T>{"Liever vlak bij waar je nu bent? Gebruik je locatie. Met Alleen gratis activiteiten vind je de als gratis vermelde activiteiten binnen je selectie. De resultaten verschijnen direct onder het zoekblok."}</T></p>
     <a className="region-action" href="/#agenda"><T>{"Ontdek de agenda →"}</T></a>
   </section>
   <section id="op-pad">

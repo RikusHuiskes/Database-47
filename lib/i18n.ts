@@ -1,6 +1,18 @@
 export type Locale='nl'|'en'|'fr';
 export const LOCALE_COOKIE='cdd-language';
 export function localeFrom(value:unknown):Locale{return value==='en'||value==='nl'?value:'fr';}
+/** Direct/external page openings start in French; navigation within a visit keeps the chosen language. */
+export function startsNewLanguageVisit(request:Pick<Request,'method'|'url'|'headers'>):boolean{
+ if(request.method!=='GET')return false;
+ const destination=request.headers.get('sec-fetch-dest');
+ if(destination!==null&&destination!=='document')return false;
+ if(destination===null&&!request.headers.get('accept')?.includes('text/html'))return false;
+ const site=request.headers.get('sec-fetch-site');
+ if(site==='none'||site==='cross-site')return true;
+ const referrer=request.headers.get('referer');
+ try{if(referrer&&new URL(referrer).origin===new URL(request.url).origin)return false;}catch{/* A malformed referrer is not an internal visit. */}
+ return site!=='same-origin';
+}
 export const intlLocale:Record<Locale,string>={nl:'nl-NL',en:'en-GB',fr:'fr-FR'};
 export function normalizeMessage(text:string){return text.replace(/\s+/g,' ').trim();}
 // Stable key shared with the offline catalogue builder. No personal text is sent to a translator.

@@ -42,7 +42,7 @@ import { inferEventCategorySlug } from "../lib/import-sources";
 import {prepareEventPhoto} from "../lib/event-photo-browser";
 import { eventPhotoType } from "../lib/event-photo";
 import { LOCAL_AREA_TOWNS, VISITOR_EVENT_CITY_GROUPS, normalizePlaceName, type LocalAreaTown } from "../lib/local-area";
-import { categoryIdsForSelection, DEFAULT_SEARCH_RADIUS_KM, matchesSelectedCategory, SEARCH_RADIUS_OPTIONS } from "../lib/nearby-search";
+import { categoryIdsForSelection, DEFAULT_SEARCH_RADIUS_KM, eventDateFilter, matchesEventDateRange, matchesSelectedCategory, SEARCH_RADIUS_OPTIONS } from "../lib/nearby-search";
 type Category = {
   id: string;
   name?: string;
@@ -356,7 +356,9 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const locationRequest=useRef(0);
   const deferredVisitorLocation = useDeferredValue(visitorLocation);
   const [radiusKm, setRadiusKm] = useState<number>(DEFAULT_SEARCH_RADIUS_KM);
-  const [eventSearch, setEventSearch] = useState("");
+  const [eventDateFrom, setEventDateFrom] = useState("");
+  const [eventDateTo, setEventDateTo] = useState("");
+  const dateFilter = useMemo(() => eventDateFilter(eventDateFrom, eventDateTo), [eventDateFrom, eventDateTo]);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [promotionClock,setPromotionClock]=useState(0);
   useEffect(()=>{const timer=window.setInterval(()=>setPromotionClock(Date.now()),60000);return()=>window.clearInterval(timer);},[]);
@@ -621,14 +623,12 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const searchLongitude = deferredVisitorLocation?.longitude ?? searchArea?.longitude ?? null;
   const searchLabel = deferredVisitorLocation ? "jouw locatie" : searchArea?.name ?? "Duras";
   const visibleNearbyEvents = useMemo(() => {
-    const query = eventSearch.trim().toLocaleLowerCase(intlLocale[locale]);
+    if (dateFilter.error) return [];
     return prioritizeHighlighted(uniqueEventRecords(nearbyEvents).map(event=>({...event,promotion_status:event.promotion_status==='active'&&!promotionIsActive(event)?'none' as const:event.promotion_status})).filter((event) => {
-    const matchesSearch = !query || [event.title, event.city, event.venue_name, event.short_description, event.description]
-      .some((value) => value?.toLocaleLowerCase(intlLocale[locale]).includes(query));
     const matchesCategory = matchesSelectedCategory(event.category_ids, categoryFilter);
-    return matchesSearch && matchesCategory && (!freeOnly || event.is_free === true);
+    return matchesEventDateRange(event, dateFilter.range) && matchesCategory && (!freeOnly || event.is_free === true);
     }));
-  }, [nearbyEvents, eventSearch, categoryFilter, freeOnly,promotionClock]);
+  }, [nearbyEvents, dateFilter, categoryFilter, freeOnly,promotionClock]);
   const placements = useMemo(() => promotionPlacements([...homepagePromotions,...categoryPromotions], categoryFilter), [categoryFilter,homepagePromotions,categoryPromotions,promotionClock]);
   const categoryPromotionEvents = placements.category;
   // Advertising adds visibility without removing a listing from normal search results.
@@ -640,10 +640,16 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
 
   useEffect(() => {
     setVisibleEventCount(18);
-  }, [selectedAreaId, visitorLocation, radiusKm, eventSearch, categoryFilter, freeOnly, nearbyEvents]);
+  }, [selectedAreaId, visitorLocation, radiusKm, eventDateFrom, eventDateTo, categoryFilter, freeOnly, nearbyEvents]);
 
   useEffect(() => {
     if(newListingOnly)return;
+    if (dateFilter.error) {
+      setNearbyLoading(false);
+      setNearbyError("");
+      setNearbyEvents([]);
+      return;
+    }
     if (searchLatitude == null || searchLongitude == null) {
       if (localAreas.length > 0) {
         setNearbyLoading(false);
@@ -656,11 +662,14 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     const controller = new AbortController();
     setNearbyLoading(true);
     setNearbyError("");
+    setNearbyEvents([]);
     const params = new URLSearchParams({
       lat: String(searchLatitude),
       lon: String(searchLongitude),
       radius: String(radiusKm),
       category: categoryFilter,
+      date_from: eventDateFrom,
+      date_to: eventDateTo,
     });
     void fetch(`/api/nearby-events?${params}&lang=source`, {signal: controller.signal})
       .then(async (response) => {
@@ -671,7 +680,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       .then((result) => {
         if (!active) return;
         const ordinaryCount=(result.events??[]).length;
-        if(shouldUseTownFallback(!!deferredVisitorLocation,ordinaryCount)){
+        if(!dateFilter.range && shouldUseTownFallback(!!deferredVisitorLocation,ordinaryCount)){
           setVisitorLocation(null);
           setLocationNotice(`Binnen ${radiusKm} km van je huidige locatie zijn geen vermeldingen gevonden voor deze categorie. We zoeken daarom rond ${searchArea?.name??'Duras'}, met dezelfde afstand en categorie.`);
           return;
@@ -684,7 +693,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       })
       .finally(() => { if (active) setNearbyLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [newListingOnly,localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision]);
+  }, [newListingOnly,localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision,eventDateFrom,eventDateTo,dateFilter]);
 
   // Paid placements load independently of ordinary search and geocoding.
   useEffect(() => {
@@ -1640,7 +1649,6 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   function browseTheme(keywords: RegExp) {
     const matchingCategory = categories.find((category) => keywords.test(`${category.name ?? ""} ${category.slug ?? ""}`));
     setCategoryFilter(matchingCategory?.id ?? "all");
-    setEventSearch("");
     document.getElementById("agenda-resultaten")?.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -2044,7 +2052,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <div>
             <p className="section-kicker"><T>{"Agenda voor Duras en omgeving"}</T></p>
             <h2 id="nearby-heading"><T>{"Vind jouw volgende uitje"}</T></h2>
-            <p><T>{"Zoek eenvoudig op afstand, plaats, activiteit en categorie."}</T></p>
+            <p><T>{"Zoek eenvoudig op datum, afstand, plaats en categorie."}</T></p>
           </div>
           <div className="search-count" aria-live="polite"><strong><T>{nearbyLoading ? "…" : visibleNearbyEvents.length}</T></strong><span><T>{"activiteiten"}</T><br /><T>{"in de buurt"}</T></span></div>
         </div>
@@ -2057,9 +2065,18 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <span aria-hidden="true"><T>{"⌖"}</T></span> <T>{locating?'Locatie bepalen…':'Gebruik mijn locatie'}</T>
           </button>
         </div>
-        <div className="search-controls search-controls-secondary">
-          <label className="field-label" style={labelStyle}><T>{"Zoek op activiteit "}</T><A><input style={inputStyle} value={eventSearch} onChange={(event) => setEventSearch(event.target.value)} placeholder="Bijvoorbeeld markt of concert" /></A>
+        <div className="search-controls search-date-controls">
+          <label className="field-label" style={labelStyle}><T>{"Begindatum"}</T>
+            <input type="date" style={inputStyle} value={eventDateFrom} onChange={event => setEventDateFrom(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
           </label>
+          <label className="field-label" style={labelStyle}><T>{"Einddatum"}</T>
+            <input type="date" style={inputStyle} value={eventDateTo} min={eventDateFrom || undefined} onChange={event => setEventDateTo(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
+          </label>
+          <button className="location-reset-button date-reset-button" type="button" disabled={!eventDateFrom && !eventDateTo} onClick={() => {setEventDateFrom('');setEventDateTo('');}}><T>{"Datums wissen"}</T></button>
+        </div>
+        <p id="event-date-help" className="date-filter-help"><T>{"Eén datum zoekt op die dag. Twee datums zoeken binnen die periode, inclusief begin- en einddag. Zonder datums zie je ook vaste vermeldingen."}</T></p>
+        {dateFilter.error && <p className="date-filter-error" role="alert"><T>{dateFilter.error}</T></p>}
+        <div className="search-controls search-controls-secondary">
           <label className="field-label" style={labelStyle}><T>{"Plaats "}</T><select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
               <T>{renderAreaOptions()}</T>
             </select>
@@ -2075,7 +2092,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         <div className="results-summary" role="status" aria-live="polite">
           <span className="results-indicator" aria-hidden="true" />
           <strong><T>{nearbyLoading ? "We zoeken iets leuks voor je…" : visibleNearbyEvents.length===1?`${visibleNearbyEvents.length} activiteit gevonden`:`${visibleNearbyEvents.length} activiteiten gevonden`}</T></strong>
-          <T>{!nearbyLoading && <span><T>{"binnen "}</T><T>{radiusKm}</T><T>{" km van "}</T><T>{searchLabel}</T><T>{categoryFilter !== "all" || eventSearch || freeOnly ? " met je huidige filters" : ""}</T></span>}</T>
+          <T>{!nearbyLoading && <span><T>{"binnen "}</T><T>{radiusKm}</T><T>{" km van "}</T><T>{categoryFilter !== "all" || dateFilter.range || freeOnly ? " met je huidige filters" : ""}</T></span>}</T>
+          {dateFilter.range && <span className="results-date-range"><T>{"Periode: "}</T>{new Date(dateFilter.range.start+'T12:00:00').toLocaleDateString(intlLocale[locale])}{dateFilter.range.end!==dateFilter.range.start && <> – {new Date(dateFilter.range.end+'T12:00:00').toLocaleDateString(intlLocale[locale])}</>}</span>}
         </div>
         <T>{visitorLocation && <p className="location-note"><T>{"Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. "}</T><button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}><T>{"Zoek weer rond "}</T><T>{selectedArea?.name ?? "de gekozen plaats"}</T></button></p>}</T>
         <T>{locationNotice&&<p className="location-fallback-note" role="status"><T>{locationNotice}</T></p>}</T>
@@ -2085,9 +2103,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
 
       <A><section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
         <T>{nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}><T>{nearbyError}</T></p>}</T>
-        <T>{!nearbyLoading && !nearbyError && nearbyEvents.length === 0 && <p className="empty-results"><T>{"Er staan nog geen gecontroleerde activiteiten binnen dit zoekgebied. Probeer een grotere straal of een andere plaats."}</T></p>}</T>
-        <T>{!nearbyLoading && !nearbyError && nearbyEvents.length > 0 && visibleNearbyEvents.length === 0 && <p className="empty-results"><T>{"Geen activiteiten gevonden met deze zoekfilters. Pas je zoekterm of soort activiteit aan."}</T></p>}</T>
-        <T>{!nearbyLoading&&!nearbyError&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p><T>{"Bekijk een groter gebied of verwijder je zoekfilters."}</T></p><button type="button" onClick={()=>setRadiusKm(50)}><T>{"Zoek binnen 50 kilometer"}</T></button><button type="button" onClick={()=>{setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Toon alle soorten activiteiten"}</T></button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(DEFAULT_SEARCH_RADIUS_KM);setEventSearch('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Bekijk de streek rond Duras"}</T></button></div>}</T>
+        <T>{!nearbyLoading && !nearbyError && !dateFilter.error && visibleNearbyEvents.length === 0 && <p className="empty-results"><T>{"Geen activiteiten gevonden voor deze combinatie van datum, plaats, afstand en categorie. Pas je filters aan of wis de datums om ook vaste vermeldingen te zien."}</T></p>}</T>
+        <T>{!nearbyLoading&&!nearbyError&&!dateFilter.error&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p><T>{"Bekijk een groter gebied of verwijder je zoekfilters."}</T></p><button type="button" onClick={()=>setRadiusKm(50)}><T>{"Zoek binnen 50 kilometer"}</T></button><button type="button" onClick={()=>{setCategoryFilter('all');setFreeOnly(false);}}><T>{"Toon alle soorten activiteiten"}</T></button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(DEFAULT_SEARCH_RADIUS_KM);setEventDateFrom('');setEventDateTo('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Bekijk de streek rond Duras"}</T></button></div>}</T>
         <T>{locationlessCount > 0 && <p className="location-note"><T>{locationlessCount}</T><T>{" aankomende "}</T><T>{locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"}</T><T>{" nog geen herkenbare plaats en kan daarom niet op afstand worden getoond."}</T></p>}</T>
 
         <A><div className="event-grid" aria-label="Aankomende activiteiten">

@@ -25,7 +25,7 @@ function queueContent(locale:Locale,keys:string[]){
 }
 export function LanguageProvider({initialLocale,children}:{initialLocale:Locale;children:ReactNode}){
  const [locale,setLanguage]=useState(initialLocale),router=useRouter();
- const setLocale=(next:Locale)=>{setLanguage(next);document.documentElement.lang=next;document.cookie=`${LOCALE_COOKIE}=${next}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;router.refresh();};
+ const setLocale=(next:Locale)=>{setLanguage(next);document.documentElement.lang=next;document.cookie=`${LOCALE_COOKIE}=${next}; Path=/; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;router.refresh();};
  useEffect(()=>{document.documentElement.lang=locale;},[locale]);
  const t=useMemo(()=>createTranslator(locale,dictionaries[locale]),[locale]);
  return <Context.Provider value={{locale,setLocale,t}}><LanguageMenu/>{children}</Context.Provider>;

@@ -687,7 +687,18 @@ body { font-family: Arial, Helvetica, sans-serif; }
 .search-panel { margin-top: 0 !important; margin-bottom: 45px !important; padding: clamp(22px, 3vw, 36px) !important; border: 1px solid #e5e3d8 !important; border-radius: 20px !important; background: #fffefa !important; box-shadow: 0 18px 50px #233d3510 !important; scroll-margin-top: 18px; }
 .search-heading h2, .area-explorer h2 { color: #193e39; }
 .search-controls-primary { grid-template-columns: minmax(170px, .8fr) minmax(190px, 1fr) auto; }
-.search-controls-secondary { grid-template-columns: minmax(0, 1.2fr) minmax(0, .9fr) minmax(0, 1fr) auto; }
+.search-controls-secondary { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; }
+.search-date-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; margin-top: 14px; }
+.search-date-controls input { width: 100%; min-width: 0; box-sizing: border-box; }
+.date-reset-button { min-height: 49px; padding: 10px 4px; }
+.date-reset-button:disabled { opacity: .45; cursor: default; }
+.date-filter-help { margin: 9px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.date-filter-error { margin: 10px 0 0; padding: 10px 14px; border-radius: 10px; background: #fff1f2; color: #9f1239; }
+.results-date-range { font-weight: 650; }
+@media (max-width: 960px) {
+  .search-controls-secondary { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .search-controls-secondary .free-filter { grid-column: 1 / -1; }
+}
 .area-explorer { margin-top: 0; margin-bottom: 44px; border-radius: 20px; }
 .visitor-guides { display: grid; grid-template-columns: 1fr; gap: 17px; margin-bottom: 52px; }
 .visitor-guides:empty { margin: 0; }
@@ -836,6 +847,8 @@ body { font-family: Arial, Helvetica, sans-serif; }
   .search-heading { align-items: flex-start; }
   .search-heading h2 { font-size: 28px; }
   .search-controls-primary, .search-controls-secondary { grid-template-columns: 1fr; }
+  .search-date-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .date-reset-button { grid-column: 1 / -1; justify-self: start; min-height: 36px; }
   .activity-image-trigger { min-height: 145px; }
   .visitor-photo-preview img { width: 100%; }
   .promotion-fieldset { padding: 15px; }
