@@ -93,7 +93,7 @@ export async function processAdvertisingInvoiceMailOutbox(limit=10){
  let accepted=0,failed=0;
  for(const row of (data??[]) as QueueRow[]){
   try{
-   const {data:invoice,error:loadError}=await client.from('advertising_invoices').select('id,invoice_number,issued_at,currency,net_cents,vat_cents,total_cents,snapshot').eq('id',row.invoice_id).maybeSingle();
+   const {data:invoice,error:loadError}=await client.from('advertising_invoices').select('id,invoice_number,issued_at,currency,net_cents,vat_cents,total_cents,snapshot,is_test_mode').eq('id',row.invoice_id).maybeSingle();
    if(loadError||!invoice)throw Error('De factuur kon niet worden geladen.');
    const snapshot=invoice.snapshot as Snapshot;const message=invoiceEmail(snapshot);
    const preview=config.previewMode||invoice.is_test_mode;
