@@ -1,13 +1,13 @@
 "use client";
 
-import {T} from '../i18n/Language';
+import {T,useLanguage} from '../i18n/Language';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {FormEvent} from 'react';
 import {advertisingOrderTypes,ADVERTISING_LABELS} from '../../lib/advertising';
 import type {SupabaseClient} from '@supabase/supabase-js';
 
 type Invoice={invoice_number:string;issued_at:string;state:'issued'|'cancelled';is_test_mode:boolean;net_cents:number;vat_cents:number;total_cents:number;advertising_invoice_mail_outbox:{state:string;accepted_at:string|null;last_error:string|null}[]};
-type RequestRow={id:string;placement:string;details:Record<string,string>;starts_on:string;ends_on:string;months:number;amount_cents:number;payment_status:string;is_test_mode:boolean;events:{title:string;city?:string;municipal_key?:string;municipal_type?:string}|null;advertising_invoices:Invoice[]|Invoice|null};
+type RequestRow={id:string;placement:string;details:Record<string,string>;starts_on:string;ends_on:string;months:number;amount_cents:number;payment_status:string;is_test_mode:boolean;events:{id:string;archived_at?:string|null;title:string;city?:string;municipal_key?:string;municipal_type?:string}|null;advertising_invoices:Invoice[]|Invoice|null};
 type Summary={invoiceCount:number;invoicedTotalCents:number;unbilledRequestCount:number;testCount:number;mailPending:number;mailFailed:number};
 type Settings={tax_mode:'standard'|'franchise_exempt';vat_rate:number;vat_number:string|null;tax_note:string;price_basis:'tax_inclusive'};
 type AdminData={items:RequestRow[];total:number;page:number;summary:Summary;settings:Settings|null;invoiceSetupReady:boolean;invoiceSetupMissing:string[];mailConfigured:boolean;mailDeliveryEnabled:boolean;previewMode:boolean};
@@ -16,7 +16,8 @@ const eur=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',curren
 const invoiceOf=(item:RequestRow)=>Array.isArray(item.advertising_invoices)?item.advertising_invoices[0]??null:item.advertising_invoices;
 const invoiceMailOf=(invoice:Invoice|null)=>Array.isArray(invoice?.advertising_invoice_mail_outbox)?invoice.advertising_invoice_mail_outbox[0]??null:null;
 
-export default function AdvertisingRequests({client}:{client:SupabaseClient|null}){
+export default function AdvertisingRequests({client,onListingArchived}:{client:SupabaseClient|null;onListingArchived?:()=>void}){
+ const {t}=useLanguage();
  const dialogRef=useRef<HTMLDialogElement>(null);
  const [open,setOpen]=useState(false),[page,setPage]=useState(1),[data,setData]=useState<AdminData|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[version,setVersion]=useState(0),[editSettings,setEditSettings]=useState(false);
  const [draft,setDraft]=useState({tax_mode:'standard' as 'standard'|'franchise_exempt',vat_rate:'20',vat_number:'',tax_note:'',price_basis:false});
@@ -37,6 +38,7 @@ export default function AdvertisingRequests({client}:{client:SupabaseClient|null
   if(!client)return;setBusy(true);setMessage('');setError('');
   try{
    const session=await client.auth.getSession();const response=await fetch('/api/admin/advertising',{method:'POST',headers:{Authorization:'Bearer '+session.data.session?.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await response.json();if(!response.ok)throw Error(result.error||'De actie is niet afgerond.');
+   if(body.action==='archive-listing')onListingArchived?.();
    setMessage(result.message||'Opgeslagen.');setVersion(value=>value+1);
   }catch(e){setError(e instanceof Error?e.message:'De actie is niet afgerond.');}
   finally{setBusy(false);}
@@ -84,6 +86,8 @@ export default function AdvertisingRequests({client}:{client:SupabaseClient|null
       <p><T preserve>{item.details?.address}</T><T>{", "}</T><T preserve>{item.details?.postcode}</T><T>{" "}</T><T>{item.details?.city}</T><T>{item.details?.vatNumber?' · TVA '+item.details.vatNumber:''}</T></p>
       {invoice&&<p><T>{"Netto "}</T>{eur(invoice.net_cents)}<T>{" · btw "}</T>{eur(invoice.vat_cents)}<T>{" · e-mail: "}</T><T>{mail?.state==='accepted'?'door mailserver geaccepteerd':mail?.state==='failed'?'verzending mislukt':mail?.state==='sending'?'wordt verzonden':'wacht op verzending'}</T><T>{mail?.last_error?' · '+mail.last_error:''}</T></p>}
       {!invoice&&!item.is_test_mode&&<button type="button" disabled={busy||!data?.invoiceSetupReady} onClick={()=>void action({action:'issue-invoice',requestId:item.id})}><T>{"Factuur opstellen en versturen"}</T></button>}
+      {item.events?.archived_at&&<p><T>{"Vermelding verwijderd — factuurhistorie bewaard."}</T></p>}
+      {item.events&&!item.events.archived_at&&<button type="button" disabled={busy} onClick={()=>{if(window.confirm(t('Deze vermelding uit de actieve lijst verwijderen? Bestaande facturen blijven bewaard.')))void action({action:'archive-listing',eventId:item.events!.id});}}><T>{"Vermelding uit actieve lijst verwijderen"}</T></button>}
       {item.is_test_mode&&<button type="button" disabled={busy} onClick={()=>void action({action:'delete-test',requestId:item.id})}><T>{"Testaanvraag uit lijst verwijderen"}</T></button>}
      </article>;
     })}

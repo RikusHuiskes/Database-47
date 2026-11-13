@@ -1,3 +1,4 @@
+import {eventDisplayImage} from './event-image.ts';
 import { sirtaquiCategories } from "./sirtaqui.ts";
 import { distanceInKm } from "./local-area.ts";
 type Area={latitude:number;longitude:number;radius_km:number};
@@ -26,7 +27,7 @@ export function parseOpenAgendaEvents(rows:RecordData[],areas:Area[],now=new Dat
       const slug=`${row.title_fr}-${row.uid}-${start_at}`.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
       events.push({title:row.title_fr,slug,start_at,end_at,description:description+(row.conditions_fr?`\n\n${row.conditions_fr}`:"")+(row.imagecredits?`\n\nFotocredit: ${row.imagecredits}`:""),short_description:String(row.description_fr??description).slice(0,250)||null,
         venue_name:row.location_name||null,address:row.location_address||null,postcode:row.location_postalcode||null,city:row.location_city||null,latitude,longitude,
-        website_url:row.location_website||null,booking_url:null,contact_phone:row.location_phone||null,image_url:row.image||null,organizer_name:row.originagenda_title||null,
+        website_url:row.location_website||null,booking_url:null,contact_phone:row.location_phone||null,image_url:row.image?eventDisplayImage(row.image):null,organizer_name:row.originagenda_title||null,
         price_from:null,price_to:null,is_free:/\bgratuit|entree libre\b/i.test(String(row.conditions_fr??"")),source_category:keywords||null,source_url,category_slugs,status:"pending",verified:false});
     }
   }
