@@ -1,7 +1,7 @@
 /** Shared, pure monthly billing rules. Amounts and dates are never accepted from checkout clients. */
 export type RecurringMethod='sepa'|'creditcard';
 export const BILLING_TERMS_VERSION='2026-11-13-monthly-v1';
-export const FIRST_SEPA_METHODS=['ideal','bancontact','belfius','eps','kbc','paybybank'];
+export const FIRST_SEPA_METHODS=['ideal','bancontact','belfius','eps','kbc','mybank','paybybank'];
 export function recurringMethod(value:unknown):RecurringMethod{
  if(value!=='sepa'&&value!=='creditcard')throw Error('Kies SEPA-incasso of creditcard.');return value;
 }
