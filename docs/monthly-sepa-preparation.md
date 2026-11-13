@@ -52,3 +52,10 @@ Decision recorded 13 November 2026: a rolling monthly subscription, cancellable 
 - https://docs.mollie.com/reference/create-payment
 - https://docs.mollie.com/reference/create-mandate
 - https://docs.mollie.com/docs/sepa-direct-debit
+
+## Deployment checkpoint — 13 November 2026
+
+Draft PR #4 contains the implementation; main/production remains unchanged pending provider tests.
+The feature preview deploy builds successfully, but its NEXT_PUBLIC_SUPABASE_URL points to historical project evvanbexkkdaqdfoginp. Its service connection returns PGRST205 for advertising_contracts; the current linked Supabase accounts have no access to that project. The active Database 47 project is jhzbfeyhtyzyobsxypvj and both migrations are applied there.
+
+To unblock provider tests, securely configure the feature/tourisme-duras-enrichment Preview environment with matching Database 47 NEXT_PUBLIC_SUPABASE_URL, publishable/anon key and server-only service key, plus a Mollie test API key, then redeploy. Never place service keys in NEXT_PUBLIC variables or repository files. Verify databaseReady before creating any test checkout. Test payment completion, renewal, invoices and cancellation before merging. No live payment has been performed by this implementation session.
