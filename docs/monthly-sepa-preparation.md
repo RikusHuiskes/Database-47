@@ -64,3 +64,15 @@ Real Mollie test-mode credit-card checkout completed through hosted checkout wit
 SEPA test checkout reports no enabled first-payment bank method that creates a directdebit mandate. Mollie dashboard currently requires sign-in. Inspect the intended profile and enabled SEPA/Pay by Bank methods before declaring SEPA ready. No bank method was activated, no account/plan changed and no credentials copied. The owner request endpoint now checks provider, mail and invoice readiness before reserving a new monthly order.
 
 Browser review also found and fixed untranslated payment-confirmation text and the manual payment button on automatic renewal cycles. Verify those changes in the latest preview before release.
+
+## French advertisers and confirmed Mollie organization
+
+Rikus confirmed organization #19136437 (Le Nourrissat) on 13 November. French advertiser billing defaults to France and French locale; the existing SEPA first-payment list includes Pay by Bank (France-supported) and MyBank as documented. Do not treat iDEAL alone as French bank coverage. Card and SEPA methods remain separate mandates.
+
+Read-only preview readiness now confirms the currently stored test key resolves to profile pfl_JCS8Crrwgd, with only creditcard returned for both first and recurring methods. Organization #19136437 shows website profiles pfl_NAma7doDmX (Le Nourrissat, cotededuras.com; some attention required) and pfl_yBVU4Cdgmo (Le Nourrissat #66551, cotededuras.com; online). The existing live key named Cote de Duras was created 5 November and belongs to pfl_NAma7doDmX. No API secret was revealed.
+
+A matching standard Test API-key form for Le Nourrissat in #19136437 and the existing branch-scoped Vercel Preview MOLLIE_API_KEY edit field are prepared in the user's local browser. No key was created, rotated, copied, or saved. User must complete secure credential creation/entry.
+
+Pay by Bank is offered for activation but not enabled. The dashboard explicitly states that activation accepts additional payment-method terms, so obtain explicit action-time confirmation before activating it. French public standard pricing currently lists 0.45% + EUR0.25 for Pay by Bank; dashboard/account terms control actual charges.
+
+Invoice seller identity needs confirmation before release: selected Mollie organization shows registration number 98402615300010, whereas the existing invoice seller constant uses 93451899400025. Do not silently rewrite historical invoices or change a legal identifier without resolving this mismatch with Rikus.
