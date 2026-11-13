@@ -1,3 +1,6 @@
+import {after} from 'next/server';
+import {processBillingMail} from '../../../../lib/recurring-server';
+import {processAdvertisingInvoiceMailOutbox} from '../../../../lib/advertising-invoices';
 import {reconcileMonthlyPayment} from '../../../../lib/recurring-server';
 import {managedAccess} from '../../../../lib/managed-events';
 import {mollieRequest,verifiedPaymentState} from '../../../../lib/mollie';
@@ -20,7 +23,7 @@ export async function POST(request:Request){
   if(!order.mollie_payment_id)return Response.json({paymentStatus:order.payment_status},{headers:{'Cache-Control':'no-store'}});
   const monthly=await client.from('advertising_billing_cycles').select('id').eq('request_id',order.id).maybeSingle();
   if(monthly.error)throw Error('Abonnementscontrole is niet beschikbaar.');
-  if(monthly.data)return Response.json(await reconcileMonthlyPayment(client,order.mollie_payment_id),{headers:{'Cache-Control':'no-store'}});
+  if(monthly.data){const result=await reconcileMonthlyPayment(client,order.mollie_payment_id);after(async()=>{await processBillingMail(client,10).catch(()=>{});await processAdvertisingInvoiceMailOutbox(10).catch(()=>{});});return Response.json(result,{headers:{'Cache-Control':'no-store'}});}
   const payment=await mollieRequest('payments/'+encodeURIComponent(order.mollie_payment_id));
   const state=verifiedPaymentState(payment,order);
   const result=await client.rpc('settle_advertising_payment',{p_payment_id:order.mollie_payment_id,p_state:state});
