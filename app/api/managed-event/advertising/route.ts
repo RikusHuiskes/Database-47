@@ -1,4 +1,7 @@
 import {recurringMethod,BILLING_TERMS_VERSION} from '../../../../lib/recurring-billing';
+import {firstMethods} from '../../../../lib/recurring-server';
+import {loadAdvertisingInvoiceProfile} from '../../../../lib/advertising-invoices';
+import {mailConfiguration} from '../../../../lib/mail';
 import {managedAccess,tokenHash} from '../../../../lib/managed-events';
 import {validateAdvertiser,advertisingSelectionQuote} from '../../../../lib/advertising';
 export const runtime='nodejs';
@@ -15,6 +18,11 @@ export async function POST(request:Request){
   const {details,quote:singleQuote}=validateAdvertiser(selection&&Array.isArray(body.placements)?body.placements[0]:body.placement,monthly?{...body.advertiser,months:1}:body.advertiser);
   if(monthly&&!selection)throw Error('Kies advertentievormen voor je abonnement.');
   const quote=selection?advertisingSelectionQuote(body.placements,details):singleQuote;
+  if(monthly){
+   if(!mailConfiguration().deliveryEnabled)throw Error('De bevestigingsmail is nog niet ingericht. Neem contact op met Côte de Duras.');
+   if(!(await loadAdvertisingInvoiceProfile(client)).profile)throw Error('De factuurinstellingen zijn nog niet compleet. Neem contact op met Côte de Duras.');
+   await firstMethods(recurringMethod(body.method),quote.amountCents);
+  }
   const token=request.headers.get('authorization')!.slice(7);
   const {data:id,error}=await client.rpc(selection?'request_managed_advertising_selection':'upgrade_managed_advertising',{p_event_id:body.eventId,p_token_hash:tokenHash(token),...(!selection?{p_placement:body.placement}:{}),p_ad:{...quote,details:selection?{...details,placements:('placements' in quote?quote.placements:[])}:details}});
   if(error)throw Error(error.message);

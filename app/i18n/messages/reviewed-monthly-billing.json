@@ -203,5 +203,40 @@
     "Eenmalige facturen handmatig; maandfacturen automatisch na betaling",
     "One-off invoices manually; monthly invoices automatically after payment",
     "Factures ponctuelles manuelles ; factures mensuelles automatiques après paiement"
+  ],
+  [
+    "Betaling",
+    "Payment",
+    "Paiement"
+  ],
+  [
+    "Betalingsbevestiging",
+    "Payment confirmation",
+    "Confirmation du paiement"
+  ],
+  [
+    "Bedankt voor je bestelling en betaling",
+    "Thank you for your order and payment",
+    "Merci pour votre commande et votre paiement"
+  ],
+  [
+    "Je betaling is bevestigd. Je advertentie wordt na goedkeuring geplaatst voor de afgesproken periode.",
+    "Your payment is confirmed. Your advertisement will be published after approval for the agreed period.",
+    "Votre paiement est confirmé. Votre publicité sera diffusée après validation pendant la période convenue."
+  ],
+  [
+    "Je kunt dit tabblad sluiten of teruggaan naar de website.",
+    "You can close this tab or return to the website.",
+    "Vous pouvez fermer cet onglet ou retourner au site."
+  ],
+  [
+    "Terug naar Côte de Duras",
+    "Back to Côte de Duras",
+    "Retour à Côte de Duras"
+  ],
+  [
+    "Automatische maandbetaling gepland",
+    "Automatic monthly payment scheduled",
+    "Paiement mensuel automatique prévu"
   ]
 ]

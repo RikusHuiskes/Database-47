@@ -8,7 +8,7 @@ import {useState} from 'react';
 import {BILLING_TERMS_VERSION} from '../../lib/recurring-billing';
 import {advertisingSelectionQuote,advertisingOrderTypes,emptyAdvertiser,MONTHLY_PRICES,type AdvertiserDetails,type AdvertisingType} from '../../lib/advertising';
 
-export type OwnerAdvertisement={id?:string;amount_cents:number;payment_status:string;starts_on:string;ends_on:string;placement?:string;details?:AdvertiserDetails&{placements?:AdvertisingType[]}};
+export type OwnerAdvertisement={id?:string;recurring_cycle_index?:number|null;amount_cents:number;payment_status:string;starts_on:string;ends_on:string;placement?:string;details?:AdvertiserDetails&{placements?:AdvertisingType[]}};
 type Props={access:{id:string;token:string};event:Record<string,unknown>;advertising:OwnerAdvertisement|null;advertisements?:OwnerAdvertisement[];paymentReady:boolean;busy:boolean;onCreated:(ad:OwnerAdvertisement)=>void;onCheckout:(requestId?:string)=>Promise<void>};
 const eventLabels={highlight:'Vetomrande vermelding',category:'Categorieadvertentie',homepage:'Homepageadvertentie'};
 const euro=(cents:number)=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR'}).format(cents/100);

@@ -55,7 +55,12 @@ Decision recorded 13 November 2026: a rolling monthly subscription, cancellable 
 
 ## Deployment checkpoint — 13 November 2026
 
-Draft PR #4 contains the implementation; main/production remains unchanged pending provider tests.
-The feature preview deploy builds successfully, but its NEXT_PUBLIC_SUPABASE_URL points to historical project evvanbexkkdaqdfoginp. Its service connection returns PGRST205 for advertising_contracts; the current linked Supabase accounts have no access to that project. The active Database 47 project is jhzbfeyhtyzyobsxypvj and both migrations are applied there.
+Draft PR #4 contains the implementation; main/production remains unchanged pending completion of SEPA provider tests. Both active projects are in the Domaine Le Nourrissat Pro organization; the separate historical Database 47 test project (evvanbexkkdaqdfoginp) remains Free. Its preview credentials were retained, preserving separation from production.
 
-To unblock provider tests, securely configure the feature/tourisme-duras-enrichment Preview environment with matching Database 47 NEXT_PUBLIC_SUPABASE_URL, publishable/anon key and server-only service key, plus a Mollie test API key, then redeploy. Never place service keys in NEXT_PUBLIC variables or repository files. Verify databaseReady before creating any test checkout. Test payment completion, renewal, invoices and cancellation before merging. No live payment has been performed by this implementation session.
+Both monthly migrations are now installed in that test database through the authenticated dashboard. Readiness endpoint reports databaseReady/configured true. RLS is enabled and anon cannot select any of the three new tables. Migration versions are recorded.
+
+Real Mollie test-mode credit-card checkout completed through hosted checkout with the official test card. Verified: paid state; valid mandate; one automatic monthly invoice; confirmation and invoice outbox accepted; next month planned; owner cancellation preserves paid_until and cancels the planned cycle. No real charge was performed.
+
+SEPA test checkout reports no enabled first-payment bank method that creates a directdebit mandate. Mollie dashboard currently requires sign-in. Inspect the intended profile and enabled SEPA/Pay by Bank methods before declaring SEPA ready. No bank method was activated, no account/plan changed and no credentials copied. The owner request endpoint now checks provider, mail and invoice readiness before reserving a new monthly order.
+
+Browser review also found and fixed untranslated payment-confirmation text and the manual payment button on automatic renewal cycles. Verify those changes in the latest preview before release.

@@ -132,15 +132,15 @@ export default function MyListing(){
       <div id="owner-save-status" role="status" aria-live="polite" aria-atomic="true"><T>{saving?<p className="owner-save-message"><T>{"Bezig met opslaan. Wacht tot de bevestiging verschijnt."}</T></p>:message?<p className="owner-save-message"><T>{message}</T></p>:null}</T></div></form></div>
       <div hidden={section!=='advertise'}><T>{access&&<AdvertisingUpgrade key={access.id} access={access} event={event} advertising={ad} paymentReady={paymentReady} busy={busy} advertisements={advertisements} onCreated={created=>{setAd(created);setAdvertisements(previous=>[created,...previous.filter(item=>item.id!==created.id)]);}} onCheckout={checkout}/>}</T></div>
       <section hidden={section!=='payments'} aria-labelledby="owner-payments-heading">
-        {access&&<MonthlySubscriptions access={access}/>}
+        {access&&<MonthlySubscriptions access={access} onUpdated={setAdvertisements}/>}
         <h2 id="owner-payments-heading"><T>Betalingen en aanvragen</T></h2>
         <p><T>Hier vind je alle advertentieaanvragen voor deze vermelding, met het bedrag, de periode en de betaalstatus. Een verlopen betaallink kun je hier opnieuw openen.</T></p>
         {!advertisements.length?<p><T>Je hebt nog geen advertentieaanvragen voor deze vermelding.</T></p>:advertisements.map(item=><article className="owner-payment-card" key={item.id}>
           <h3><T>{advertisingOrderTypes(item).map(type=>event.municipal_key&&type==='homepage'?'Gemeentepartner':event.municipal_key&&type==='category'?'Rubriekpartner':ADVERTISING_LABELS[type]).join(' + ')}</T></h3>
           <p><T>Periode:</T> {item.starts_on} <T>tot</T> {item.ends_on}</p>
-          <p className="owner-payment-total">€ {(item.amount_cents/100).toFixed(2).replace('.',',')} <span><T>{advertisementPaymentLabel(item.payment_status)}</T></span></p>
+          <p className="owner-payment-total">€ {(item.amount_cents/100).toFixed(2).replace('.',',')} <span><T>{Number(item.recurring_cycle_index)>0&&item.payment_status==='requested'?'Automatische maandbetaling gepland':advertisementPaymentLabel(item.payment_status)}</T></span></p>
           <div className="management-link-actions">
-            {item.id&&canResumeAdvertisement(item)&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void checkout(item.id)}><T>{item.payment_status==='open'?'Betaling hervatten via Mollie':'Betalen via Mollie'}</T></button>}
+            {item.id&&!(Number(item.recurring_cycle_index)>0)&&canResumeAdvertisement(item)&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void checkout(item.id)}><T>{item.payment_status==='open'?'Betaling hervatten via Mollie':'Betalen via Mollie'}</T></button>}
             {item.id&&item.payment_status!=='requested'&&<button type="button" disabled={busy||!paymentReady} onClick={()=>void refreshPayment(item.id!)}><T>Betaalstatus controleren</T></button>}
           </div>
         </article>)}

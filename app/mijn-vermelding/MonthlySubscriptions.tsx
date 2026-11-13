@@ -1,13 +1,14 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
 import {T} from '../i18n/Language';
+import type {OwnerAdvertisement} from './AdvertisingUpgrade';
 type Contract={id:string;method:string;status:string;amount_cents:number;paid_until:string|null;anchor_date:string};
-export default function MonthlySubscriptions({access}:{access:{id:string;token:string}}){
+export default function MonthlySubscriptions({access,onUpdated}:{access:{id:string;token:string};onUpdated?:(orders:OwnerAdvertisement[])=>void}){
  const [contracts,setContracts]=useState<Contract[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState<string|null>(null);
- const load=useCallback(async()=>{const response=await fetch('/api/managed-event?id='+access.id,{headers:{Authorization:'Bearer '+access.token},cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error);setContracts(data.contracts??[])},[access.id,access.token]);
+ const load=useCallback(async()=>{const response=await fetch('/api/managed-event?id='+access.id,{headers:{Authorization:'Bearer '+access.token},cache:'no-store'});const data=await response.json();if(!response.ok)throw Error(data.error);setContracts(data.contracts??[]);return data},[access.id,access.token]);
  useEffect(()=>{let live=true;void load().catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[load]);
  async function act(id:string,action:'cancel'|'refresh'){
-  setBusy(true);setError('');try{const response=await fetch('/api/managed-event/subscription',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id,contractId:id,action})});const data=await response.json();if(!response.ok)throw Error(data.error);await load();setConfirm(null)}catch(e){setError(e instanceof Error?e.message:'Abonnement niet beschikbaar.')}finally{setBusy(false)}
+  setBusy(true);setError('');try{const response=await fetch('/api/managed-event/subscription',{method:'POST',headers:{Authorization:'Bearer '+access.token,'Content-Type':'application/json'},body:JSON.stringify({eventId:access.id,contractId:id,action})});const data=await response.json();if(!response.ok)throw Error(data.error);const updated=await load();onUpdated?.(updated.advertisements??[]);setConfirm(null)}catch(e){setError(e instanceof Error?e.message:'Abonnement niet beschikbaar.')}finally{setBusy(false)}
  }
  return <section aria-labelledby="monthly-heading"><h2 id="monthly-heading"><T>Maandabonnementen</T></h2>
  {!contracts.length&&<p><T>Je hebt nog geen maandabonnementen.</T></p>}
