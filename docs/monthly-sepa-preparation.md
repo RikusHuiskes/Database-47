@@ -76,3 +76,11 @@ A matching standard Test API-key form for Le Nourrissat in #19136437 and the exi
 Pay by Bank is offered for activation but not enabled. The dashboard explicitly states that activation accepts additional payment-method terms, so obtain explicit action-time confirmation before activating it. French public standard pricing currently lists 0.45% + EUR0.25 for Pay by Bank; dashboard/account terms control actual charges.
 
 Invoice seller identity needs confirmation before release: selected Mollie organization shows registration number 98402615300010, whereas the existing invoice seller constant uses 93451899400025. Do not silently rewrite historical invoices or change a legal identifier without resolving this mismatch with Rikus.
+
+## Authorization and Pay by Bank request — 13 November 2026
+
+Rikus explicitly authorized Pay by Bank activation and accepted its additional terms; he confirmed 93451899400025 is the correct invoice SIRET. Preserve that existing seller constant; the prior invoice-identity confirmation blocker is resolved by the owner's instruction. Do not alter historic invoices or the Mollie registration without separate instructions.
+
+Pay by Bank activation was submitted for profile pfl_NAma7doDmX in organization #19136437. Mollie's confirmation dialog now states that the payment-method request is still being reviewed and that an email will follow when processed. It is requested/pending review, not yet confirmed live. The dialog displays EUR0.25 + 0.45% per transaction and EUR0.25 per refund; France is in its supported-country list. No second profile or unrelated method was changed.
+
+Remaining blocker for end-to-end French SEPA test: replace the mismatched existing Preview key securely with a Test key for the chosen profile. API-key creation form (standard, Test, Le Nourrissat) and branch-only Vercel MOLLIE_API_KEY edit field are ready in the user's local browser. No new key has been created or entered. Do not collect the key through chat. After secure entry, redeploy feature preview and check the sanitized readiness endpoint before further provider tests.
