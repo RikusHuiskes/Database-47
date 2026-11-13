@@ -7,7 +7,7 @@ import {advertisingOrderTypes,ADVERTISING_LABELS} from '../../lib/advertising';
 import type {SupabaseClient} from '@supabase/supabase-js';
 
 type Invoice={invoice_number:string;issued_at:string;state:'issued'|'cancelled';is_test_mode:boolean;net_cents:number;vat_cents:number;total_cents:number;advertising_invoice_mail_outbox:{state:string;accepted_at:string|null;last_error:string|null}[]};
-type RequestRow={id:string;placement:string;details:Record<string,string>;starts_on:string;ends_on:string;months:number;amount_cents:number;payment_status:string;is_test_mode:boolean;events:{title:string;city?:string;municipal_key?:string;municipal_type?:string}|null;advertising_invoices:Invoice[]|Invoice|null};
+type RequestRow={advertising_billing_cycles?:{cycle_index:number;state:string;advertising_contracts:{method:string;status:string;paid_until:string|null}}[];id:string;placement:string;details:Record<string,string>;starts_on:string;ends_on:string;months:number;amount_cents:number;payment_status:string;is_test_mode:boolean;events:{title:string;city?:string;municipal_key?:string;municipal_type?:string}|null;advertising_invoices:Invoice[]|Invoice|null};
 type Summary={invoiceCount:number;invoicedTotalCents:number;unbilledRequestCount:number;testCount:number;mailPending:number;mailFailed:number};
 type Settings={tax_mode:'standard'|'franchise_exempt';vat_rate:number;vat_number:string|null;tax_note:string;price_basis:'tax_inclusive'};
 type AdminData={items:RequestRow[];total:number;page:number;summary:Summary;settings:Settings|null;invoiceSetupReady:boolean;invoiceSetupMissing:string[];mailConfigured:boolean;mailDeliveryEnabled:boolean;previewMode:boolean};
@@ -54,7 +54,7 @@ export default function AdvertisingRequests({client}:{client:SupabaseClient|null
     {(error||message)&&<p className={error?'invoice-notice invoice-error':'invoice-notice'} role={error?'alert':'status'}>{error||message}</p>}
     <div className="invoice-summary-grid">
      <article><span><T>{"Totaal gefactureerd"}</T></span><strong>{eur(summary.invoicedTotalCents)}</strong><small>{summary.invoiceCount}<T>{" uitgegeven facturen"}</T></small></article>
-    <article><span><T>{"Nog zonder factuur"}</T></span><strong>{summary.unbilledRequestCount}</strong><small><T>{"Echte aanvragen; facturen maak je handmatig aan"}</T></small></article>
+    <article><span><T>{"Nog zonder factuur"}</T></span><strong>{summary.unbilledRequestCount}</strong><small><T>{"Eenmalige facturen handmatig; maandfacturen automatisch na betaling"}</T></small></article>
      <article><span><T>{"Testaanvragen"}</T></span><strong>{summary.testCount}</strong><small><T>{"Uitgesloten van de factuurteller"}</T></small></article>
      <article><span><T>{"E-mailwachtrij"}</T></span><strong>{summary.mailPending}</strong><small>{summary.mailFailed}<T>{" mislukt"}</T></small></article>
     </div>
@@ -80,11 +80,12 @@ export default function AdvertisingRequests({client}:{client:SupabaseClient|null
      return <article className={'advertising-invoice-row'+(item.is_test_mode||invoice?.is_test_mode?' is-test':'')} key={item.id}>
       <div className="advertising-invoice-row-top"><div><p className="eyebrow">{item.is_test_mode?<T>{"TEST"}</T>:item.events?.municipal_key?<T>{"GEMEENTEGIDS"}</T>:<T>{"EVENEMENTENKALENDER"}</T>}</p><h4>{item.events?.title??'Vermelding'}{types?' — '+types:''}</h4></div><strong>{eur(invoice?.total_cents??item.amount_cents)}</strong></div>
       <p><T>{item.starts_on}</T><T>{" t/m "}</T><T>{item.ends_on}</T><T>{" · Betaalstatus (Mollie): "}</T><T>{item.payment_status}</T><T>{" · Factuur: "}</T><T>{status}</T></p>
+      {item.advertising_billing_cycles?.map(cycle=><p key={cycle.cycle_index}><T>Maandabonnement</T> · <T>{cycle.advertising_contracts.method==='creditcard'?'Creditcard':'Automatische SEPA-incasso'}</T> · <T>{({checkout:'Eerste betaling nog afronden',active:'Actief',past_due:'Betaling vraagt aandacht',cancelled:'Opgezegd'} as Record<string,string>)[cycle.advertising_contracts.status]}</T> · <T>Betaald tot:</T> {cycle.advertising_contracts.paid_until??'—'}</p>)}
       <p>{item.details?.name}<T>{" · "}</T><T preserve>{item.details?.company}</T><T>{" · "}</T><T preserve>{item.details?.email}</T><T>{" · "}</T><T preserve>{item.details?.phone}</T></p>
       <p><T preserve>{item.details?.address}</T><T>{", "}</T><T preserve>{item.details?.postcode}</T><T>{" "}</T><T>{item.details?.city}</T><T>{item.details?.vatNumber?' · TVA '+item.details.vatNumber:''}</T></p>
       {invoice&&<p><T>{"Netto "}</T>{eur(invoice.net_cents)}<T>{" · btw "}</T>{eur(invoice.vat_cents)}<T>{" · e-mail: "}</T><T>{mail?.state==='accepted'?'door mailserver geaccepteerd':mail?.state==='failed'?'verzending mislukt':mail?.state==='sending'?'wordt verzonden':'wacht op verzending'}</T><T>{mail?.last_error?' · '+mail.last_error:''}</T></p>}
       {!invoice&&!item.is_test_mode&&<button type="button" disabled={busy||!data?.invoiceSetupReady} onClick={()=>void action({action:'issue-invoice',requestId:item.id})}><T>{"Factuur opstellen en versturen"}</T></button>}
-      {item.is_test_mode&&<button type="button" disabled={busy} onClick={()=>void action({action:'delete-test',requestId:item.id})}><T>{"Testaanvraag uit lijst verwijderen"}</T></button>}
+      {item.is_test_mode&&!item.advertising_billing_cycles?.length&&<button type="button" disabled={busy} onClick={()=>void action({action:'delete-test',requestId:item.id})}><T>{"Testaanvraag uit lijst verwijderen"}</T></button>}
      </article>;
     })}
     {data?.items.length===0&&<p><T>{"Geen advertentieaanvragen."}</T></p>}

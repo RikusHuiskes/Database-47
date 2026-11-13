@@ -96,7 +96,7 @@ export async function processAdvertisingInvoiceMailOutbox(limit=10){
    const {data:invoice,error:loadError}=await client.from('advertising_invoices').select('id,invoice_number,issued_at,currency,net_cents,vat_cents,total_cents,snapshot').eq('id',row.invoice_id).maybeSingle();
    if(loadError||!invoice)throw Error('De factuur kon niet worden geladen.');
    const snapshot=invoice.snapshot as Snapshot;const message=invoiceEmail(snapshot);
-   const preview=config.previewMode;
+   const preview=config.previewMode||invoice.is_test_mode;
    const outgoing=preview?{...message,subject:'[TEST PREVIEW] '+message.subject,text:`TESTBERICHT — uitsluitend naar je eigen mailbox.\nOorspronkelijke ontvanger: ${row.recipient}\n\n${message.text}`} :message;
    const info=await mailTransport().sendMail({from:config.from,to:preview?config.user:row.recipient,replyTo:config.user,...outgoing,messageId:`<advertising-invoice-${invoice.id}@cotededuras.com>`,attachments:[{filename:`Factuur-${invoice.invoice_number}.pdf`,content:Buffer.from(advertisingInvoicePdf(snapshot)),contentType:'application/pdf'}]});
    if(!info.accepted?.length)throw Error('Geen ontvanger geaccepteerd.');

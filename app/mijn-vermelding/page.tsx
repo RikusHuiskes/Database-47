@@ -1,4 +1,5 @@
 "use client";
+import MonthlySubscriptions from './MonthlySubscriptions';
 import {T, A} from '../i18n/Language';
 
 import {useEffect,useRef,useState} from 'react';
@@ -131,6 +132,7 @@ export default function MyListing(){
       <div id="owner-save-status" role="status" aria-live="polite" aria-atomic="true"><T>{saving?<p className="owner-save-message"><T>{"Bezig met opslaan. Wacht tot de bevestiging verschijnt."}</T></p>:message?<p className="owner-save-message"><T>{message}</T></p>:null}</T></div></form></div>
       <div hidden={section!=='advertise'}><T>{access&&<AdvertisingUpgrade key={access.id} access={access} event={event} advertising={ad} paymentReady={paymentReady} busy={busy} advertisements={advertisements} onCreated={created=>{setAd(created);setAdvertisements(previous=>[created,...previous.filter(item=>item.id!==created.id)]);}} onCheckout={checkout}/>}</T></div>
       <section hidden={section!=='payments'} aria-labelledby="owner-payments-heading">
+        {access&&<MonthlySubscriptions access={access}/>}
         <h2 id="owner-payments-heading"><T>Betalingen en aanvragen</T></h2>
         <p><T>Hier vind je alle advertentieaanvragen voor deze vermelding, met het bedrag, de periode en de betaalstatus. Een verlopen betaallink kun je hier opnieuw openen.</T></p>
         {!advertisements.length?<p><T>Je hebt nog geen advertentieaanvragen voor deze vermelding.</T></p>:advertisements.map(item=><article className="owner-payment-card" key={item.id}>

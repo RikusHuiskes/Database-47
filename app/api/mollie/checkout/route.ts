@@ -1,3 +1,4 @@
+import {POST as monthlyCheckout} from '../recurring/checkout/route';
 import {managedAccess} from '../../../../lib/managed-events';
 import {mollieRequest,verifiedPaymentState} from '../../../../lib/mollie';
 import {advertisingOrderTypes,ADVERTISING_LABELS} from '../../../../lib/advertising';
@@ -13,6 +14,9 @@ export async function POST(request:Request){
     if(requestId)orderQuery=orderQuery.eq('id',requestId);
     const {data:initialOrder,error}=await orderQuery.maybeSingle();let order=initialOrder;
     if(error||!order)throw Error('Advertentieaanvraag niet gevonden.');
+    const monthly=await client.from('advertising_contracts').select('id').eq('request_id',order.id).maybeSingle();
+    if(monthly.error)throw Error('Abonnementscontrole is niet beschikbaar.');
+    if(monthly.data)return monthlyCheckout(new Request(request.url,{method:'POST',headers:request.headers,body:JSON.stringify({eventId,requestId:order.id})}));
     if(order.payment_status==='paid')return Response.json({error:'Deze aanvraag is al betaald.'},{status:409});
     if(new Date(order.ends_on+'T00:00:00Z')<=new Date())return Response.json({error:'De advertentieperiode is verstreken. Neem contact op voor een nieuwe periode.'},{status:409});
     if(order.mollie_payment_id){

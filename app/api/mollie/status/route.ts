@@ -1,3 +1,4 @@
+import {reconcileMonthlyPayment} from '../../../../lib/recurring-server';
 import {managedAccess} from '../../../../lib/managed-events';
 import {mollieRequest,verifiedPaymentState} from '../../../../lib/mollie';
 export const runtime='nodejs';
@@ -17,6 +18,9 @@ export async function POST(request:Request){
   if(error)throw Error('De advertentieaanvraag kon niet worden geladen.');
   if(!order)return Response.json({error:'Advertentieaanvraag niet gevonden.'},{status:404});
   if(!order.mollie_payment_id)return Response.json({paymentStatus:order.payment_status},{headers:{'Cache-Control':'no-store'}});
+  const monthly=await client.from('advertising_billing_cycles').select('id').eq('request_id',order.id).maybeSingle();
+  if(monthly.error)throw Error('Abonnementscontrole is niet beschikbaar.');
+  if(monthly.data)return Response.json(await reconcileMonthlyPayment(client,order.mollie_payment_id),{headers:{'Cache-Control':'no-store'}});
   const payment=await mollieRequest('payments/'+encodeURIComponent(order.mollie_payment_id));
   const state=verifiedPaymentState(payment,order);
   const result=await client.rpc('settle_advertising_payment',{p_payment_id:order.mollie_payment_id,p_state:state});

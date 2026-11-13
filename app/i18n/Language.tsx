@@ -6,10 +6,15 @@ import {publicEventText} from '../../lib/public-event-links';
 import nl from './messages/nl.json';
 import en from './messages/en.json';
 import fr from './messages/fr.json';
+import monthlyBilling from './messages/reviewed-monthly-billing.json';
 import publicKeys from '../../lib/translations/content-index.json';
 import './language.css';
 type LanguageContext={locale:Locale;setLocale:(locale:Locale)=>void;t:(text:string)=>string};
-const dictionaries:Record<Locale,Dictionary>={nl,en,fr};
+const dictionaries:Record<Locale,Dictionary>={
+ nl:{...nl,...Object.fromEntries(monthlyBilling.map(row=>[row[0],row[0]]))},
+ en:{...en,...Object.fromEntries(monthlyBilling.map(row=>[row[0],row[1]]))},
+ fr:{...fr,...Object.fromEntries(monthlyBilling.map(row=>[row[0],row[2]]))}
+};
 const knownPublicKeys=new Set(publicKeys);
 const Context=createContext<LanguageContext>({locale:'fr',setLocale:()=>{},t:text=>text});
 const contentCache:Record<Locale,Map<string,string|null>>={nl:new Map(),en:new Map(),fr:new Map()};
