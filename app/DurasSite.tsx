@@ -26,6 +26,7 @@ import {MONTHLY_PRICES,advertisingSelectionQuote,emptyAdvertiser,validateAdverti
 import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 import MailSettings from './components/MailSettings';
+import SocialLinks from './components/SocialLinks';
 import ListingRequestsAdmin from './components/ListingRequestsAdmin';
 import AdvertisingRequests from "./components/AdvertisingRequests";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
@@ -2270,6 +2271,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       <T>{listingContent}</T>
 
       <AnalyticsConsent disabled={isAdmin || authLoading} />
+      <SocialLinks />
       <footer className="site-footer">
         <A><a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
           <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} loading="lazy" decoding="async" /></A></span>
