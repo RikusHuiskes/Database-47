@@ -85,9 +85,8 @@ export async function processBillingMail(db:SupabaseClient,limit=20){
 export async function processMonthlyBilling(limit=40){
  if(!process.env.MOLLIE_API_KEY)return {enabled:false};const db=createServiceClient();if(!db)throw Error('Serververbinding ontbreekt.');
  const mode=process.env.MOLLIE_API_KEY.startsWith('test_'),today=parisToday(),soon=new Date(Date.now()+3*86400000).toISOString().slice(0,10);let processed=0,errors=0;
- const active=await db.from('advertising_contracts').select('id').eq('is_test_mode',mode).eq('status','active').limit(limit);
- for(const c of active.data??[]){const reserved=await db.rpc('reserve_monthly_cycle',{p_contract_id:c.id});if(reserved.error)errors++;}
- const cycles=await db.from('advertising_billing_cycles').select('*,advertising_contracts!inner(*)').eq('advertising_contracts.is_test_mode',mode).in('state',['planned','creating','open','paid']).lte('charge_on',soon).order('charge_on').limit(limit);
+ const recovery=await db.rpc('queue_monthly_cycles',{p_test:mode,p_limit:limit});if(recovery.error)throw Error('Abonnementsherstel is niet beschikbaar.');errors+=Number(recovery.data?.failed||0);
+ const cycles=await db.from('advertising_billing_cycles').select('*,advertising_contracts!inner(*)').eq('advertising_contracts.is_test_mode',mode).or('and(cycle_index.gt.0,state.in.(planned,creating)),state.eq.open,and(state.eq.paid,invoice_id.is.null)').lte('charge_on',soon).order('charge_on').limit(limit);
  if(cycles.error)throw Error('De maandtermijnen konden niet worden geladen.');
  for(const row of cycles.data??[]){
   const c=row.advertising_contracts as Contract,b=row as Cycle;

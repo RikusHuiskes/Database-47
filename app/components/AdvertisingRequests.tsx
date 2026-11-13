@@ -84,7 +84,7 @@ export default function AdvertisingRequests({client}:{client:SupabaseClient|null
       <p>{item.details?.name}<T>{" · "}</T><T preserve>{item.details?.company}</T><T>{" · "}</T><T preserve>{item.details?.email}</T><T>{" · "}</T><T preserve>{item.details?.phone}</T></p>
       <p><T preserve>{item.details?.address}</T><T>{", "}</T><T preserve>{item.details?.postcode}</T><T>{" "}</T><T>{item.details?.city}</T><T>{item.details?.vatNumber?' · TVA '+item.details.vatNumber:''}</T></p>
       {invoice&&<p><T>{"Netto "}</T>{eur(invoice.net_cents)}<T>{" · btw "}</T>{eur(invoice.vat_cents)}<T>{" · e-mail: "}</T><T>{mail?.state==='accepted'?'door mailserver geaccepteerd':mail?.state==='failed'?'verzending mislukt':mail?.state==='sending'?'wordt verzonden':'wacht op verzending'}</T><T>{mail?.last_error?' · '+mail.last_error:''}</T></p>}
-      {!invoice&&!item.is_test_mode&&<button type="button" disabled={busy||!data?.invoiceSetupReady} onClick={()=>void action({action:'issue-invoice',requestId:item.id})}><T>{"Factuur opstellen en versturen"}</T></button>}
+      {!invoice&&!item.is_test_mode&&(!item.advertising_billing_cycles?.length||item.payment_status==='paid')&&<button type="button" disabled={busy||!data?.invoiceSetupReady} onClick={()=>void action({action:'issue-invoice',requestId:item.id})}><T>{"Factuur opstellen en versturen"}</T></button>}
       {item.is_test_mode&&!item.advertising_billing_cycles?.length&&<button type="button" disabled={busy} onClick={()=>void action({action:'delete-test',requestId:item.id})}><T>{"Testaanvraag uit lijst verwijderen"}</T></button>}
      </article>;
     })}
