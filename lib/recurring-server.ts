@@ -1,6 +1,7 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {mollieRequest} from './mollie';
 import {FIRST_SEPA_METHODS,verifiedRecurringPayment,type RecurringPayment,type RecurringMethod} from './recurring-billing';
+import {advertiserLink} from './advertiser-mail';
 import {createServiceClient} from './supabase-server';
 import {loadAdvertisingInvoiceProfile} from './advertising-invoices';
 import {mailConfiguration,mailTransport,safeMailError} from './mail';
@@ -49,7 +50,7 @@ export async function reconcileMonthlyPayment(db:SupabaseClient,id:string){
  return {paymentStatus:state};
 }
 
-function billingMail(kind:string,c:Contract,b:Cycle|null){
+function billingMail(kind:string,c:Contract,b:Cycle|null,link:string){
  const lang=c.locale,amount=new Intl.NumberFormat(lang==='nl'?'nl-NL':lang==='en'?'en-GB':'fr-FR',{style:'currency',currency:'EUR'}).format(c.amount_cents/100);
  const date=(value:string|null)=>value?new Intl.DateTimeFormat(lang==='nl'?'nl-NL':lang==='en'?'en-GB':'fr-FR',{dateStyle:'long',timeZone:'Europe/Paris'}).format(new Date(value+'T12:00:00Z')):'—';
  const method=lang==='fr'?(c.method==='sepa'?'prélèvement SEPA':'carte bancaire'):lang==='en'?(c.method==='sepa'?'SEPA direct debit':'credit card'):(c.method==='sepa'?'SEPA-incasso':'creditcard');
@@ -57,7 +58,7 @@ function billingMail(kind:string,c:Contract,b:Cycle|null){
  const terms={nl:`Je betaalt ${amount} per maand via ${method}. Je kunt maandelijks opzeggen in je persoonlijke beheeromgeving. Na opzegging starten we geen nieuwe betalingen. Een al gestarte betaling kan nog worden verwerkt. Je advertentie blijft actief voor de betaalde periode.`,en:`You pay ${amount} per month by ${method}. You can cancel monthly in your personal management area. After cancellation we will not initiate new payments. A payment already initiated may still be processed. Your advertisement remains active for the paid period.`,fr:`Vous payez ${amount} par mois par ${method}. Vous pouvez résilier chaque mois dans votre espace de gestion personnel. Après résiliation, nous n'initierons plus de nouveaux paiements. Un paiement déjà engagé peut encore être traité. Votre publicité reste active pendant la période payée.`};
  const notice=lang==='nl'?`Geplande afschrijving: ${date(b?.charge_on??null)}. Periode: ${date(b?.starts_on??null)} – ${date(b?.ends_on??null)}.`:lang==='en'?`Scheduled payment: ${date(b?.charge_on??null)}. Period: ${date(b?.starts_on??null)} – ${date(b?.ends_on??null)}.`:`Paiement prévu le ${date(b?.charge_on??null)}. Période : ${date(b?.starts_on??null)} – ${date(b?.ends_on??null)}.`;
  const paid=lang==='nl'?`Betaald tot: ${date(c.paid_until)}.`:lang==='en'?`Paid until: ${date(c.paid_until)}.`:`Payé jusqu'au ${date(c.paid_until)}.`;
- return {subject:'Côte de Duras — '+titles[lang][kind as keyof typeof titles.nl],text:[titles[lang][kind as keyof typeof titles.nl],terms[lang],kind==='upcoming'?notice:paid,'https://www.cotededuras.com/mijn-vermelding','info@cotededuras.com','Référence: '+c.id].join('\n\n')};
+ return {subject:'Côte de Duras — '+titles[lang][kind as keyof typeof titles.nl],text:[titles[lang][kind as keyof typeof titles.nl],terms[lang],kind==='upcoming'?notice:paid,link,'info@cotededuras.com','Référence: '+c.id].join('\n\n')};
 }
 export async function processBillingMail(db:SupabaseClient,limit=20){
  const config=mailConfiguration();if(!config.deliveryEnabled)return {accepted:0,failed:0};
@@ -73,7 +74,7 @@ export async function processBillingMail(db:SupabaseClient,limit=20){
    if(!order?.details?.email)throw Error('Factuuradres ontbreekt.');
    // Suppress obsolete debit notices after cancellation; never let them authorize a charge.
    if(row.kind==='upcoming'&&c.status==='cancelled'){await db.from('advertising_billing_mail').update({state:'accepted',lease_until:null}).eq('id',row.id).eq('lease_until',lease);continue;}
-   const message=billingMail(row.kind,c as Contract,cycle as Cycle|null);
+   const message=billingMail(row.kind,c as Contract,cycle as Cycle|null,await advertiserLink(db,c.request_id)??'https://www.cotededuras.com/mijn-vermelding');
    const info=await mailTransport().sendMail({from:config.from,to:config.previewMode||c.is_test_mode?config.user:order.details.email,replyTo:config.user,...message,subject:(config.previewMode||c.is_test_mode?'[TEST PREVIEW] ':'')+message.subject,messageId:'<billing-'+row.id+'@cotededuras.com>'});if(!info.accepted?.length)throw Error('Mail niet geaccepteerd.');
    const saved=await db.from('advertising_billing_mail').update({state:'accepted',accepted_at:new Date().toISOString(),lease_until:null,last_error:null}).eq('id',row.id).eq('lease_until',lease);if(saved.error)throw saved.error;
    if(row.kind==='upcoming'&&cycle)await db.from('advertising_billing_cycles').update({notice_accepted_at:new Date().toISOString()}).eq('id',cycle.id);

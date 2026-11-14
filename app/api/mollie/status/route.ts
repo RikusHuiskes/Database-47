@@ -2,7 +2,7 @@ import {after} from 'next/server';
 import {processBillingMail} from '../../../../lib/recurring-server';
 import {processAdvertisingInvoiceMailOutbox} from '../../../../lib/advertising-invoices';
 import {reconcileMonthlyPayment} from '../../../../lib/recurring-server';
-import {managedAccess} from '../../../../lib/managed-events';
+import {paymentAccess,isAdvertiserRoute} from '../../../../lib/advertiser-access';
 import {mollieRequest,verifiedPaymentState} from '../../../../lib/mollie';
 export const runtime='nodejs';
 
@@ -12,7 +12,7 @@ export async function POST(request:Request){
  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
  try{
   const {eventId,requestId}=await request.json();
-  const client=await managedAccess(request,eventId);
+  const client=await paymentAccess(request,eventId,requestId);
   if(!client)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
   if(!process.env.MOLLIE_API_KEY)return Response.json({error:'Online betalen is nog niet geactiveerd.'},{status:503});
   let orderQuery=client.from('advertising_requests').select('id,amount_cents,mollie_payment_id,payment_status').eq('event_id',eventId).order('created_at',{ascending:false}).limit(1);
@@ -20,6 +20,7 @@ export async function POST(request:Request){
     const {data:initialOrder,error}=await orderQuery.maybeSingle();let order=initialOrder;
   if(error)throw Error('De advertentieaanvraag kon niet worden geladen.');
   if(!order)return Response.json({error:'Advertentieaanvraag niet gevonden.'},{status:404});
+    if(!(await paymentAccess(request,eventId,order.id)))return Response.json({error:'Open je persoonlijke betaallink.'},{status:401});
   if(!order.mollie_payment_id)return Response.json({paymentStatus:order.payment_status},{headers:{'Cache-Control':'no-store'}});
   const monthly=await client.from('advertising_billing_cycles').select('id').eq('request_id',order.id).maybeSingle();
   if(monthly.error)throw Error('Abonnementscontrole is niet beschikbaar.');
