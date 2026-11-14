@@ -1283,3 +1283,5 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .owner-form .monthly-consent{display:flex;align-items:flex-start;gap:12px;grid-column:1/-1;padding:18px;border:1px solid #bbcbb9;border-radius:8px;background:#f3f6ef;line-height:1.6}
 .owner-form .monthly-consent input{width:20px;min-width:20px;height:20px;margin:3px 0 0;accent-color:#244738}
 .owner-form .monthly-consent span{flex:1}
+/* Keep the brand mark legible without cropping or enlarging the small asset. */
+img.event-image-logo { object-fit: scale-down; object-position: center; padding: 28px; background: #f7f5ed; box-sizing: border-box; }

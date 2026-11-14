@@ -1,0 +1,37 @@
+[
+  [
+    "Bijgewerkt op 13 november 2026.",
+    "Updated on 13 November 2026.",
+    "Mis à jour le 13 novembre 2026."
+  ],
+  [
+    "Ontbreekt een foto of kan die niet geladen worden? In de agenda verschijnt dan het logo van Côte de Duras. Ook gecontroleerde bronbeelden die te klein of onbruikbaar zijn, worden door dit logo vervangen. De informatie en links van het evenement blijven beschikbaar. Een nieuwe, geschikte foto kun je via Gegevens wijzigen of BEWERKEN opslaan.",
+    "If a photo is missing or cannot load, the calendar displays the Côte de Duras logo. Reviewed source images that are too small or unusable are also replaced with this logo. Event information and links remain available. Save a new, suitable photo through Edit details or EDIT.",
+    "Si une photo manque ou ne peut pas être chargée, l’agenda affiche le logo de Côte de Duras. Les images sources vérifiées qui sont trop petites ou inutilisables sont également remplacées par ce logo. Les informations et les liens de l’événement restent disponibles. Vous pouvez enregistrer une nouvelle photo adaptée via Modifier les informations ou MODIFIER."
+  ],
+  [
+    "Een vermelding uit de actieve lijst verwijderen",
+    "Remove a listing from the active list",
+    "Retirer une annonce de la liste active"
+  ],
+  [
+    "Zoek de vermelding bij Alle evenementen en controleer de titel. Klik op VERWIJDEREN en lees het bevestigingsvenster. Bevestig alleen als de vermelding van de website moet verdwijnen.",
+    "Find the listing under All events and check its title. Click DELETE and read the confirmation dialog. Confirm only if the listing should be removed from the website.",
+    "Recherchez l’annonce dans Tous les événements et vérifiez son titre. Cliquez sur SUPPRIMER et lisez la fenêtre de confirmation. Confirmez uniquement si l’annonce doit être retirée du site."
+  ],
+  [
+    "Wacht op de bevestigingsmelding. De vermelding wordt gearchiveerd en verdwijnt van de openbare website en uit de actieve beheerlijst. Vernieuwen haalt de actuele lijst op. Bij een fout blijft de vermelding staan; controleer de melding voordat je opnieuw probeert.",
+    "Wait for confirmation. The listing is archived and disappears from the public website and the active administration list. Refresh reloads the current list. If an error occurs, the listing remains; check the message before trying again.",
+    "Attendez le message de confirmation. L’annonce est archivée et disparaît du site public et de la liste active de gestion. Actualiser recharge la liste à jour. En cas d’erreur, l’annonce reste en place ; consultez le message avant de réessayer."
+  ],
+  [
+    "Gekoppelde facturen en advertentieaanvragen blijven in het factuuroverzicht bewaard. Verwijderen voert geen terugbetaling uit. Behandel een eventuele terugbetaling afzonderlijk bij Mollie. Een bestaande import of betaalstatusupdate maakt een gearchiveerde vermelding niet opnieuw zichtbaar.",
+    "Linked invoices and advertising requests are retained in the invoice overview. Removing a listing does not issue a refund. Handle any refund separately in Mollie. An import or payment status update does not make an archived listing visible again.",
+    "Les factures et demandes publicitaires liées sont conservées dans le récapitulatif des factures. La suppression d’une annonce ne déclenche aucun remboursement. Traitez tout remboursement séparément dans Mollie. Un import ou une mise à jour du statut de paiement ne rend pas une annonce archivée à nouveau visible."
+  ],
+  [
+    "Vermelding uit actieve lijst verwijderen vind je ook bij de betreffende aanvraag in het factuuroverzicht. Na bevestiging verdwijnt de vermelding uit de actieve lijst. De aanvraag en een eventuele factuur blijven zichtbaar met de melding Vermelding verwijderd — factuurhistorie bewaard.",
+    "Remove listing from active list is also available for the relevant request in the invoice overview. After confirmation, the listing disappears from the active list. The request and any invoice remain visible with the message Listing removed — invoice history retained.",
+    "L’option Retirer l’annonce de la liste active est également disponible pour la demande concernée dans le récapitulatif des factures. Après confirmation, l’annonce disparaît de la liste active. La demande et toute facture restent visibles avec le message Annonce supprimée — historique des factures conservé."
+  ]
+]

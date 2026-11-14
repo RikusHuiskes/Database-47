@@ -1,3 +1,4 @@
+import {eventDisplayImage} from './event-image.ts';
 import {isWineTasting} from "./wine-category.ts";
 /** SIRTAQUI's published open CSV is semicolon separated, Windows-1252 and
  * contains quoted multiline fields. Never split it by lines or shift its dates. */
@@ -8,7 +9,7 @@ export function sirtaquiPhotoUrl(value: string | undefined): string | null {
     try {
       if (!/^https:\/\//i.test(path) && !/^[a-f\d-]{36}\/[^?#]+\.(?:jpe?g|png|webp|gif)$/i.test(path)) continue;
       const url = new URL(path, "https://aquitaine.media.tourinsoft.eu/upload/");
-      if (url.protocol === "https:" && !url.username && !url.password) return url.href;
+      if (url.protocol === "https:" && !url.username && !url.password) return eventDisplayImage(url.href);
     } catch { /* Try the next published photo. */ }
   }
   return null;

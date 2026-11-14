@@ -5,6 +5,7 @@ import {publicEventUrl} from '../lib/public-event-links';
 import {intlLocale,localizeMunicipalName} from '../lib/i18n';
 
 
+import EventImage from './components/EventImage';
 import MunicipalServicePhoto from './components/MunicipalServicePhoto';
 import MunicipalBusinessAdmin from './components/MunicipalBusinessAdmin';
 import MunicipalPartners from './components/MunicipalPartners';
@@ -25,6 +26,7 @@ import {MONTHLY_PRICES,advertisingSelectionQuote,emptyAdvertiser,validateAdverti
 import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 import MailSettings from './components/MailSettings';
+import SocialLinks from './components/SocialLinks';
 import ListingRequestsAdmin from './components/ListingRequestsAdmin';
 import AdvertisingRequests from "./components/AdvertisingRequests";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
@@ -1038,34 +1040,21 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       setError("Log in als beheerder om een evenement te verwijderen.");
       return;
     }
-    if (!window.confirm(t(`Weet je zeker dat je “${event.title}” definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`))) return;
+    if (!window.confirm(t(`“${event.title}” uit de actieve lijst verwijderen? De vermelding verdwijnt van de website. Bestaande facturen blijven bewaard.`))) return;
 
     setError("");
     setMessage("");
     setUpdatingEventId(event.id);
-    const { data, error: deleteError } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", event.id)
-      .select("id")
-      .maybeSingle();
-    setUpdatingEventId(null);
-
-    if (deleteError) {
-      setError(`Verwijderen van “${event.title}” is mislukt: ${deleteError.message}`);
-      return;
-    }
-    if (!data) {
-      setError(`“${event.title}” is niet verwijderd. Controleer of je als beheerder bent ingelogd.`);
-      return;
-    }
-
-    setEvents((current) => current.filter((item) => item.id !== event.id));
-    if (editingEventId === event.id) {
-      setEditingEventId(null);
-      setEditDraft(null);
-    }
-    setMessage(`“${event.title}” is verwijderd.`);
+    try {
+      const { data, error: deleteError } = await supabase.rpc("archive_event", {p_event_id: event.id});
+      if (deleteError) throw new Error(deleteError.message);
+      if (!data) throw new Error("De vermelding is niet verwijderd. Controleer je beheerderstoegang.");
+      setEvents((current) => current.filter((item) => item.id !== event.id));
+      if (editingEventId === event.id) { setEditingEventId(null); setEditDraft(null); }
+      setMessage(`“${event.title}” is verwijderd.`);
+    } catch (cause) {
+      setError(`Verwijderen van “${event.title}” is mislukt: ${cause instanceof Error ? cause.message : "Probeer opnieuw."}`);
+    } finally { setUpdatingEventId(null); }
   }
 
   function beginEdit(event: EventRow) {
@@ -2099,9 +2088,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               <T>{hasAdvertisingPlacement(event,"highlight") && <div className="activity-highlight-banner"><T>{"Uitgelichte advertentie"}</T></div>}</T>
               <div className="activity-media">
                 <A><button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
-                  <T>{safeHttpUrl(event.image_url)
-                    ? <A><img className="activity-image" src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></A>
-                    : <span className="activity-image-placeholder"><span aria-hidden="true"><T>{"47"}</T></span><small><T>{"Ontdek dichtbij"}</T></small></span>}</T>
+                  <EventImage className="activity-image" src={event.image_url} />
                 </button></A>
                 <span className="distance-pill"><T>{event.distance_is_approximate ? "ca. " : ""}</T><T>{event.distance_km}</T><T>{" km"}</T></span>
               </div>
@@ -2147,7 +2134,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             const date = formatCardDate(event.start_at);
             return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={"standard"} className={`featured-event-card${hasAdvertisingPlacement(event,"homepage") ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
               <A><button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
-                <T>{safeHttpUrl(event.image_url) ? <A><img src={safeHttpUrl(event.image_url)!} alt="" loading="lazy" /></A> : <span className="featured-image-art" aria-hidden="true"><T>{"47"}</T></span>}</T>
+                <EventImage src={event.image_url} />
               </button></A>
               <div className="featured-event-body"><span className="date-tile"><strong><T>{date.day}</T></strong><small><T>{date.month}</T></small></span><div><T>{hasAdvertisingPlacement(event,"homepage") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}><T preserve={event.is_directory_entry===true}>{event.title}</T></button></h3><p><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{event.city || event.venue_name || "Lot-et-Garonne"}</T></p></div></div>
             </article>;
@@ -2284,6 +2271,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       <T>{listingContent}</T>
 
       <AnalyticsConsent disabled={isAdmin || authLoading} />
+      <SocialLinks />
       <footer className="site-footer">
         <A><a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">
           <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} loading="lazy" decoding="async" /></A></span>
@@ -2319,7 +2307,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       <T>{!authLoading && user && isAdmin && <>
       <CalendarSiteSwitcher currentSite="duras"/>
       <AnalyticsDashboard client={supabase} />
-      <MunicipalBusinessAdmin client={supabase}/><AdvertisingRequests client={supabase}/><ListingRequestsAdmin client={supabase}/><MailSettings client={supabase}/>
+      <MunicipalBusinessAdmin client={supabase}/><AdvertisingRequests onListingArchived={()=>void loadData(true)} client={supabase}/><ListingRequestsAdmin client={supabase}/><MailSettings client={supabase}/>
       <div
         style={{
           display: "grid",
@@ -2933,7 +2921,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               <button className="event-detail-back" type="button" autoFocus onClick={closeVisitorEvent}><span aria-hidden="true"><T>{"←"}</T></span><T>{" Terug naar de agenda"}</T></button>
               <A><button className="event-detail-close" type="button" aria-label="Sluiten" onClick={closeVisitorEvent}><T>{"×"}</T></button></A>
             </div>
-            <T>{safeHttpUrl(selectedVisitorEvent.image_url) && <A><img className="event-detail-image" src={safeHttpUrl(selectedVisitorEvent.image_url)!} alt="" /></A>}</T>
+            <EventImage className="event-detail-image" src={selectedVisitorEvent.image_url} loading="eager" />
             <div className="event-detail-content">
               <p className="event-detail-kicker"><T>{categories.find((category) => category.id === selectedVisitorEvent.category_id)?.name ?? "Activiteit in de streek"}</T></p>
               <h2 id="visitor-event-title"><T>{selectedVisitorEvent.title}</T></h2>

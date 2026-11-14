@@ -5,7 +5,7 @@ export async function GET(request:Request){
   const client=await adminService(request);if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
   const raw=Number(new URL(request.url).searchParams.get('page')??1),page=Number.isSafeInteger(raw)&&raw>0?raw:1;
   const [result,summaryResult,settingsResult]=await Promise.all([
-    client.from('advertising_requests').select('id,event_id,placement,details,starts_on,ends_on,months,amount_cents,payment_status,is_test_mode,created_at,events(title,city,municipal_key,municipal_type),advertising_billing_cycles(cycle_index,state,advertising_contracts(method,status,paid_until)),advertising_invoices(invoice_number,issued_at,state,is_test_mode,net_cents,vat_cents,total_cents,advertising_invoice_mail_outbox(state,accepted_at,last_error))',{count:'exact'}).order('created_at',{ascending:false}).range((page-1)*10,page*10-1),
+    client.from('advertising_requests').select('id,event_id,placement,details,starts_on,ends_on,months,amount_cents,payment_status,is_test_mode,created_at,events(id,title,city,municipal_key,municipal_type,archived_at),advertising_billing_cycles(cycle_index,state,advertising_contracts(method,status,paid_until)),advertising_invoices(invoice_number,issued_at,state,is_test_mode,net_cents,vat_cents,total_cents,advertising_invoice_mail_outbox(state,accepted_at,last_error))',{count:'exact'}).order('created_at',{ascending:false}).range((page-1)*10,page*10-1),
     client.rpc('advertising_invoice_summary'),
     client.from('advertising_invoice_settings').select('tax_mode,vat_rate,vat_number,tax_note,price_basis,updated_at').eq('id',1).maybeSingle()
   ]);
@@ -20,6 +20,12 @@ export async function POST(request:Request){
  const client=await adminService(request);if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
  try{
   const body=await request.json();
+  if(body.action==='archive-listing'){
+   if(typeof body.eventId!=='string'||!/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(body.eventId))return Response.json({error:'Vermelding niet gevonden.'},{status:400});
+   const result=await client.rpc('archive_event',{p_event_id:body.eventId});
+   if(result.error)return Response.json({error:'De vermelding kon niet worden verwijderd.'},{status:409});
+   return Response.json({message:'De vermelding is uit de actieve lijst verwijderd. Factuurhistorie blijft bewaard.'},{headers:{'Cache-Control':'no-store'}});
+  }
   if(body.action==='delete-test'){
    if(typeof body.requestId!=='string'||!/^[a-f0-9-]{36}$/i.test(body.requestId))return Response.json({error:'Testaanvraag niet gevonden.'},{status:400});
    const result=await client.rpc('delete_test_advertising_request',{p_request_id:body.requestId});

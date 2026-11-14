@@ -1,4 +1,5 @@
 "use client";
+import EventImage from './EventImage';
 import {T, A} from '../i18n/Language';
 import CoteDeDurasAdvertisement from './CoteDeDurasAdvertisement';
 
@@ -26,7 +27,7 @@ export default function FloatingPromotions<T extends Promotion>({events,headingI
   const shown=Array.from({length:Math.min(displayCount,events.length)},(_,offset)=>events[(index+offset)%events.length]);
   const sidebar=<A><aside className="promotion-sidebar" aria-label="Uitgelichte advertenties" hidden={!visible}>
     <div className="floating-promotion-heading"><div><small className="carousel-kicker"><T>{"Lokale partners · Advertenties"}</T></small><h2 id={headingId}><T>{title}</T></h2></div></div>
-    <div className="floating-promotion-cards">{previewSample&&<CoteDeDurasAdvertisement variant="rail" placement={previewSample.placement} categoryName={previewSample.categoryName}/>}<T>{shown.map(event=><button className="floating-promotion-card" type="button" key={event.id} onClick={()=>onOpen(event)}><T>{event.image_url&&/^https?:\/\//i.test(event.image_url)&&<A><img src={event.image_url} alt=""/></A>}</T><span className="floating-promotion-copy"><small className="floating-promotion-label"><T>{headingId==='homepage-promotion-heading'?'Homepagepartner':'Categoriepartner'}</T><T>{event.city?' · '+event.city:''}</T></small><strong><T>{event.title}</T></strong><span className="floating-promotion-description"><T>{event.short_description||event.description||'Ontdek deze lokale partner en bekijk alle informatie.'}</T></span><span className="floating-promotion-cta"><T>{"Ontdek →"}</T></span></span></button>)}</T></div>
+    <div className="floating-promotion-cards">{previewSample&&<CoteDeDurasAdvertisement variant="rail" placement={previewSample.placement} categoryName={previewSample.categoryName}/>}<T>{shown.map(event=><button className="floating-promotion-card" type="button" key={event.id} onClick={()=>onOpen(event)}><EventImage src={event.image_url} /><span className="floating-promotion-copy"><small className="floating-promotion-label"><T>{headingId==='homepage-promotion-heading'?'Homepagepartner':'Categoriepartner'}</T><T>{event.city?' · '+event.city:''}</T></small><strong><T>{event.title}</T></strong><span className="floating-promotion-description"><T>{event.short_description||event.description||'Ontdek deze lokale partner en bekijk alle informatie.'}</T></span><span className="floating-promotion-cta"><T>{"Ontdek →"}</T></span></span></button>)}</T></div>
     {events.length>displayCount&&<p className="carousel-position" aria-live="off"><T>{reduced?'Rustige weergave · ':'Wisselt automatisch · '}</T><T>{index%events.length+1}</T><T>{" van "}</T><T>{events.length}</T></p>}
   </aside></A>;
   if(wide&&mounted)return createPortal(sidebar,document.body);

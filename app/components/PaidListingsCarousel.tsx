@@ -1,5 +1,6 @@
 "use client";
 
+import EventImage from './EventImage';
 import { useEffect, useState } from "react";
 import { T, useLanguage } from "../i18n/Language";
 
@@ -115,9 +116,7 @@ export default function PaidListingsCarousel() {
       ) : (
         <article className="paid-listing-card" key={current.id} role="group" aria-label={`${index + 1} van ${listings.length}`} aria-roledescription="dia">
           <div className="paid-listing-media">
-            {current.image_url
-              ? <img src={current.image_url} alt="" loading="lazy" />
-              : <div className="paid-listing-placeholder" aria-hidden="true">✦</div>}
+            <EventImage src={current.image_url} />
           </div>
           <div className="paid-listing-content">
             <div className="paid-listing-labels">
