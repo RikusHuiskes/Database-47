@@ -31,6 +31,11 @@ export function hasAdvertisingPlacement(event:PresentedEvent,placement:string,no
  return event.promotion_type===placement&&promotionIsActive(event,now);
 }
 
+/** Existing active advertisers do not need the public acquisition button. */
+export function hasActiveAdvertising(event:PresentedEvent,now=new Date()){
+ return Boolean(event.reserved_homepage||event.reserved_category_id||['highlight','category','homepage'].some(kind=>hasAdvertisingPlacement(event,kind,now)));
+}
+
 export function upcomingHighlights<T extends PresentedEvent>(events: T[], now = new Date()) {
   return events.filter(event => !event.is_directory_entry && Number.isFinite(Date.parse(event.start_at))
       && Date.parse(event.start_at) >= now.getTime()
