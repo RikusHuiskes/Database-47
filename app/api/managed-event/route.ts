@@ -8,10 +8,13 @@ export async function GET(request:Request){
     client.from('events').select('id,municipal_key,municipal_type,municipal_code,municipal_email,municipal_hours,title,short_description,description,venue_name,address,postcode,city,start_at,end_at,website_url,booking_url,source_url,contact_phone,image_url,is_manual_entry,is_free,price_from,price_to,is_directory_entry,status,promotion_type,promotion_status,promotion_start_at,promotion_end_at').eq('id',id).maybeSingle(),
     client.from('event_categories').select('category_id').eq('event_id',id),
     client.from('categories').select('id,name').eq('active',true).order('name'),
-    client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details').eq('event_id',id).order('created_at',{ascending:false})
+    client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details,billing_cycles:advertising_billing_cycles(cycle_index)').eq('event_id',id).order('created_at',{ascending:false})
   ]);
   if(error||!event)return Response.json({error:'Vermelding niet gevonden.'},{status:404});
-  return Response.json({event,categoryId:links?.[0]?.category_id??'',categories,advertising:advertising?.[0]??null,advertisements:advertising??[]},{headers:{'Cache-Control':'no-store'}});
+  const contracts=await client.from('advertising_contracts').select('id,method,status,amount_cents,anchor_date,paid_until,cancelled_at').eq('event_id',id).order('created_at',{ascending:false});
+  if(contracts.error)return Response.json({error:'Abonnementen konden niet worden geladen.'},{status:503});
+  const orders=(advertising??[]).map(row=>{const {billing_cycles,...order}=row;const cycle=Array.isArray(billing_cycles)?billing_cycles[0]:billing_cycles;return {...order,recurring_cycle_index:cycle?.cycle_index??null};});
+  return Response.json({contracts:contracts.data??[],event,categoryId:links?.[0]?.category_id??'',categories,advertising:orders[0]??null,advertisements:orders},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});

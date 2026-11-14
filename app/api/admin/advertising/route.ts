@@ -5,7 +5,7 @@ export async function GET(request:Request){
   const client=await adminService(request);if(!client)return Response.json({error:'Beheerderstoegang vereist.'},{status:403});
   const raw=Number(new URL(request.url).searchParams.get('page')??1),page=Number.isSafeInteger(raw)&&raw>0?raw:1;
   const [result,summaryResult,settingsResult]=await Promise.all([
-    client.from('advertising_requests').select('id,event_id,placement,details,starts_on,ends_on,months,amount_cents,payment_status,is_test_mode,created_at,events(id,title,city,municipal_key,municipal_type,archived_at),advertising_invoices(invoice_number,issued_at,state,is_test_mode,net_cents,vat_cents,total_cents,advertising_invoice_mail_outbox(state,accepted_at,last_error))',{count:'exact'}).order('created_at',{ascending:false}).range((page-1)*10,page*10-1),
+    client.from('advertising_requests').select('id,event_id,placement,details,starts_on,ends_on,months,amount_cents,payment_status,is_test_mode,created_at,events(id,title,city,municipal_key,municipal_type,archived_at),advertising_billing_cycles(cycle_index,state,advertising_contracts(method,status,paid_until)),advertising_invoices(invoice_number,issued_at,state,is_test_mode,net_cents,vat_cents,total_cents,advertising_invoice_mail_outbox(state,accepted_at,last_error))',{count:'exact'}).order('created_at',{ascending:false}).range((page-1)*10,page*10-1),
     client.rpc('advertising_invoice_summary'),
     client.from('advertising_invoice_settings').select('tax_mode,vat_rate,vat_number,tax_note,price_basis,updated_at').eq('id',1).maybeSingle()
   ]);

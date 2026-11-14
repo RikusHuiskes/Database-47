@@ -1,0 +1,247 @@
+[
+  [
+    "Maandelijks betalen — maandelijks opzegbaar",
+    "Pay monthly — cancel monthly",
+    "Paiement mensuel — résiliable chaque mois"
+  ],
+  [
+    "Eenmalig betalen voor een vaste periode",
+    "One-off payment for a fixed period",
+    "Paiement unique pour une période fixe"
+  ],
+  [
+    "Maandelijkse betaalmethode",
+    "Monthly payment method",
+    "Mode de paiement mensuel"
+  ],
+  [
+    "Automatische SEPA-incasso",
+    "SEPA direct debit",
+    "Prélèvement automatique SEPA"
+  ],
+  [
+    "Creditcard",
+    "Credit card",
+    "Carte bancaire"
+  ],
+  [
+    "Maandelijks opzegbaar",
+    "Cancel monthly",
+    "Résiliable chaque mois"
+  ],
+  [
+    "Maandelijks opzegbaar. De eerste maand betaal je via Mollie.",
+    "Cancel monthly. Pay the first month through Mollie.",
+    "Résiliable chaque mois. Payez le premier mois via Mollie."
+  ],
+  [
+    "Daarna betaal je automatisch per maand via de gekozen betaalmethode.",
+    "After that, you pay automatically each month using your chosen payment method.",
+    "Ensuite, vous payez automatiquement chaque mois avec le moyen de paiement choisi."
+  ],
+  [
+    "Eerste maand:",
+    "First month:",
+    "Premier mois :"
+  ],
+  [
+    "Per maand: {0}",
+    "Per month: {0}",
+    "Par mois : {0}"
+  ],
+  [
+    "Maandabonnementen",
+    "Monthly subscriptions",
+    "Abonnements mensuels"
+  ],
+  [
+    "Je hebt nog geen maandabonnementen.",
+    "You do not have any monthly subscriptions yet.",
+    "Vous n’avez pas encore d’abonnement mensuel."
+  ],
+  [
+    "Eerste betaling nog afronden",
+    "Complete the first payment",
+    "Premier paiement à finaliser"
+  ],
+  [
+    "Betaling vraagt aandacht",
+    "Payment needs attention",
+    "Paiement à vérifier"
+  ],
+  [
+    "Opgezegd",
+    "Cancelled",
+    "Résilié"
+  ],
+  [
+    "Betaald tot:",
+    "Paid until:",
+    "Payé jusqu’au :"
+  ],
+  [
+    "Maandabonnement opzeggen",
+    "Cancel monthly subscription",
+    "Résilier l’abonnement mensuel"
+  ],
+  [
+    "Ja, abonnement opzeggen",
+    "Yes, cancel subscription",
+    "Oui, résilier l’abonnement"
+  ],
+  [
+    "Abonnement behouden",
+    "Keep subscription",
+    "Conserver l’abonnement"
+  ],
+  [
+    "Opzegging bevestigen",
+    "Confirm cancellation",
+    "Confirmer la résiliation"
+  ],
+  [
+    "Wil je dit maandabonnement opzeggen? Je advertentie blijft actief voor de betaalde periode. Een al gestarte betaling kan nog worden verwerkt.",
+    "Do you want to cancel this monthly subscription? Your advertisement remains active for the paid period. A payment already initiated may still be processed.",
+    "Voulez-vous résilier cet abonnement mensuel ? Votre publicité reste active pendant la période payée. Un paiement déjà engagé peut encore être traité."
+  ],
+  [
+    "Ik geef Côte de Duras toestemming om het getoonde maandbedrag iedere maand via mijn gekozen betaalmethode af te schrijven. Het abonnement loopt door totdat ik het opzeg in mijn beheeromgeving. De advertentie blijft actief tot het einde van de betaalde periode. Een al gestarte betaling kan nog worden verwerkt. Ik ontvang vooraf bericht over vervolgbetalingen.",
+    "I authorise Côte de Duras to charge the displayed monthly amount each month using my chosen payment method. The subscription continues until I cancel it in my management area. The advertisement remains active until the end of the paid period. A payment already initiated may still be processed. I will receive advance notice of subsequent payments.",
+    "J’autorise Côte de Duras à prélever chaque mois le montant mensuel affiché avec le moyen de paiement choisi. L’abonnement se poursuit jusqu’à sa résiliation dans mon espace de gestion. La publicité reste active jusqu’à la fin de la période payée. Un paiement déjà engagé peut encore être traité. Je recevrai une notification avant les paiements suivants."
+  ],
+  [
+    "Je kunt alle drie de advertentievormen combineren voor dezelfde vermelding. Vink je gewenste vormen aan en kies maandelijks betalen of een eenmalige betaling via Mollie. Je vermelding blijft ook in de normale resultaten staan; actieve vetomrande vermeldingen komen bovenaan de zoekresultaten.",
+    "You can combine all three advertising formats for the same listing. Select your formats and choose monthly payments or a one-off payment through Mollie. Your listing also stays in the normal results; active highlighted listings appear at the top of search results.",
+    "Vous pouvez combiner les trois formats publicitaires pour la même fiche. Choisissez vos formats et optez pour un paiement mensuel ou un paiement unique via Mollie. Votre fiche reste aussi dans les résultats habituels ; les annonces encadrées actives apparaissent en tête des résultats."
+  ],
+  [
+    "Kies SEPA-incasso of creditcard.",
+    "Choose SEPA direct debit or credit card.",
+    "Choisissez le prélèvement SEPA ou la carte bancaire."
+  ],
+  [
+    "Geef toestemming voor de maandelijkse betalingen.",
+    "Authorise the monthly payments.",
+    "Autorisez les paiements mensuels."
+  ],
+  [
+    "De betaalkeuze van deze aanvraag kan niet worden gewijzigd.",
+    "The payment choice for this request cannot be changed.",
+    "Le mode de paiement de cette demande ne peut pas être modifié."
+  ],
+  [
+    "Deze advertentievorm heeft al een abonnement.",
+    "This advertising format already has a subscription.",
+    "Ce format publicitaire dispose déjà d’un abonnement."
+  ],
+  [
+    "Abonnement niet gevonden.",
+    "Subscription not found.",
+    "Abonnement introuvable."
+  ],
+  [
+    "Abonnement niet beschikbaar.",
+    "Subscription unavailable.",
+    "Abonnement indisponible."
+  ],
+  [
+    "Opzeggen is niet gelukt. Probeer het opnieuw.",
+    "Cancellation failed. Please try again.",
+    "La résiliation a échoué. Veuillez réessayer."
+  ],
+  [
+    "Dit abonnement is al gestart of stopgezet.",
+    "This subscription has already started or been stopped.",
+    "Cet abonnement a déjà commencé ou a été arrêté."
+  ],
+  [
+    "De eerste maand is al betaald. Vernieuw de pagina.",
+    "The first month is already paid. Refresh the page.",
+    "Le premier mois est déjà payé. Actualisez la page."
+  ],
+  [
+    "De eerste betaling is afgerond of verlopen. Neem contact op voor een nieuwe aanvraag.",
+    "The first payment is completed or expired. Contact us for a new request.",
+    "Le premier paiement est terminé ou a expiré. Contactez-nous pour une nouvelle demande."
+  ],
+  [
+    "Creditcard is niet beschikbaar voor deze eerste betaling.",
+    "Credit card is unavailable for this first payment.",
+    "La carte bancaire n’est pas disponible pour ce premier paiement."
+  ],
+  [
+    "Er is nog geen bankbetaalmethode voor een SEPA-machtiging beschikbaar. Neem contact op met Côte de Duras.",
+    "No bank payment method for a SEPA mandate is available yet. Please contact Côte de Duras.",
+    "Aucun moyen de paiement bancaire permettant un mandat SEPA n’est encore disponible. Contactez Côte de Duras."
+  ],
+  [
+    "De bevestigingsmail is nog niet ingericht. Neem contact op met Côte de Duras.",
+    "Confirmation emails are not configured yet. Please contact Côte de Duras.",
+    "Les e-mails de confirmation ne sont pas encore configurés. Contactez Côte de Duras."
+  ],
+  [
+    "De factuurinstellingen zijn nog niet compleet. Neem contact op met Côte de Duras.",
+    "Invoice settings are not complete yet. Please contact Côte de Duras.",
+    "La configuration de facturation n’est pas encore complète. Contactez Côte de Duras."
+  ],
+  [
+    "Deze betaling wordt al voorbereid of vraagt handmatige controle. Probeer het over enkele minuten opnieuw.",
+    "This payment is already being prepared or needs manual review. Try again in a few minutes.",
+    "Ce paiement est déjà en préparation ou nécessite une vérification manuelle. Réessayez dans quelques minutes."
+  ],
+  [
+    "Abonnementen konden niet worden geladen.",
+    "Subscriptions could not be loaded.",
+    "Impossible de charger les abonnements."
+  ],
+  [
+    "Maandabonnement",
+    "Monthly subscription",
+    "Abonnement mensuel"
+  ],
+  [
+    "Eenmalige facturen handmatig; maandfacturen automatisch na betaling",
+    "One-off invoices manually; monthly invoices automatically after payment",
+    "Factures ponctuelles manuelles ; factures mensuelles automatiques après paiement"
+  ],
+  [
+    "Betaling",
+    "Payment",
+    "Paiement"
+  ],
+  [
+    "Betalingsbevestiging",
+    "Payment confirmation",
+    "Confirmation du paiement"
+  ],
+  [
+    "Bedankt voor je bestelling en betaling",
+    "Thank you for your order and payment",
+    "Merci pour votre commande et votre paiement"
+  ],
+  [
+    "Je betaling is bevestigd. Je advertentie wordt na goedkeuring geplaatst voor de afgesproken periode.",
+    "Your payment is confirmed. Your advertisement will be published after approval for the agreed period.",
+    "Votre paiement est confirmé. Votre publicité sera diffusée après validation pendant la période convenue."
+  ],
+  [
+    "Je kunt dit tabblad sluiten of teruggaan naar de website.",
+    "You can close this tab or return to the website.",
+    "Vous pouvez fermer cet onglet ou retourner au site."
+  ],
+  [
+    "Terug naar Côte de Duras",
+    "Back to Côte de Duras",
+    "Retour à Côte de Duras"
+  ],
+  [
+    "Automatische maandbetaling gepland",
+    "Automatic monthly payment scheduled",
+    "Paiement mensuel automatique prévu"
+  ],
+  [
+    "Nederland",
+    "Netherlands",
+    "Pays-Bas"
+  ]
+]

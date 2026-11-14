@@ -1,3 +1,7 @@
+import {recurringMethod,BILLING_TERMS_VERSION} from '../../../../lib/recurring-billing';
+import {firstMethods} from '../../../../lib/recurring-server';
+import {loadAdvertisingInvoiceProfile} from '../../../../lib/advertising-invoices';
+import {mailConfiguration} from '../../../../lib/mail';
 import {managedAccess,tokenHash} from '../../../../lib/managed-events';
 import {validateAdvertiser,advertisingSelectionQuote} from '../../../../lib/advertising';
 export const runtime='nodejs';
@@ -7,18 +11,31 @@ export async function POST(request:Request){
   const text=await request.text();if(text.length>8000)throw Error('De invoer is te groot.');
   const body=JSON.parse(text),client=await managedAccess(request,body.eventId);
   if(!client)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
+  const monthly=body.billingMode==='monthly';
+  if(monthly&&(body.consent!==true||body.termsVersion!==BILLING_TERMS_VERSION))throw Error('Geef toestemming voor de maandelijkse betalingen.');
+  if(monthly)recurringMethod(body.method);
   const selection=body.placements!==undefined;
-  const {details,quote:singleQuote}=validateAdvertiser(selection&&Array.isArray(body.placements)?body.placements[0]:body.placement,body.advertiser);
+  const {details,quote:singleQuote}=validateAdvertiser(selection&&Array.isArray(body.placements)?body.placements[0]:body.placement,monthly?{...body.advertiser,months:1}:body.advertiser);
+  if(monthly&&!selection)throw Error('Kies advertentievormen voor je abonnement.');
   const quote=selection?advertisingSelectionQuote(body.placements,details):singleQuote;
+  if(monthly){
+   if(!mailConfiguration().deliveryEnabled)throw Error('De bevestigingsmail is nog niet ingericht. Neem contact op met Côte de Duras.');
+   if(!(await loadAdvertisingInvoiceProfile(client)).profile)throw Error('De factuurinstellingen zijn nog niet compleet. Neem contact op met Côte de Duras.');
+   await firstMethods(recurringMethod(body.method),quote.amountCents);
+  }
   const token=request.headers.get('authorization')!.slice(7);
   const {data:id,error}=await client.rpc(selection?'request_managed_advertising_selection':'upgrade_managed_advertising',{p_event_id:body.eventId,p_token_hash:tokenHash(token),...(!selection?{p_placement:body.placement}:{}),p_ad:{...quote,details:selection?{...details,placements:('placements' in quote?quote.placements:[])}:details}});
   if(error)throw Error(error.message);
+  if(monthly){
+   const contract=await client.rpc('prepare_monthly_contract',{p_request_id:id,p_method:body.method,p_terms:BILLING_TERMS_VERSION,p_locale:['nl','en','fr'].includes(body.locale)?body.locale:'fr',p_test:Boolean(process.env.MOLLIE_API_KEY?.startsWith('test_'))});
+   if(contract.error)throw Error(contract.error.message);
+  }
   if(process.env.MOLLIE_API_KEY?.startsWith('test_')){
    const marked=await client.from('advertising_requests').update({is_test_mode:true}).eq('id',id);
    if(marked.error)throw Error('De aanvraag is aangemaakt, maar de testmarkering kon niet worden opgeslagen. Neem contact op met de beheerder voordat je betaalt.');
   }
   const result=await client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details').eq('id',id).single();
   if(result.error)throw Error('De aanvraag is opgeslagen. Vernieuw de pagina om de betaling te openen.');
-  return Response.json({advertising:result.data},{headers:{'Cache-Control':'no-store'}});
+  return Response.json({advertising:result.data,billingMode:monthly?'monthly':'once'},{headers:{'Cache-Control':'no-store'}});
  }catch(error){return Response.json({error:error instanceof Error?error.message:'Advertentie aanvragen mislukt.'},{status:400});}
 }
