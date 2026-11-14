@@ -1697,9 +1697,9 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       <T>{service.serviceTimes && <p><strong><T>{"Mis- of diensttijden:"}</T></strong> <T>{service.serviceTimes}</T></p>}</T>
       <T>{(groupType === "church" || municipalityServiceType === "all" && service.type === "church") && !service.serviceTimes && <p className="municipality-missing-detail"><T>{"Mis- of diensttijden zijn niet vermeld bij deze bron. Neem contact op met de kerk of parochie."}</T></p>}</T>
       <T>{service.extra && <p>{service.extra.split(/(?<=\.)\s+(?=[A-ZÀ-ÖØ-Þ])/u).map((sentence,index)=><span key={index}><T>{sentence}</T>{" "}</span>)}</p>}</T>
-      <T>{COMMERCIAL_SERVICE_TYPES.includes(service.type)&&!service.hasActiveAdvertising&&<p><a className="more-customers-button" href={'/adverteren?'+new URLSearchParams({serviceId:service.id,city:service.municipality||municipalityName})}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a></p>}</T>
       <T>{COMMERCIAL_SERVICE_TYPES.includes(service.type)&&<p><a className="text-arrow-link" href={'/mijn-vermelding?'+new URLSearchParams({serviceId:service.id,city:service.municipality||municipalityName,title:service.name})}><T>{"Mijn vermelding: beheren of een correctie doorgeven →"}</T></a></p>}</T>
       <div className="municipality-service-links">
+      <T>{COMMERCIAL_SERVICE_TYPES.includes(service.type)&&!service.hasActiveAdvertising&&<a href={'/adverteren?'+new URLSearchParams({serviceId:service.id,city:service.municipality||municipalityName})}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a>}</T>
         <T>{safeHttpUrl(service.website) && <a href={safeHttpUrl(service.website)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
         <T>{safeHttpUrl(service.sourceUrl) && <a href={safeHttpUrl(service.sourceUrl)!} target="_blank" rel="noreferrer"><T>{"Bron: "}</T><T>{service.sourceName ?? "gegevens bekijken"}</T> <span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
         <T>{safeHttpUrl(service.secondarySourceUrl) && <a href={safeHttpUrl(service.secondarySourceUrl)!} target="_blank" rel="noreferrer"><T>{"Extra bron: "}</T><T>{service.secondarySourceName ?? "controleren"}</T> <span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
@@ -2107,7 +2107,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                 <p className="activity-place"><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</T></p>
                 <T>{(event.short_description || event.description) && <p className="activity-description"><T>{event.short_description || event.description}</T></p>}</T>
                 <div className="activity-links">
-                  {!hasActiveAdvertising(event)&&<a className="more-customers-button" href={'/adverteren?eventId='+event.id}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a>}
+                  {!hasActiveAdvertising(event)&&<a className="activity-link" href={'/adverteren?eventId='+event.id}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a>}
                   <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T>{"Bekijk evenementdetails "}</T><span aria-hidden="true"><T>{"→"}</T></span></button>
                   <T>{publicEventUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={publicEventUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
                   <T>{publicEventUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={publicEventUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
@@ -2934,11 +2934,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               <T>{(selectedVisitorEvent.short_description || selectedVisitorEvent.description) && <p className="event-detail-description"><T>{selectedVisitorEvent.description || selectedVisitorEvent.short_description}</T></p>}</T>
               <T>{selectedVisitorEvent.is_free ? <p className="event-detail-price"><T>{"Gratis"}</T></p> : selectedVisitorEvent.price_from != null ? <p className="event-detail-price"><T>{"Vanaf €"}</T><T>{Number(selectedVisitorEvent.price_from).toFixed(2)}</T><T>{selectedVisitorEvent.price_to != null ? ` tot €${Number(selectedVisitorEvent.price_to).toFixed(2)}` : ""}</T></p> : null}</T>
               <div className="event-detail-links">
+              {!hasActiveAdvertising(selectedVisitorEvent)&&<a href={'/adverteren?eventId='+selectedVisitorEvent.id}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a>}
                 <T>{publicEventUrl(selectedVisitorEvent.booking_url) && <a className="event-detail-primary" data-analytics-channel="booking" href={publicEventUrl(selectedVisitorEvent.booking_url)!} target="_blank" rel="noopener noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
                 <T>{publicEventUrl(selectedVisitorEvent.website_url) && <a data-analytics-channel="website" href={publicEventUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer"><T>{"Website organisator "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
               </div>
               <p className="event-detail-note"><T>{"Externe pagina’s openen in een nieuw tabblad. Je kunt hierna direct terug naar de agenda."}</T></p>
-              {!hasActiveAdvertising(selectedVisitorEvent)&&<p><a className="more-customers-button" href={'/adverteren?eventId='+selectedVisitorEvent.id}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a></p>}
               <p className="event-management-link"><a href={'/mijn-vermelding?'+new URLSearchParams({eventId:selectedVisitorEvent.id,title:selectedVisitorEvent.title})}><T>Mijn vermelding: beheren of een correctie doorgeven →</T></a></p><button className="event-detail-back event-detail-back-bottom" type="button" onClick={closeVisitorEvent}><span aria-hidden="true"><T>{"←"}</T></span><T>{" Terug naar de agenda"}</T></button>
             </div>
           </section>
