@@ -3,19 +3,10 @@ import {Children,cloneElement,createContext,isValidElement,useContext,useEffect,
 import {useRouter} from 'next/navigation';
 import {LOCALE_COOKIE,localeFrom,normalizeMessage,createTranslator,messageKey,type Dictionary,type Locale} from '../../lib/i18n';
 import {publicEventText} from '../../lib/public-event-links';
-import nl from './messages/nl.json';
-import en from './messages/en.json';
-import fr from './messages/fr.json';
-import directAdvertising from './messages/reviewed-direct-advertising.json';
-import monthlyBilling from './messages/reviewed-monthly-billing.json';
+import {loadUiDictionary} from './ui-dictionary';
 import publicKeys from '../../lib/translations/content-index.json';
 import './language.css';
 type LanguageContext={locale:Locale;setLocale:(locale:Locale)=>void;t:(text:string)=>string};
-const dictionaries:Record<Locale,Dictionary>={
- nl:{...nl,...Object.fromEntries([...monthlyBilling,...directAdvertising].map(row=>[row[0],row[0]]))},
- en:{...en,...Object.fromEntries([...monthlyBilling,...directAdvertising].map(row=>[row[0],row[1]]))},
- fr:{...fr,...Object.fromEntries([...monthlyBilling,...directAdvertising].map(row=>[row[0],row[2]]))}
-};
 const knownPublicKeys=new Set(publicKeys);
 const Context=createContext<LanguageContext>({locale:'fr',setLocale:()=>{},t:text=>text});
 const contentCache:Record<Locale,Map<string,string|null>>={nl:new Map(),en:new Map(),fr:new Map()};
@@ -29,11 +20,21 @@ function queueContent(locale:Locale,keys:string[]){
  if(!queues[locale].size||scheduled.has(locale))return;scheduled.add(locale);
  setTimeout(async()=>{const keys=[...queues[locale]].slice(0,100);keys.forEach(key=>queues[locale].delete(key));try{const response=await fetch('/api/content-translations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({locale,keys})});if(!response.ok)throw Error('Translation lookup failed');const data=await response.json() as {translations:Record<string,string>};for(const key of keys)contentCache[locale].set(key,typeof data.translations[key]==='string'?data.translations[key]:null);revision++;listeners.forEach(listener=>listener());}catch{/* Keep the original public text on a network failure. Retry on the next render. */}finally{scheduled.delete(locale);if(queues[locale].size)queueContent(locale,[]);}},30);
 }
-export function LanguageProvider({initialLocale,children}:{initialLocale:Locale;children:ReactNode}){
- const [locale,setLanguage]=useState(initialLocale),router=useRouter();
- const setLocale=(next:Locale)=>{setLanguage(next);document.documentElement.lang=next;document.cookie=`${LOCALE_COOKIE}=${next}; Path=/; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;router.refresh();};
+export function LanguageProvider({initialLocale,initialDictionary,children}:{initialLocale:Locale;initialDictionary:Dictionary;children:ReactNode}){
+ const [{locale,dictionary},setLanguage]=useState({locale:initialLocale,dictionary:initialDictionary}),router=useRouter();
+ const languageRequest=useRef(0);
+ const setLocale=async(next:Locale)=>{
+  const request=++languageRequest.current;
+  try {
+   const nextDictionary=await loadUiDictionary(next);
+   if(request!==languageRequest.current)return;
+   setLanguage({locale:next,dictionary:nextDictionary});document.documentElement.lang=next;
+   document.cookie=`${LOCALE_COOKIE}=${next}; Path=/; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;
+   router.refresh();
+  }catch{/* Retain the current language if the requested dictionary cannot load. */}
+ };
  useEffect(()=>{document.documentElement.lang=locale;},[locale]);
- const t=useMemo(()=>createTranslator(locale,dictionaries[locale]),[locale]);
+ const t=useMemo(()=>createTranslator(locale,dictionary),[locale,dictionary]);
  return <Context.Provider value={{locale,setLocale,t}}><LanguageMenu/>{children}</Context.Provider>;
 }
 export function useLanguage(){return useContext(Context);}

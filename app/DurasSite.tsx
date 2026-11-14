@@ -1,4 +1,6 @@
 "use client";
+import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import {T, A, useLanguage} from './i18n/Language';
 
 import {publicEventUrl} from '../lib/public-event-links';
@@ -7,9 +9,9 @@ import {intlLocale,localizeMunicipalName} from '../lib/i18n';
 
 import EventImage from './components/EventImage';
 import MunicipalServicePhoto from './components/MunicipalServicePhoto';
-import MunicipalBusinessAdmin from './components/MunicipalBusinessAdmin';
+const MunicipalBusinessAdmin = dynamic(() => import('./components/MunicipalBusinessAdmin'));
 import MunicipalPartners from './components/MunicipalPartners';
-import CalendarSiteSwitcher from './components/CalendarSiteSwitcher';
+const CalendarSiteSwitcher = dynamic(() => import('./components/CalendarSiteSwitcher'));
 import {SHOP_TYPES,COMMERCIAL_SERVICE_TYPES} from "../lib/municipal-shops";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -25,11 +27,11 @@ import entry from "./components/new-event-experience.module.css";
 import {MONTHLY_PRICES,advertisingSelectionQuote,emptyAdvertiser,validateAdvertiser,type AdvertisingType} from "../lib/advertising";
 import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
 import AnalyticsConsent from "./components/AnalyticsConsent";
-import MailSettings from './components/MailSettings';
+const MailSettings = dynamic(() => import('./components/MailSettings'));
 import SocialLinks from './components/SocialLinks';
-import ListingRequestsAdmin from './components/ListingRequestsAdmin';
-import AdvertisingRequests from "./components/AdvertisingRequests";
-import AnalyticsDashboard from "./components/AnalyticsDashboard";
+const ListingRequestsAdmin = dynamic(() => import('./components/ListingRequestsAdmin'));
+const AdvertisingRequests = dynamic(() => import('./components/AdvertisingRequests'));
+const AnalyticsDashboard = dynamic(() => import('./components/AnalyticsDashboard'));
 import {trackAnalytics} from "../lib/analytics-client";
 import {upcomingHighlights,promotionPlacements,uniqueEventRecords,promotionIsActive,hasActiveAdvertising,hasAdvertisingPlacement,prioritizeHighlighted} from "../lib/event-presentation";
 import {normalizeWebAddress} from "../lib/web-address";
@@ -2012,7 +2014,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           </nav></A>
         </div>
         <div className="hero-grid" id="top">
-          <div className="hero-art" aria-hidden="true"><A><img src="/lot-et-garonne-hero.png" alt="" /></A></div>
+          <div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>
           <div className="hero-shade" aria-hidden="true" />
           <div className="hero-copy">
             <p className="hero-kicker"><span aria-hidden="true" /><T>{" Leven, beleven en ontdekken in het zuidwesten"}</T></p>
