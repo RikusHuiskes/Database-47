@@ -9,7 +9,7 @@ import {firstMethods} from '../../../../lib/recurring-server';
 import {loadAdvertisingInvoiceProfile} from '../../../../lib/advertising-invoices';
 import {mailConfiguration} from '../../../../lib/mail';
 import {sealManagementMail} from '../../../../lib/management-mail';
-import {processAdvertiserMail} from '../../../../lib/advertiser-mail';
+import {processAdvertiserMail,ensureAdvertiserInvoice} from '../../../../lib/advertiser-mail';
 import {POST as checkout} from '../checkout/route';
 export const runtime='nodejs';
 export async function GET(request:Request){
@@ -19,6 +19,7 @@ export async function GET(request:Request){
  const contract=await db.from('advertising_contracts').select('id,method,status,amount_cents,paid_until').eq('request_id',id).maybeSingle();if(contract.error)return Response.json({error:'Abonnement niet beschikbaar.'},{status:503});
  const cycles=contract.data?await db.from('advertising_billing_cycles').select('request_id,cycle_index,state,starts_on,ends_on').eq('contract_id',contract.data.id).order('cycle_index'):null;
  if(cycles?.error)return Response.json({error:'Betaalperioden niet beschikbaar.'},{status:503});
+ if(order.data.payment_status==='paid'){try{await ensureAdvertiserInvoice(db,id);after(async()=>{await processAdvertiserMail(db,10).catch(()=>{});});}catch{return Response.json({error:'Factuur wordt nog verwerkt. Probeer het later opnieuw.'},{status:503});}}
  const ids=cycles?.data?.map(x=>x.request_id)??[id];
  const invoices=await db.from('advertising_invoices').select('id,invoice_number,total_cents,issued_at').in('request_id',ids);if(invoices.error)return Response.json({error:'Facturen niet beschikbaar.'},{status:503});
  return Response.json({order:order.data,contract:contract.data,cycles:cycles?.data??[],invoices:invoices.data??[]},{headers:{'Cache-Control':'no-store'}});
