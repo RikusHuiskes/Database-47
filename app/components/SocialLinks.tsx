@@ -3,9 +3,10 @@
 import {useId, useState} from 'react';
 import {useLanguage} from '../i18n/Language';
 import profiles from '../../lib/social-profiles.json';
+import {SITE_SHARE_URL} from '../../lib/site-sharing';
 import styles from './social-links.module.css';
 
-const siteUrl = 'https://www.cotededuras.com/';
+const siteUrl = SITE_SHARE_URL;
 const copy = {
   nl: {title: 'Côte de Duras delen', follow: 'Volg Côte de Duras', description: 'Elke twee dagen een idee voor Duras en omgeving: markten, uitjes en handige adressen. Voor inwoners én bezoekers.', share: 'Deel de website', facebook: 'Delen op Facebook', copied: 'Link gekopieerd.', failed: 'Kopiëren lukt niet. Kopieer dit adres:', opened: 'Het deelmenu is geopend.'},
   en: {title: 'Share Côte de Duras', follow: 'Follow Côte de Duras', description: 'A fresh idea every two days: markets, outings and useful addresses around Duras. For residents and visitors.', share: 'Share the website', facebook: 'Share on Facebook', copied: 'Link copied.', failed: 'Unable to copy. Copy this address:', opened: 'The share menu has opened.'},
