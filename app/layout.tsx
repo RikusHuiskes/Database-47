@@ -5,6 +5,7 @@ import {SITE_ORIGIN, SITE_SOCIAL_IMAGE, siteOpenGraph} from "../lib/site-sharing
 import "./globals.css";
 import {cookies} from 'next/headers';
 import {LanguageProvider} from './i18n/Language';
+import {loadUiDictionary} from './i18n/ui-dictionary';
 import {LOCALE_COOKIE,localeFrom} from '../lib/i18n';
 
 const sourceMetadata: Metadata = {
@@ -27,6 +28,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale=localeFrom((await cookies()).get(LOCALE_COOKIE)?.value);
+  const dictionary=await loadUiDictionary(locale);
   return (
     <html lang={locale}>
       <body
@@ -37,7 +39,7 @@ export default async function RootLayout({
           color: "#172033",
         }}
       >
-        <LanguageProvider initialLocale={locale}>{children}</LanguageProvider>
+        <LanguageProvider initialLocale={locale} initialDictionary={dictionary}>{children}</LanguageProvider>
       </body>
     </html>
   );
