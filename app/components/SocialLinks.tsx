@@ -1,15 +1,15 @@
 'use client';
 
-import {useState} from 'react';
+import {useId, useState} from 'react';
 import {useLanguage} from '../i18n/Language';
 import profiles from '../../lib/social-profiles.json';
 import styles from './social-links.module.css';
 
 const siteUrl = 'https://www.cotededuras.com/';
 const copy = {
-  nl: {title: 'Côte de Duras delen', follow: 'Volg Côte de Duras', description: 'Ontdek en deel de mooiste uitjes in de streek.', share: 'Deel de website', facebook: 'Delen op Facebook', copied: 'Link gekopieerd.', failed: 'Kopiëren lukt niet. Kopieer dit adres:', opened: 'Het deelmenu is geopend.'},
-  en: {title: 'Share Côte de Duras', follow: 'Follow Côte de Duras', description: 'Discover and share the best outings in the area.', share: 'Share the website', facebook: 'Share on Facebook', copied: 'Link copied.', failed: 'Unable to copy. Copy this address:', opened: 'The share menu has opened.'},
-  fr: {title: 'Partager Côte de Duras', follow: 'Suivez Côte de Duras', description: 'Découvrez et partagez les plus belles sorties de la région.', share: 'Partager le site', facebook: 'Partager sur Facebook', copied: 'Lien copié.', failed: 'Copie impossible. Copiez cette adresse :', opened: 'Le menu de partage est ouvert.'},
+  nl: {title: 'Côte de Duras delen', follow: 'Volg Côte de Duras', description: 'Elke twee dagen een idee voor Duras en omgeving: markten, uitjes en handige adressen. Voor inwoners én bezoekers.', share: 'Deel de website', facebook: 'Delen op Facebook', copied: 'Link gekopieerd.', failed: 'Kopiëren lukt niet. Kopieer dit adres:', opened: 'Het deelmenu is geopend.'},
+  en: {title: 'Share Côte de Duras', follow: 'Follow Côte de Duras', description: 'A fresh idea every two days: markets, outings and useful addresses around Duras. For residents and visitors.', share: 'Share the website', facebook: 'Share on Facebook', copied: 'Link copied.', failed: 'Unable to copy. Copy this address:', opened: 'The share menu has opened.'},
+  fr: {title: 'Partager Côte de Duras', follow: 'Suivez Côte de Duras', description: 'Une idée tous les deux jours : marchés, sorties et bonnes adresses autour de Duras. Pour habitants et visiteurs.', share: 'Partager le site', facebook: 'Partager sur Facebook', copied: 'Lien copié.', failed: 'Copie impossible. Copiez cette adresse :', opened: 'Le menu de partage est ouvert.'},
 };
 
 // Only verified profile URLs belong in the configuration. Empty values stay hidden.
@@ -22,7 +22,8 @@ function profileUrl(value: string, domain: string) {
   } catch { return null; }
 }
 
-export default function SocialLinks() {
+export default function SocialLinks({compact = false}: {compact?: boolean}) {
+  const headingId = useId();
   const {locale} = useLanguage();
   const text = copy[locale];
   const [message, setMessage] = useState('');
@@ -42,13 +43,13 @@ export default function SocialLinks() {
       setMessage(`${text.failed} ${siteUrl}`);
     }
   }
-  return <section className={styles.panel} aria-labelledby="social-heading">
-    <div><h2 id="social-heading">{facebook || instagram ? text.follow : text.title}</h2><p>{text.description}</p></div>
+  return <section className={`${styles.panel} ${compact ? styles.compact : ''}`} aria-labelledby={headingId}>
+    <div><h2 id={headingId}>{facebook || instagram ? text.follow : text.title}</h2><p>{text.description}</p></div>
     <div className={styles.actions}>
-      {facebook && <a href={facebook} target="_blank" rel="noopener noreferrer">Facebook ↗</a>}
-      {instagram && <a href={instagram} target="_blank" rel="noopener noreferrer">Instagram ↗</a>}
-      <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`} target="_blank" rel="noopener noreferrer">{text.facebook} ↗</a>
-      <button type="button" onClick={share}>{text.share}</button>
+      {facebook && <a href={facebook} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Suivre sur Facebook' : locale === 'en' ? 'Follow on Facebook' : 'Volg op Facebook'} ↗</a>}
+      {instagram && <a href={instagram} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Suivre sur Instagram' : locale === 'en' ? 'Follow on Instagram' : 'Volg op Instagram'} ↗</a>}
+      {!compact && <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`} target="_blank" rel="noopener noreferrer">{text.facebook} ↗</a>}
+      {!compact && <button type="button" onClick={share}>{text.share}</button>}
     </div>
     <p role="status" aria-live="polite" className={styles.status}>{message}</p>
   </section>;
