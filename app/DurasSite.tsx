@@ -2022,6 +2022,8 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         </div>
       </header>
 
+      <SocialLinks compact />
+
       <section id="agenda" className="search-panel agenda-search-panel" aria-labelledby="nearby-heading">
         <div className="search-heading">
           <div>
