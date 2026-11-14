@@ -11,10 +11,15 @@ export async function GET(request:Request){
     client.from('advertising_requests').select('id,placement,starts_on,ends_on,months,amount_cents,payment_status,details,billing_cycles:advertising_billing_cycles(cycle_index)').eq('event_id',id).order('created_at',{ascending:false})
   ]);
   if(error||!event)return Response.json({error:'Vermelding niet gevonden.'},{status:404});
-  const contracts=await client.from('advertising_contracts').select('id,method,status,amount_cents,anchor_date,paid_until,cancelled_at').eq('event_id',id).order('created_at',{ascending:false});
+  const sponsors=await client.from('advertiser_access').select('request_id,advertising_requests!inner(event_id)').eq('advertising_requests.event_id',id);
+  if(sponsors.error)return Response.json({error:'Betalingen niet beschikbaar.'},{status:503});
+  const sponsorIds=new Set((sponsors.data??[]).map(row=>row.request_id));
+  const contracts=await client.from('advertising_contracts').select('id,request_id,method,status,amount_cents,anchor_date,paid_until,cancelled_at').eq('event_id',id).order('created_at',{ascending:false});
   if(contracts.error)return Response.json({error:'Abonnementen konden niet worden geladen.'},{status:503});
-  const orders=(advertising??[]).map(row=>{const {billing_cycles,...order}=row;const cycle=Array.isArray(billing_cycles)?billing_cycles[0]:billing_cycles;return {...order,recurring_cycle_index:cycle?.cycle_index??null};});
-  return Response.json({contracts:contracts.data??[],event,categoryId:links?.[0]?.category_id??'',categories,advertising:orders[0]??null,advertisements:orders},{headers:{'Cache-Control':'no-store'}});
+  const sponsorContracts=(contracts.data??[]).filter(row=>sponsorIds.has(row.request_id)).map(row=>row.id);
+  if(sponsorContracts.length){const cycles=await client.from('advertising_billing_cycles').select('request_id').in('contract_id',sponsorContracts);if(cycles.error)return Response.json({error:'Betalingen niet beschikbaar.'},{status:503});for(const cycle of cycles.data??[])sponsorIds.add(cycle.request_id);}
+  const orders=(advertising??[]).filter(row=>!sponsorIds.has(row.id)).map(row=>{const {billing_cycles,...order}=row;const cycle=Array.isArray(billing_cycles)?billing_cycles[0]:billing_cycles;return {...order,recurring_cycle_index:cycle?.cycle_index??null};});
+  return Response.json({contracts:(contracts.data??[]).filter(row=>!sponsorIds.has(row.request_id)),event,categoryId:links?.[0]?.category_id??'',categories,advertising:orders[0]??null,advertisements:orders},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});

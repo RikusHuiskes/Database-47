@@ -1285,3 +1285,5 @@ body:has(.analytics-consent) .floating-promotions { visibility: hidden; }
 .owner-form .monthly-consent span{flex:1}
 /* Keep the brand mark legible without cropping or enlarging the small asset. */
 img.event-image-logo { object-fit: scale-down; object-position: center; padding: 28px; background: #f7f5ed; box-sizing: border-box; }
+
+.more-customers-button{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #244738;border-radius:8px;background:#edf3e9;color:#244738;font-weight:700;text-decoration:none;line-height:1.3}.more-customers-button:hover{background:#244738;color:#fff}.more-customers-button:focus-visible{outline:3px solid #b76543;outline-offset:3px}

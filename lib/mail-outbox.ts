@@ -1,3 +1,4 @@
+import {processAdvertiserMail} from './advertiser-mail';
 import {createServiceClient} from './supabase-server';
 import {listingMail,mailConfiguration,mailTransport,safeMailError} from './mail';
 import {openManagementMail,managementMailMessage,managementMailTokenHash,openSubmissionMail,submissionApprovedMessage} from './management-mail';
@@ -44,6 +45,7 @@ export async function processMailOutbox(limit=10,submissionId?:string){
    await client.from('listing_mail_outbox').update({state:row.attempts>=5?'failed':'pending',last_error:safeMailError(error),next_attempt_at:new Date(Date.now()+Math.min(1440,5*2**row.attempts)*60000).toISOString(),lease_token:null}).eq('id',row.id).eq('lease_token',row.lease_token);
   }
  }
+ if(!submissionId)await processAdvertiserMail(client,limit);
  const invoices=submissionId?{accepted:0,failed:0}:await processAdvertisingInvoiceMailOutbox(limit);
  return {enabled:true,accepted,failed,invoiceAccepted:invoices.accepted,invoiceFailed:invoices.failed};
 }

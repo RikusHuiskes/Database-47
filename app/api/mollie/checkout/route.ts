@@ -1,5 +1,5 @@
 import {POST as monthlyCheckout} from '../recurring/checkout/route';
-import {managedAccess} from '../../../../lib/managed-events';
+import {paymentAccess,isAdvertiserRoute} from '../../../../lib/advertiser-access';
 import {mollieRequest,verifiedPaymentState} from '../../../../lib/mollie';
 import {advertisingOrderTypes,ADVERTISING_LABELS} from '../../../../lib/advertising';
 import {isPaymentCheckoutUrl} from '../../../../lib/payment-checkout-url';
@@ -7,13 +7,14 @@ export const runtime='nodejs';
 export async function POST(request:Request){
   if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
   try{
-    const {eventId,requestId}=await request.json(),client=await managedAccess(request,eventId);
+    const {eventId,requestId}=await request.json(),client=await paymentAccess(request,eventId,requestId);
     if(!client)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
     if(!process.env.MOLLIE_API_KEY)return Response.json({error:'Online betalen is nog niet geactiveerd. Je aanvraag blijft bewaard.'},{status:503});
     let orderQuery=client.from('advertising_requests').select('*').eq('event_id',eventId).order('created_at',{ascending:false}).limit(1);
     if(requestId)orderQuery=orderQuery.eq('id',requestId);
     const {data:initialOrder,error}=await orderQuery.maybeSingle();let order=initialOrder;
     if(error||!order)throw Error('Advertentieaanvraag niet gevonden.');
+    if(!(await paymentAccess(request,eventId,order.id)))return Response.json({error:'Open je persoonlijke betaallink.'},{status:401});
     const monthly=await client.from('advertising_contracts').select('id').eq('request_id',order.id).maybeSingle();
     if(monthly.error)throw Error('Abonnementscontrole is niet beschikbaar.');
     if(monthly.data)return monthlyCheckout(new Request(request.url,{method:'POST',headers:request.headers,body:JSON.stringify({eventId,requestId:order.id})}));
@@ -45,7 +46,7 @@ export async function POST(request:Request){
     const base=new URL(process.env.VERCEL_ENV==='preview'?request.url:(process.env.PUBLIC_SITE_URL??request.url)).origin;
     const returnBase=new URL(request.url).origin;
     if(!base.startsWith('https://')||!returnBase.startsWith('https://'))throw Error('De publieke betaalomgeving is nog niet ingesteld.');
-    const redirectUrl=new URL('/mijn-vermelding',returnBase);
+    const redirectUrl=new URL(isAdvertiserRoute(request)?'/adverteren/betaling':'/mijn-vermelding',returnBase);
     redirectUrl.searchParams.set('betaling','terug');
     redirectUrl.searchParams.set('aanvraag',order.id);
     const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':order.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(order.amount_cents/100).toFixed(2)},description:`Côte de Duras – ${placements.map(type=>labels[type]).join(' + ')} – ${order.months} maand(en)`,redirectUrl:redirectUrl.toString(),webhookUrl:base+'/api/mollie/webhook',metadata:{requestId:order.id},billingAddress:{givenName:order.details.name,familyName:order.details.company||order.details.name,streetAndNumber:order.details.address,postalCode:order.details.postcode,city:order.details.city,country:order.details.country.toUpperCase()},billingEmail:order.details.email})});

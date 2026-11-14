@@ -1,4 +1,4 @@
-import {managedAccess} from '../../../../../lib/managed-events';
+import {paymentAccess,isAdvertiserRoute} from '../../../../../lib/advertiser-access';
 import {mollieRequest} from '../../../../../lib/mollie';
 import {isPaymentCheckoutUrl} from '../../../../../lib/payment-checkout-url';
 import {contractCycle,firstMethods,billingOrigin,reconcileMonthlyPayment} from '../../../../../lib/recurring-server';
@@ -8,7 +8,7 @@ export const runtime='nodejs';
 export async function POST(request:Request){
  if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'Ongeldige aanvraag.'},{status:403});
  try{
-  const {eventId,requestId}=await request.json(),db=await managedAccess(request,eventId);if(!db)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
+  const {eventId,requestId}=await request.json(),db=await paymentAccess(request,eventId,requestId);if(!db)return Response.json({error:'Gebruik je persoonlijke beheerlink.'},{status:401});
   const found=await db.from('advertising_contracts').select('id').eq('request_id',requestId).eq('event_id',eventId).single();if(found.error)throw Error('Abonnement niet gevonden.');
   const {contract:c,cycle:b}=await contractCycle(db,found.data.id);
   if(c.status!=='checkout')throw Error('Dit abonnement is al gestart of stopgezet.');
@@ -32,7 +32,7 @@ export async function POST(request:Request){
    if(!/^cst_[A-Za-z0-9]+$/.test(customer.id))throw Error('Klantreferentie ontbreekt.');customerId=customer.id;
    const saved=await db.from('advertising_contracts').update({customer_id:customerId}).eq('id',c.id).is('customer_id',null);if(saved.error)throw Error('Klantreferentie kon niet worden opgeslagen.');
   }
-  const redirect=new URL('/mijn-vermelding',new URL(request.url).origin);redirect.searchParams.set('betaling','terug');redirect.searchParams.set('aanvraag',requestId);
+  const redirect=new URL(isAdvertiserRoute(request)?'/adverteren/betaling':'/mijn-vermelding',new URL(request.url).origin);redirect.searchParams.set('betaling','terug');redirect.searchParams.set('aanvraag',requestId);
   const payment=await mollieRequest('payments',{method:'POST',headers:{'Idempotency-Key':b.checkout_key},body:JSON.stringify({amount:{currency:'EUR',value:(c.amount_cents/100).toFixed(2)},customerId,sequenceType:'first',method:c.method==='creditcard'?'creditcard':methods,description:'Côte de Duras — première mensualité — '+requestId.slice(0,8),locale:c.locale==='fr'?'fr_FR':c.locale==='en'?'en_GB':'nl_NL',redirectUrl:redirect.toString(),webhookUrl:billingOrigin(request)+'/api/mollie/recurring/webhook',metadata:{contractId:c.id,cycleId:b.id},billingAddress:{givenName:order.data.details.name,familyName:order.data.details.company||order.data.details.name,streetAndNumber:order.data.details.address,postalCode:order.data.details.postcode,city:order.data.details.city,country:order.data.details.country}})});
   if(!/^tr_[A-Za-z0-9]+$/.test(payment.id)||!isPaymentCheckoutUrl(payment._links?.checkout?.href))throw Error('Ongeldige betaalverwijzing.');
   const saved=await db.from('advertising_billing_cycles').update({payment_id:payment.id,state:'open',attempted_at:new Date().toISOString()}).eq('id',b.id).is('payment_id',null).eq('state','creating');if(saved.error)throw Error('De betaalreferentie kon niet worden opgeslagen.');
