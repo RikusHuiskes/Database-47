@@ -124,6 +124,8 @@ export async function GET(request: NextRequest) {
 
   const supabase = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    // Public anonymous reads only: reuse identical database pages briefly.
+    global: {fetch: (input, init) => fetch(input, {...init, cache: 'force-cache', next: {revalidate: 30}})},
   });
   const now = new Date();
   // Fetch category links with each page, not in one additional request per 100
@@ -141,6 +143,12 @@ export async function GET(request: NextRequest) {
       .or(`and(latitude.gte.${latitude-radiusKm/110},latitude.lte.${latitude+radiusKm/110}),latitude.is.null,longitude.is.null,latitude.lt.-90,latitude.gt.90,longitude.lt.-180,longitude.gt.180`)
       .order("start_at", { ascending: true })
       .order("id");
+    // Avoid transferring expired history, preserving date-only events and permanent listings.
+    // Stable daily cutoff also lets identical database queries share the cache.
+    if (!dateFilter.range) {
+      const cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString();
+      query = query.or(`is_directory_entry.eq.true,end_at.gte.${cutoff},and(end_at.is.null,start_at.gte.${cutoff})`);
+    }
     if (category && category !== 'all') query = query.eq("matching_category.category_id", category);
     const { data, error } = await query.range(offset, offset + pageSize - 1);
 
