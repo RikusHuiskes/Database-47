@@ -1,4 +1,5 @@
 "use client";
+import MarketingDashboard from './MarketingDashboard';
 import {intlLocale,type Locale} from '../../lib/i18n';
 import {T, A, useLanguage} from '../i18n/Language';
 
@@ -10,15 +11,16 @@ const displayNumber=(n:number,locale:Locale)=>new Intl.NumberFormat(intlLocale[l
 export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}){
  const {locale}=useLanguage();const number=(value:number)=>displayNumber(value,locale);
   const [days,setDays]=useState(30),[report,setReport]=useState<Report|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
-  const [tab,setTab]=useState('overview');
+  const [tab,setTab]=useState('marketing');
   const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
   const [showFullReport,setShowFullReport]=useState(false);
   const requestId=useRef(0);
   const load=useCallback(async()=>{
     if(!client)return;const id=++requestId.current;setLoading(true);setError('');setReport(null);
-    try{const {data,error}=await client.rpc('site_analytics_report',{p_days:days});
+    try{const [base,marketing]=await Promise.all([client.rpc('site_analytics_report',{p_days:days}),client.rpc('site_marketing_report',{p_days:days})]);
+      const {data,error}=base; if(marketing.error)throw new Error('Marketingrapport ophalen mislukt: '+marketing.error.message);
       if(error)throw new Error(error.code==='PGRST202'?'Analytics is nog niet geactiveerd in deze database. De databasemigratie ontbreekt.':`Statistieken ophalen mislukt: ${error.message}`);
-      if(id===requestId.current)setReport(data as Report);
+      if(id===requestId.current)setReport({...data,marketing:marketing.data} as Report);
     }catch(cause){if(id===requestId.current)setError(cause instanceof Error?cause.message:'Statistieken zijn tijdelijk niet beschikbaar.');}finally{if(id===requestId.current)setLoading(false);}
   },[client,days]);
   useEffect(()=>{void load();},[load]);
@@ -40,7 +42,7 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
     } catch(cause){if(cause instanceof Error&&cause.name==='AbortError')setSaveMessage('Opslaan geannuleerd.');else setError(cause instanceof Error?cause.message:'Het rapport kon niet worden opgeslagen.');}
     finally{setSaving(false);}
   }
-  const tabs=[['overview','Overzicht'],['periods','Dagen & maanden'],['categories','Categorieën'],['places','Plaatsen'],['filters','Zoekfilters'],['advertisers','Adverteerders']];
+  const tabs=[['marketing','Marketing & herkomst'],['overview','Overzicht'],['periods','Dagen & maanden'],['categories','Categorieën'],['places','Plaatsen'],['filters','Zoekfilters'],['advertisers','Adverteerders']];
   const table=(headings:string[],rows:(string|number)[][])=><ReportTable key={tab+headings[0]} headings={headings} rows={rows}/>;
   return <section className="analytics-dashboard" aria-labelledby="analytics-title">
     <h2 id="analytics-title"><T>{"Bezoekers & advertentiebereik"}</T></h2>
@@ -54,6 +56,7 @@ export default function AnalyticsDashboard({client}:{client:SupabaseClient|null}
       <div className="analytics-kpis"><T>{[['Bezoekers',report.summary.visitors],['Bezoeken',report.summary.visits],['Paginaweergaven',report.summary.pageviews],['Evenementen geopend',report.summary.views],['Zichtbare vermeldingen',report.summary.impressions],['Doorklikken',report.summary.clicks]].map(([label,value])=><div key={label}><span><T>{label}</T></span><strong><T>{number(Number(value))}</T></strong></div>)}</T></div>
       <A><div className="analytics-tabs" role="tablist" aria-label="Statistiekonderdelen"><T>{tabs.map(([id,label])=><button type="button" role="tab" id={'analytics-tab-'+id} aria-controls="analytics-panel" aria-selected={tab===id} key={id} onClick={()=>setTab(id)}><T>{label}</T></button>)}</T></div></A>
       <div id="analytics-panel" role="tabpanel" aria-labelledby={'analytics-tab-'+tab}>
+        {tab==='marketing'&&<MarketingDashboard report={report} days={days} table={table}/>}
         <T>{tab==='overview'&&<><h3><T>{"In één oogopslag"}</T></h3><p><T>{"Totaal gemeten bezoekers binnen de bewaartermijn van 13 maanden: "}</T><strong><T>{number(report.totalMeasuredVisitors)}</T></strong><T>{". Oudste meting: "}</T><T>{report.firstMeasuredAt?new Date(report.firstMeasuredAt).toLocaleDateString(intlLocale[locale]):'nog geen metingen'}</T><T>{"."}</T></p>
           <T>{table(['Pagina','Weergaven','Bezoekers'],report.pages.map(p=>[p.name==='/'?'Agenda':p.name,p.views,p.visitors]))}</T>
           <p><T>{"Een bezoeker is een browsercode, geen gegarandeerd unieke persoon. Beheerders worden uitgesloten. Categorieën kunnen overlappen. Reserveringsklikken zijn geen bevestigde boekingen."}</T></p></>}</T>

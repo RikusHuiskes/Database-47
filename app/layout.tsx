@@ -1,3 +1,4 @@
+import GlobalAnalytics from './components/GlobalAnalytics';
 import {localizeMetadata} from './i18n/server';
 
 import type { Metadata } from "next";
@@ -39,7 +40,7 @@ export default async function RootLayout({
           color: "#172033",
         }}
       >
-        <LanguageProvider initialLocale={locale} initialDictionary={dictionary}>{children}</LanguageProvider>
+        <LanguageProvider initialLocale={locale} initialDictionary={dictionary}>{children}<GlobalAnalytics/></LanguageProvider>
       </body>
     </html>
   );

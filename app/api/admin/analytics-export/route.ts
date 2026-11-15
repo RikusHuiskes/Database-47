@@ -25,7 +25,9 @@ export async function POST(request:Request) {
     const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${token}`}}});
     const admin=await client.rpc('is_admin');
     if(admin.error||admin.data!==true)return Response.json({error:'Beheerderstoegang vereist.'},{status:403,headers});
-    const result=await client.rpc('site_analytics_report',{p_days:days});
+    const [result,marketing]=await Promise.all([client.rpc('site_analytics_report',{p_days:days}),client.rpc('site_marketing_report',{p_days:days})]);
+    if(marketing.error)return Response.json({error:'Marketingrapport kon niet worden gemaakt.'},{status:502,headers});
+    if(result.data)result.data.marketing=marketing.data;
     if(result.error||!result.data)return Response.json({error:'Het rapport kon niet worden gemaakt. Vernieuw de statistieken en probeer opnieuw.'},{status:502,headers});
     if(format==='xlsx'){const bytes=await analyticsWorkbook(result.data as AnalyticsReport,days,translate);return new Response(new Uint8Array(bytes),{headers:{...headers,'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="cote-de-duras-bereik-${days}-dagen.xlsx"`}});}
     return new Response(analyticsCsv(result.data as AnalyticsReport,days,translate),{headers:{...headers,'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="cote-de-duras-bereik-${days}-dagen.csv"`}});

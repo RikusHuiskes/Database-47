@@ -1,4 +1,11 @@
+export type MarketingRow={name:string;visits:number;visitors:number;engaged:number;details:number;outbound:number;bookings:number;advertising:number;checkouts:number};
+export type MarketingReport={startedAt:string|null;returningVisitors:number;
+ summary:{visits:number;visitors:number;attributed:number;countryKnown:number;engaged:number;details:number;outbound:number;bookings:number;advertising:number;checkouts:number};
+ previous:{visits:number;visitors:number;engaged:number;outbound:number;bookings:number};
+ channels?:MarketingRow[];sources?:MarketingRow[];campaigns?:MarketingRow[];variants?:MarketingRow[];referrers?:MarketingRow[];countries?:MarketingRow[];devices?:MarketingRow[];languages?:MarketingRow[];landings?:MarketingRow[];
+};
 export type AnalyticsReport = {
+  marketing?:MarketingReport;
   generatedAt:string; firstMeasuredAt:string|null; totalMeasuredVisitors:number;
   summary:{visitors:number;visits:number;pageviews:number;views:number;impressions:number;clicks:number};
   daily:{day:string;visitors:number;visits:number}[];
@@ -21,6 +28,13 @@ export function analyticsRows(report:AnalyticsReport, days:number,translate:(tex
     labels('Categorie','Bezoekers','Bezoeken','Categoriekeuzes','Evenementweergaven','Doorklikken'),...report.categories.map(c=>[translate(c.name),c.visitors,c.visits,c.selections,c.views,c.clicks]),[],
     labels('Evenement','Zichtbare vermeldingen','Geopend','Doorklikken','Reserveringsklikken','Bereikte bezoeken','Bezoeken met doorklik na vertoning'),...report.events.map(e=>[e.name,e.impressions,e.views,e.clicks,e.bookings,e.reached_sessions,e.clicked_sessions]),[],
     labels('Toelichting','Uitsluitend gemeten bezoeken met toestemming; geen historische reconstructie, volledige personentelling of bevestigde boekingen.')];
+  if(report.marketing){const m=report.marketing;
+    rows.push([],labels('Marketing & herkomst'),[translate('Herkomst gemeten vanaf'),m.startedAt??''],[translate('Bezoeken met herkomstmeting'),m.summary.attributed],[translate('Betrokken bezoeken'),m.summary.engaged],[translate('Terugkerende bezoekers'),m.returningVisitors],[],labels('Vorige periode: bezoeken, bezoekers, betrokken, externe klik, reserveringsklik'),[m.previous.visits,m.previous.visitors,m.previous.engaged,m.previous.outbound,m.previous.bookings]);
+    for(const [key,label]of [['channels','Kanalen'],['sources','Bron / medium'],['campaigns','Campagnes'],['variants','Advertentievarianten'],['referrers','Verwijzende websites'],['countries','Landen'],['devices','Apparaten'],['languages','Talen'],['landings','Landingspagina’s']] as const){
+      rows.push([],labels(label,'Bezoeken','Bezoekers','Betrokken bezoeken','Bezoeken met detailweergave','Bezoeken met externe klik','Bezoeken met reserveringsklik','Interesse in adverteren','Betaalproces gestart'),...(m[key]??[]).map(r=>[translate(({unmeasured:'Niet gemeten vóór uitbreiding',direct:'Direct / onbekend',organic_social:'Sociale media',organic_search:'Zoekmachines',paid_social:'Betaalde sociale media',paid_search:'Betaalde zoekmachines',paid_other:'Overig betaald verkeer',email:'E-mail / nieuwsbrief',referral:'Verwijzende websites'} as Record<string,string>)[r.name]??r.name),r.visits,r.visitors,r.engaged,r.details,r.outbound,r.bookings,r.advertising,r.checkouts]));
+    }
+    rows.push([],labels('Betrokken betekent: evenementdetails geopend of een externe link aangeklikt. Klikken en gestarte betalingen zijn geen bevestigde boekingen of omzet. Direct/onbekend kan ook een afgeschermde verwijzer zijn. Oudere bezoeken krijgen geen verzonnen bron.'));
+  }
   return rows;
 }
 
