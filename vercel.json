@@ -33,5 +33,8 @@
       "path": "/api/cron/listing-mail",
       "schedule": "0 12 * * *"
     }
+  ],
+  "regions": [
+    "fra1"
   ]
 }
