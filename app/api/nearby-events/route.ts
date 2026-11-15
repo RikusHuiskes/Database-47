@@ -1,3 +1,4 @@
+import {campaignPreviewRead} from '../../../lib/campaign-preview-read';
 import {CHRISTMAS_CATEGORY,isChristmasMarket} from '../../../lib/event-period';
 import {visitorEventData} from '../../../lib/public-event-links';
 import { NextRequest, NextResponse } from "next/server";
@@ -121,6 +122,7 @@ export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !anonKey) {
+    const preview=await campaignPreviewRead(request,'nearby-events');if(preview)return preview;
     return NextResponse.json({ error: "De evenementendatabase is niet beschikbaar." }, { status: 503 });
   }
 

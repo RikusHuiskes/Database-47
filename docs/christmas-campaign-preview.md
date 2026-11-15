@@ -23,6 +23,10 @@ on conflict (slug) do nothing;
 commit;
 ```
 
+## Read-only preview data
+
+When preview database config is absent, only the public agenda/category/promotion GET endpoints are read from the fixed production origin. No cookies, authentication, secrets, or mutations are forwarded. Category matching is applied to the source titles before localisation. Admin login and mutations remain disconnected.
+
 ## Validation
 
 Run `node --experimental-strip-types --test lib/event-period.test.mjs`, `npx tsc --noEmit` and `npm run build`.

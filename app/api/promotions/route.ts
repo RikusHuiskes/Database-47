@@ -1,3 +1,4 @@
+import {campaignPreviewRead} from '../../../lib/campaign-preview-read';
 import {visitorEventData} from '../../../lib/public-event-links';
 import {NextRequest,NextResponse} from 'next/server';
 import {localizePublicData,requestLocale} from '../../../lib/public-translations';
@@ -12,7 +13,7 @@ export async function GET(request:NextRequest){
   const category=request.nextUrl.searchParams.get('category')??'all';
   if(category!=='all'&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(category))return NextResponse.json({error:'Kies een geldige categorie.'},{status:400});
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if(!url||!key)return NextResponse.json({error:'Advertenties zijn tijdelijk niet beschikbaar.'},{status:503});
+  if(!url||!key){const preview=await campaignPreviewRead(request,'promotions');if(preview)return preview;return NextResponse.json({error:'Advertenties zijn tijdelijk niet beschikbaar.'},{status:503});}
   const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
   const now=new Date().toISOString();
   const type=category==='all'?'homepage':'category';

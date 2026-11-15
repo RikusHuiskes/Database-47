@@ -789,6 +789,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
 
   async function loadData(includeEvents = isAdmin) {
     if (!supabase) {
+      if(campaignPreview&&!includeEvents){
+        try{const response=await fetch('/api/ios-categories');if(!response.ok)throw Error();const data=await response.json();setCategories(data.categories??[]);setError('');return true;}
+        catch{setError('Categorieën konden niet worden geladen.');return false;}
+        finally{setLoading(false);}
+      }
       setError("Supabase-instellingen ontbreken. Controleer Vercel.");
       setLoading(false);
       return;
@@ -857,6 +862,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
 
   useEffect(() => {
     if (!supabase) {
+      if(campaignPreview){void loadData(false);setAuthLoading(false);return;}
       setError("Supabase-instellingen ontbreken. Controleer Vercel.");
       setLoading(false);
       setAuthLoading(false);
