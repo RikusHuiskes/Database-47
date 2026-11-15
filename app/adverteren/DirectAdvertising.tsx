@@ -1,4 +1,5 @@
 'use client';
+import {trackAnalytics} from '../../lib/analytics-client';
 import {useEffect,useState} from 'react';
 import {T,useLanguage} from '../i18n/Language';
 import {ADVERTISING_LABELS,MONTHLY_PRICES,emptyAdvertiser,advertisingSelectionQuote,type AdvertisingType,type AdvertiserDetails} from '../../lib/advertising';
@@ -29,7 +30,7 @@ export default function DirectAdvertising(){
  const link='/adverteren/betaling#'+p.id+':'+p.token;
  const response=await fetch('/api/advertiser/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({requestId:p.id,purchaseKey:p.token,eventId:listing.id,placements:selected,advertiser:details,billingMode:mode,method,consent,termsVersion:BILLING_TERMS_VERSION,locale,website})});const data=await response.json();
  if(data.saved){setResume(link);try{localStorage.setItem('cdd-advertiser-'+p.id,p.token);sessionStorage.setItem('cdd-advertiser-last',p.id)}catch{/* The email and visible link also preserve access. */}}
- if(!response.ok)throw Error(data.error);if(typeof data.checkoutUrl!=='string')throw Error('Betaallink niet beschikbaar.');window.location.assign(data.checkoutUrl);
+ if(!response.ok)throw Error(data.error);if(typeof data.checkoutUrl!=='string')throw Error('Betaallink niet beschikbaar.');trackAnalytics('checkout_start');window.location.assign(data.checkoutUrl);
  }catch(e){setError(e instanceof Error?e.message:'Advertentie aanvragen mislukt.')}finally{setBusy(false)}}
  const field=(key:Exclude<keyof AdvertiserDetails,'months'|'startDate'>,label:string,required=true,type='text')=><label key={key}><T>{label}</T>{required?' *':''}<input type={type} required={required} maxLength={250} value={details[key]} onChange={e=>change(key,e.target.value)}/></label>;
  return <main className={s.page}><a href="/"><T>← Côte de Duras</T></a><p className={s.eyebrow}><T>Adverteren zonder beheeraanvraag</T></p><h1><T>Meer opvallen. Meer klanten. Meer kansen op omzet.</T></h1><p><T>Kies je advertentie, vul je factuurgegevens in en betaal veilig via Mollie.</T></p>

@@ -27,7 +27,7 @@ import NewEventExperience from "./components/NewEventExperience";
 import entry from "./components/new-event-experience.module.css";
 import {MONTHLY_PRICES,advertisingSelectionQuote,emptyAdvertiser,validateAdvertiser,type AdvertisingType} from "../lib/advertising";
 import {advertisingPlacementName,formatAdvertisingAmount,requestListingCheckout,type ListingPaymentSummary} from "../lib/listing-checkout";
-import AnalyticsConsent from "./components/AnalyticsConsent";
+
 const MailSettings = dynamic(() => import('./components/MailSettings'));
 import SocialLinks from './components/SocialLinks';
 const ListingRequestsAdmin = dynamic(() => import('./components/ListingRequestsAdmin'));
@@ -2283,7 +2283,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
 
       <T>{listingContent}</T>
 
-      <AnalyticsConsent disabled={isAdmin || authLoading} />
+
       <SocialLinks />
       <footer className="site-footer">
         <A><a className="brand-lockup footer-brand" href="#top" aria-label="Terug naar boven">

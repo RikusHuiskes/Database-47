@@ -11,15 +11,19 @@ export function setAnalyticsChoice(accepted:boolean){
 }
 export function enableAnalytics(value:boolean){enabled=value;}
 export function trackAnalytics(action:string,detail:Record<string,string|undefined>={}) {
-  if(!enabled||navigator.doNotTrack==='1'||!analyticsChoice()?.accepted)return;
+  if(!enabled||(navigator.doNotTrack==='1'||(navigator as Navigator&{globalPrivacyControl?:boolean}).globalPrivacyControl)||!analyticsChoice()?.accepted)return;
   try {
     let visitorId=localStorage.getItem('cdd-visitor');if(!visitorId){visitorId=crypto.randomUUID();localStorage.setItem('cdd-visitor',visitorId);}
     let session=JSON.parse(sessionStorage.getItem('cdd-session')||'null');
     const fresh=!session||Date.now()-session.last>30*60000;
-    if(fresh)session={id:crypto.randomUUID(),last:Date.now()};
+    if(fresh){
+      const url=new URL(window.location.href);let referrer='';
+      try{const ref=new URL(document.referrer);if(ref.origin!==url.origin)referrer=ref.hostname}catch{}
+      session={id:crypto.randomUUID(),last:Date.now(),acquisition:{source:url.searchParams.get('utm_source')||'',medium:url.searchParams.get('utm_medium')||'',campaign:url.searchParams.get('utm_campaign')||'',content:url.searchParams.get('utm_content')||'',referrer,landing:url.pathname,language:document.documentElement.lang}};
+    }
     session.last=Date.now();sessionStorage.setItem('cdd-session',JSON.stringify(session));
     const send=(kind:string,dimensions:Record<string,string|undefined>)=>void fetch('/api/analytics',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,
-      body:JSON.stringify({id:crypto.randomUUID(),visitorId,sessionId:session.id,consentAt:analyticsChoice()!.at,action:kind,...dimensions})}).catch(()=>{});
+      body:JSON.stringify({id:crypto.randomUUID(),visitorId,sessionId:session.id,consentAt:analyticsChoice()!.at,action:kind,acquisition:session.acquisition,...dimensions})}).catch(()=>{});
     if(fresh&&action!=='visit')send('visit',{});
     send(action,detail);
   }catch{/* Storage restrictions must never interrupt the website. */}

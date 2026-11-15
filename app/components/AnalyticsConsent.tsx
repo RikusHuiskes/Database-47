@@ -1,10 +1,12 @@
 "use client";
 import {T, A} from '../i18n/Language';
 
+import {usePathname} from 'next/navigation';
 import {useEffect,useState} from 'react';
 import {analyticsChoice,enableAnalytics,setAnalyticsChoice,trackAnalytics} from '../../lib/analytics-client';
 
 export default function AnalyticsConsent({disabled}:{disabled:boolean}) {
+  const pathname=usePathname();
   const [choice,setChoice]=useState<ReturnType<typeof analyticsChoice>>(null);
   const [ready,setReady]=useState(false);
   const [settings,setSettings]=useState(false);
@@ -16,7 +18,7 @@ export default function AnalyticsConsent({disabled}:{disabled:boolean}) {
     const active=!disabled&&choice?.accepted===true;
     enableAnalytics(active);
     if(!active)return;
-    trackAnalytics('visit');trackAnalytics('page_view',{page:'/'});window.dispatchEvent(new Event('analytics-ready'));
+    trackAnalytics('visit');trackAnalytics('page_view',{page:pathname});window.dispatchEvent(new Event('analytics-ready'));
     const timers=new Map<Element,ReturnType<typeof setTimeout>>();
     const seen=new WeakSet<Element>();
     const observer=new IntersectionObserver(entries=>{
@@ -36,17 +38,19 @@ export default function AnalyticsConsent({disabled}:{disabled:boolean}) {
     scan();const mutations=new MutationObserver(scan);mutations.observe(document.body,{childList:true,subtree:true});
     const click=(event:MouseEvent)=>{
       const link=(event.target as Element)?.closest('a[data-analytics-channel]') as HTMLElement|null;
+      const advertising=(event.target as Element)?.closest('a[href]') as HTMLAnchorElement|null;
+      if(advertising){try{const url=new URL(advertising.href);if(url.origin===location.origin&&['/adverteren','/gemeentegids/adverteren'].includes(url.pathname))trackAnalytics('advertising_start');}catch{}}
       const card=link?.closest('[data-analytics-event]') as HTMLElement|null;
       if(card)trackAnalytics('outbound',{eventId:card.dataset.analyticsEvent,placement:card.dataset.analyticsPlacement||'standard',channel:link!.dataset.analyticsChannel});
     };
     document.addEventListener('click',click);
     return()=>{enableAnalytics(false);observer.disconnect();mutations.disconnect();timers.forEach(clearTimeout);document.removeEventListener('click',click);};
-  },[disabled,choice]);
+  },[disabled,choice,pathname]);
   return <>
     <button className="analytics-settings" type="button" onClick={()=>setSettings(true)}><T>{"Statistiekvoorkeuren"}</T></button>
     <T>{ready&&!disabled&&(!choice||settings)&&<A><aside className="analytics-consent" aria-label="Keuze voor statistieken">
       <strong><T>{"Help Côte de Duras verbeteren"}</T></strong>
-      <p><T>{"Mogen we bezoeken, bekeken categorieën en klikken meten? Daarmee verbeteren we de agenda en tonen we adverteerders geaggregeerde bereikcijfers. We gebruiken een willekeurige browsercode, bewaren meetgegevens maximaal 13 maanden en slaan geen naam, e-mail of IP-adres op in de statistieken. Uw keuze en browsercode verlopen na 6 maanden. "}</T><a href="/statistieken"><T>{"Meer informatie"}</T></a></p>
+      <p><T>{"Mogen we bezoeken, verkeersbronnen, campagnes, land bij benadering en klikken meten? Daarmee verbeteren we de website en onze marketing. We gebruiken een willekeurige browsercode, bewaren meetgegevens maximaal 13 maanden en slaan geen naam, e-mail of IP-adres op in de statistieken. Uw keuze en browsercode verlopen na 6 maanden. "}</T><a href="/statistieken"><T>{"Meer informatie"}</T></a></p>
       <div><button type="button" onClick={()=>{setAnalyticsChoice(false);setSettings(false);}}><T>{"Weigeren"}</T></button><button type="button" onClick={()=>{setAnalyticsChoice(true);setSettings(false);}}><T>{"Toestaan"}</T></button></div>
     </aside></A>}</T>
   </>;
