@@ -12,6 +12,8 @@ export function quickPeriodRange(period: QuickPeriod, now = new Date()) {
 export const CHRISTMAS_CATEGORY = {id:'a9f07cb5-4db8-4ea0-b893-cb25bd714a64',slug:'kerstmarkten',name:'Marchés de Noël'};
 /** Conservative preview classification: a Christmas market in the title, not every Christmas event. */
 export function isChristmasMarket(event:{title?:string|null}) {
-  const title=(event.title??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const raw=event.title??'';
+  const title=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(/\b(?:courses?|randonnee|nordique|pedestre)\b/.test(title)&&!/(?:^|\s)marchés?(?=\s)/i.test(raw))return false;
   return /marche(?:s)?\b.{0,60}\bnoel|christmas\s+market|kerstmarkt|weihnachtsmarkt/.test(title);
 }
