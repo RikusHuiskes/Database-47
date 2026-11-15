@@ -1,3 +1,4 @@
+import {CHRISTMAS_CATEGORY,isChristmasMarket} from '../../../lib/event-period';
 import {visitorEventData} from '../../../lib/public-event-links';
 import { NextRequest, NextResponse } from "next/server";
 import {localizePublicData,requestLocale} from '../../../lib/public-translations';
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest) {
   const requestedRadius = Number(request.nextUrl.searchParams.get("radius") || Number.NaN);
   const radiusKm = normalizeSearchRadiusKm(requestedRadius);
   const category = request.nextUrl.searchParams.get('category');
+  const christmasPreview=process.env.VERCEL_ENV==='preview'&&category===CHRISTMAS_CATEGORY.id;
   const dateFilter = eventDateFilter(request.nextUrl.searchParams.get('date_from') ?? '', request.nextUrl.searchParams.get('date_to') ?? '');
   if (dateFilter.error) return NextResponse.json({error: dateFilter.error}, {status: 400});
   if(category && category!=='all' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(category)) {
@@ -135,7 +137,7 @@ export async function GET(request: NextRequest) {
   for (let offset = 0; ; offset += pageSize) {
     let query = supabase
       .from("events")
-      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)" + (category && category !== 'all' ? ",matching_category:event_categories!inner(category_id)" : ""))
+      .select("id,title,slug,start_at,end_at,is_directory_entry,city,postcode,address,venue_name,short_description,description,image_url,is_free,website_url,booking_url,contact_phone,source_url,status,verified,latitude,longitude,advertising_placements,promotion_type,promotion_status,promotion_start_at,promotion_end_at,reserved_homepage,reserved_category_id,event_categories(category_id)" + (category && category !== 'all' && !christmasPreview ? ",matching_category:event_categories!inner(category_id)" : ""))
       .is("municipal_key",null).eq("status", "approved")
       .eq("verified", true)
       // Latitude is a conservative coarse bound. Missing/invalid coordinates
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
       const cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString();
       query = query.or(`is_directory_entry.eq.true,end_at.gte.${cutoff},and(end_at.is.null,start_at.gte.${cutoff})`);
     }
-    if (category && category !== 'all') query = query.eq("matching_category.category_id", category);
+    if (category && category !== 'all' && !christmasPreview) query = query.eq("matching_category.category_id", category);
     const { data, error } = await query.range(offset, offset + pageSize - 1);
 
     if (error) return NextResponse.json({ error: "Evenementen konden niet worden geladen." }, { status: 502 });
@@ -158,6 +160,7 @@ export async function GET(request: NextRequest) {
   }
   const upcoming = uniqueEventRecords(rows).map(({event_categories, ...event}) => {
     const category_ids = (event_categories ?? []).map(link => link.category_id);
+    if(process.env.VERCEL_ENV==='preview'&&isChristmasMarket(event)&&!category_ids.includes(CHRISTMAS_CATEGORY.id))category_ids.push(CHRISTMAS_CATEGORY.id);
     return { ...event, start_at:event.start_at??'', category_id: category_ids[0] ?? null, category_ids };
   })
     .filter((event) => !isDemoLayoutAdvertisement(event)

@@ -1,4 +1,6 @@
 "use client";
+import QuickDateFilters from './components/QuickDateFilters';
+import {CHRISTMAS_CATEGORY} from '../lib/event-period';
 import areaCatalog from "../lib/data/area-catalog.json";
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -342,7 +344,7 @@ function sourceLabel(value?: string | null): string {
   }
 }
 
-export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean}) {
+export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false,campaignPreview=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean;campaignPreview?:boolean}) {
   const {locale,t}=useLanguage();
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>(areaCatalog.areas);
   const [municipalityInView,setMunicipalityInView]=useState(false);
@@ -365,6 +367,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const [eventDateTo, setEventDateTo] = useState("");
   const dateFilter = useMemo(() => eventDateFilter(eventDateFrom, eventDateTo), [eventDateFrom, eventDateTo]);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  useEffect(()=>{const params=new URLSearchParams(window.location.search);const category=params.get('category');if(category&&/^[0-9a-f-]{36}$/i.test(category))setCategoryFilter(category);const from=params.get('date_from')??'',to=params.get('date_to')??'';if(!eventDateFilter(from,to).error){setEventDateFrom(from);setEventDateTo(to);}if(params.get('radius')==='50')setRadiusKm(50);},[]);
   const [promotionClock,setPromotionClock]=useState(0);
   useEffect(()=>{const timer=window.setInterval(()=>setPromotionClock(Date.now()),60000);return()=>window.clearInterval(timer);},[]);
   const [freeOnly, setFreeOnly] = useState(false);
@@ -2032,6 +2035,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       </header>
 
       <SocialLinks compact />
+      {campaignPreview&&<aside style={{maxWidth:1200,margin:'16px auto',padding:16,background:'#fff4dc',borderRadius:12}}><a href="/campagnes/kerstmarkten" style={{color:'#244a3c',fontWeight:700}}>✦ Marchés de Noël · Bekijk de campagne / Voir la campagne →</a></aside>}
 
       <section id="agenda" className="search-panel agenda-search-panel" aria-labelledby="nearby-heading">
         <div className="search-heading">
@@ -2051,6 +2055,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <span aria-hidden="true"><T>{"⌖"}</T></span> <T>{locating?'Locatie bepalen…':'Gebruik mijn locatie'}</T>
           </button>
         </div>
+        <QuickDateFilters start={eventDateFrom} end={eventDateTo} onChange={(start,end)=>{setEventDateFrom(start);setEventDateTo(end);}} />
         <div className="search-controls search-date-controls">
           <label className="field-label" style={labelStyle}><T>{"Begindatum"}</T>
             <input type="date" style={inputStyle} value={eventDateFrom} onChange={event => setEventDateFrom(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
@@ -2069,7 +2074,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           </label>
           <label className="field-label" style={labelStyle}><T>{"Soort activiteit "}</T><select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
               <option value="all"><T>{"Alle soorten"}</T></option>
-              <T>{[...categories].sort((a,b)=>t(a.name??a.slug??"").localeCompare(t(b.name??b.slug??""),locale,{sensitivity:"base"})).map((category) => <option key={category.id} value={category.id}><T>{category.name ?? category.slug ?? "Activiteit"}</T></option>)}</T>
+              <T>{[...categories,...(campaignPreview&&!categories.some(category=>category.slug===CHRISTMAS_CATEGORY.slug)?[{...CHRISTMAS_CATEGORY,name:locale==='nl'?'Kerstmarkten':locale==='en'?'Christmas markets':CHRISTMAS_CATEGORY.name}]:[])].sort((a,b)=>t(a.name??a.slug??"").localeCompare(t(b.name??b.slug??""),locale,{sensitivity:"base"})).map((category) => <option key={category.id} value={category.id}><T>{category.name ?? category.slug ?? "Activiteit"}</T></option>)}</T>
             </select>
           </label>
           <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>

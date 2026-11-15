@@ -4,7 +4,7 @@ export async function GET(request:Request){
  const sizes={mobiel:{width:390,height:844,name:'Mobiel'},klein:{width:360,height:800,name:'Kleine telefoon'},tablet:{width:768,height:1024,name:'Tablet staand'},breed:{width:1024,height:768,name:'Tablet liggend'}};
  const url=new URL(request.url),key=url.searchParams.get('formaat')??'mobiel';
  const size=sizes[key as keyof typeof sizes]??sizes.mobiel;
- const pages={'agenda':'/#agenda','gemeenten':'/#gemeenten','handleiding':'/handleiding','streek':'/de-streek-beleven','vermelding':'/mijn-vermelding','beheer':'/#beheer'};
+ const pages={'kerstmarkten':'/campagnes/kerstmarkten','agenda':'/#agenda','gemeenten':'/#gemeenten','handleiding':'/handleiding','streek':'/de-streek-beleven','vermelding':'/mijn-vermelding','beheer':'/#beheer'};
  const page=url.searchParams.get('pagina')??'agenda',path=pages[page as keyof typeof pages]??pages.agenda;
  const sizeLinks=Object.entries(sizes).map(([id,s])=>'<a href="?formaat='+id+'&pagina='+encodeURIComponent(page)+'">'+s.name+' ('+s.width+')</a>').join(' · ');
  const pageLinks=Object.keys(pages).map(id=>'<a href="?formaat='+encodeURIComponent(key)+'&pagina='+id+'">'+id+'</a>').join(' · ');
