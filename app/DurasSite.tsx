@@ -1,4 +1,5 @@
 "use client";
+import areaCatalog from "../lib/data/area-catalog.json";
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {T, A, useLanguage} from './i18n/Language';
@@ -343,7 +344,7 @@ function sourceLabel(value?: string | null): string {
 
 export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean}) {
   const {locale,t}=useLanguage();
-  const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>([]);
+  const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>(areaCatalog.areas);
   const [municipalityInView,setMunicipalityInView]=useState(false);
   useEffect(()=>{const node=document.getElementById('gemeenten');if(!node)return;const observer=new IntersectionObserver(entries=>setMunicipalityInView(entries[0]?.isIntersecting||false));observer.observe(node);return()=>observer.disconnect();},[]);
   const [municipalityAreaId, setMunicipalityAreaId] = useState("duras");
@@ -602,7 +603,13 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         return readApiJson<{ areas?: LocalAreaOption[]; error?: string }>(response);
       })
       .then((result) => {
-        if (active) setLocalAreas((result.areas ?? []) as LocalAreaOption[]);
+        if (active) setLocalAreas(previous => (result.areas ?? []).map(area => {
+          // Preserve usable coordinates during this visit so background town
+          // enrichment cannot cancel/restart the first agenda request.
+          const saved = previous.find(candidate => candidate.id === area.id);
+          return saved?.latitude != null && saved.longitude != null
+            ? {...area, latitude: saved.latitude, longitude: saved.longitude} : area;
+        }));
       })
       .catch((cause) => {
         if (active) setNearbyError(cause instanceof Error ? cause.message : "Plaatsen konden niet worden geladen.");
@@ -698,7 +705,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       })
       .finally(() => { if (active) setNearbyLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [newListingOnly,localAreas.length, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision,eventDateFrom,eventDateTo,dateFilter]);
+  }, [newListingOnly, searchLatitude, searchLongitude, radiusKm,categoryFilter,dataRevision,eventDateFrom,eventDateTo,dateFilter]);
 
   // Paid placements load independently of ordinary search and geocoding.
   useEffect(() => {
