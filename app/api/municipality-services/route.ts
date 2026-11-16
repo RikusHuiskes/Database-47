@@ -857,6 +857,7 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = municipalCatalog(city, latitude, longitude, service, suppliedCodeInsee);
+  if(service === "all" && params.get("fast") === "1") return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
   const dynamicallyEnrichedHealthService = service === "physiotherapist" || service === "psychologist";
   const directoryRadiusKm = dynamicallyEnrichedHealthService ? 25 : catalog.radiusKm;
   const serviceRadiusKm = (type: string) =>

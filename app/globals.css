@@ -1313,3 +1313,15 @@ input::-webkit-datetime-edit { min-inline-size:0; max-inline-size:100%; padding:
 :where(form) :where(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select),.search-controls :where(input:not([type=checkbox]),select) { min-block-size:48px; }
 input[type=date],input[type=datetime-local],input[type=time] { font-size:16px!important; }
 .advertiser-field-grid label { grid-template-rows:minmax(2.8em,auto) auto; }
+
+/* Shared guide rhythm: equal columns, aligned controls and consistent card edges. */
+.municipality-business-links{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:22px}
+.municipality-business-links p{margin:0}
+.municipality-directory>form.municipality-service-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 160px;gap:16px;margin-top:20px;align-items:end}
+.municipality-service-controls .field-label{display:grid;grid-template-rows:minmax(20px,auto) 48px;gap:8px;min-width:0;line-height:1.5}
+.municipality-service-controls .municipality-select{margin:0;height:48px;box-sizing:border-box;font-size:15px}
+.municipality-service-controls .municipality-search-button{height:48px;width:100%;box-sizing:border-box}
+.municipality-directory .municipality-results,.municipality-directory .municipality-service-group{gap:16px}
+.municipality-directory .municipality-service-group{padding:20px}
+@media(max-width:1000px){.municipality-directory>form.municipality-service-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.municipality-service-controls .municipality-search-button{grid-column:1/-1}}
+@media(max-width:600px){.municipality-directory>form.municipality-service-controls{grid-template-columns:minmax(0,1fr)}.municipality-directory .municipality-service-group{padding:14px}.municipality-business-links{gap:10px;margin-bottom:18px}}

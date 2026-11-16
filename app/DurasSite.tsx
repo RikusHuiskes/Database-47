@@ -349,9 +349,10 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const {locale,t}=useLanguage();
   const [discoveryMode,setDiscoveryMode]=useState<'events'|'food'|'shops'|'practical'|'all'>('events');
   const guideRequest=useRef(0);
+  const guideCache=useRef(new Map<string,{at:number;data:MunicipalityServiceResponse}>());
   useEffect(()=>{
     if(!discoveryPreview)return;
-    const syncHash=()=>{if(window.location.hash==='#gemeenten'){setDiscoveryMode('practical');setMunicipalityServiceType('parking');}};
+    const syncHash=()=>{if(window.location.hash==='#gemeenten'){setDiscoveryMode('practical');setMunicipalityServiceType('all');}};
     syncHash();window.addEventListener('hashchange',syncHash);return()=>window.removeEventListener('hashchange',syncHash);
   },[discoveryPreview]);
   const discoveryWords=locale==='nl'?{title:'Ontdek Duras en omgeving',intro:'Een uitje, een goed adres of praktische hulp. Alles voor jouw bezoek, op één plek.',place:'Jouw plaats',events:'Wat is er te doen?',guide:'Wat zoek je in de buurt?',all:'Alles',food:'Eten & drinken',shops:'Winkelen',practical:'Praktisch',local:'Maak er een gezellig dagje van',back:'Evenementen',test:'TESTVERSIE · Agenda en gemeentegids samen'}:locale==='en'?{title:'Discover Duras and the surrounding area',intro:'An outing, a great local address or practical help. Plan your visit in one place.',place:'Your town',events:'What’s on?',guide:'What’s nearby?',all:'Everything',food:'Eat & drink',shops:'Shopping',practical:'Practical',local:'Make a day of it',back:'Events',test:'PREVIEW · Calendar and local guide together'}:{title:'Découvrez Duras et ses environs',intro:'Une sortie, une bonne adresse ou un service utile. Tout pour préparer votre visite, au même endroit.',place:'Votre commune',events:'Que faire ?',guide:'Que trouver à proximité ?',all:'Tout',food:'Manger & boire',shops:'Commerces',practical:'Pratique',local:'Profitez de votre journée',back:'Événements',test:'APERÇU · Agenda et guide local réunis'};
@@ -364,6 +365,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const [municipalityServiceInfo, setMunicipalityServiceInfo] = useState<MunicipalityServiceResponse | null>(null);
   const [municipalitySearchComplete, setMunicipalitySearchComplete] = useState(false);
   const [municipalityServicesLoading, setMunicipalityServicesLoading] = useState(false);
+  const [municipalityEnriching,setMunicipalityEnriching]=useState(false);
   const [municipalityServicesError, setMunicipalityServicesError] = useState("");
   const [selectedAreaId, setSelectedAreaId] = useState("duras");
   const deferredSelectedAreaId = useDeferredValue(selectedAreaId);
@@ -771,6 +773,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     const request=++guideRequest.current;
     const area = areaOptions.find((candidate) => candidate.id === municipalityAreaId);
     setMunicipalityServicesError("");
+    setMunicipalityEnriching(false);
     setMunicipalityServiceInfo(null);
     setMunicipalitySearchComplete(true);
     if (municipalityServiceType === "emergency") return;
@@ -788,14 +791,34 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         service: municipalityServiceType,
       });
       if (area.code_insee) params.set("codeInsee", area.code_insee);
-      const response = await fetch(`/api/municipality-services?${params.toString()}`, { cache: "no-store" });
-      const result = await readApiJson<MunicipalityServiceResponse>(response);
-      if (!response.ok) throw new Error(result.error ?? "De gegevens konden niet worden opgehaald.");
-      if(request===guideRequest.current)setMunicipalityServiceInfo(result);
+      const key=params.toString(),cached=guideCache.current.get(key);
+      if(cached&&Date.now()-cached.at<300000){
+        if(request===guideRequest.current)setMunicipalityServiceInfo(cached.data);
+        return;
+      }
+      const readDirectory=async(fast=false)=>{
+        const query=new URLSearchParams(params);if(fast)query.set('fast','1');
+        const response=await fetch(`/api/municipality-services?${query}`,{cache:'no-store'});
+        const result=await readApiJson<MunicipalityServiceResponse>(response);
+        if(!response.ok)throw new Error(result.error??"De gegevens konden niet worden opgehaald.");
+        return result;
+      };
+      // Show the maintained catalogue before waiting for external enrichment.
+      // Start both reads together, and never replace a complete result with an older snapshot.
+      let complete=false,shown=false;
+      const fastRead=municipalityServiceType==='all'?readDirectory(true).then(result=>{
+        if(!complete&&request===guideRequest.current){shown=true;setMunicipalityServiceInfo(result);setMunicipalityServicesLoading(false);setMunicipalityEnriching(true);}
+      }).catch(()=>{}):Promise.resolve();
+      try{
+        const result=await readDirectory();complete=true;
+        guideCache.current.set(key,{at:Date.now(),data:result});
+        if(request===guideRequest.current)setMunicipalityServiceInfo(result);
+      }catch(cause){await fastRead;if(!shown)throw cause;}
+      await fastRead;
     } catch (cause) {
       if(request===guideRequest.current)setMunicipalityServicesError(cause instanceof Error ? cause.message : "De gemeentelijke informatie kon niet worden opgehaald.");
     } finally {
-      if(request===guideRequest.current)setMunicipalityServicesLoading(false);
+      if(request===guideRequest.current){setMunicipalityServicesLoading(false);setMunicipalityEnriching(false);}
     }
   }
 
@@ -2029,7 +2052,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     if(mode==='food')setCategoryFilter(categories.find(c=>c.slug==='restaurants-gastronomie')?.id??'all');
     else setCategoryFilter('all');
     setMunicipalityAreaId(selectedAreaId);
-    setMunicipalityServiceType(mode==='shops'?'bakery':mode==='practical'?'parking':'all');
+    setMunicipalityServiceType(mode==='shops'?'bakery':'all');
   }
   useEffect(()=>{
     if(!discoveryPreview||!['shops','practical','all'].includes(discoveryMode))return;
@@ -2043,7 +2066,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     setSelectedVisitorEvent(null);window.history.replaceState(null,'','#agenda');
     selectArea(area.id);setMunicipalityAreaId(area.id);setDiscoveryMode(mode);setEventDateFrom('');setEventDateTo('');setFreeOnly(false);
     setCategoryFilter(mode==='food'?(categories.find(c=>c.slug==='restaurants-gastronomie')?.id??'all'):'all');
-    setMunicipalityServiceType(mode==='shops'?'bakery':'parking');
+    setMunicipalityServiceType(mode==='shops'?'bakery':'all');
     requestAnimationFrame(()=>document.getElementById('local-discovery')?.scrollIntoView({behavior:'smooth'}));
   }
   const municipalityPanel=(<section className="area-explorer municipality-info-panel" id="gemeenten" aria-labelledby="area-heading">
@@ -2056,9 +2079,9 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <p><T>{"Kies een plaats en dienst voor contactgegevens, adressen en waar beschikbaar openingstijden. De lijst gebruikt de officiële Franse overheidsdirectory en actuele kaartgegevens."}</T></p>
         </div>
         <div className="municipality-directory">
-          <p><a className="text-arrow-link" href="/gemeentegids/adverteren"><T>{"Voor ondernemers: bekijk adverteren in de gemeentegids →"}</T></a></p>
-          <p><a className="text-arrow-link" href="/gemeentegids/aanmelden"><T>Bedrijf aanmelden in de gemeentegids →</T></a></p>
-          {discoveryPreview&&<div className={discovery.tabs}>{(discoveryMode==='shops'?['bakery','butcher','fashion','souvenirs','all']:['parking','charging','tourism','pharmacy','all']).map(type=><button type="button" key={type} aria-pressed={municipalityServiceType===type} onClick={()=>setMunicipalityServiceType(type as MunicipalityServiceType)}>{t(municipalityServiceOptions.find(option=>option.id===type)?.label??type)}</button>)}</div>}
+          <div className="municipality-business-links"><p><a className="text-arrow-link" href="/gemeentegids/adverteren"><T>{"Voor ondernemers: bekijk adverteren in de gemeentegids →"}</T></a></p>
+          <p><a className="text-arrow-link" href="/gemeentegids/aanmelden"><T>Bedrijf aanmelden in de gemeentegids →</T></a></p></div>
+          {discoveryPreview&&<div className={discovery.tabs}>{(discoveryMode==='shops'?['bakery','butcher','fashion','souvenirs','all']:['all','tourism','pharmacy','charging','parking']).map(type=><button type="button" key={type} aria-pressed={municipalityServiceType===type} onClick={()=>setMunicipalityServiceType(type as MunicipalityServiceType)}>{t(municipalityServiceOptions.find(option=>option.id===type)?.label??type)}</button>)}</div>}
           <form className="municipality-service-controls" onSubmit={findMunicipalityServices}>
             <label className="field-label"><T>{"Gemeente of dorp "}</T><select className="municipality-select" value={municipalityAreaId} onChange={(event) => {
                 setMunicipalityAreaId(event.target.value);
@@ -2085,6 +2108,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             </button>
           </form>
           <p className="municipality-data-note"><T>{"Kies ‘Alle categorieën’ om de diensten voor een gemeente tegelijk te bekijken. Officiële gemeentetellingen vullen de adressen aan. Resultaten buiten de gemeente tonen hun werkelijke plaats en afstand; ontbrekende adressen worden als ontbrekende broninformatie aangeduid."}</T></p>
+          {municipalityEnriching&&<p className="municipality-feedback" role="status">{locale==='nl'?'De beschikbare adressen staan hieronder. Aanvullende brongegevens worden nog opgehaald.':locale==='en'?'Available listings are shown below. Additional source information is still loading.':'Les adresses disponibles sont affichées ci-dessous. Les informations complémentaires sont en cours de chargement.'}</p>}
           <T>{municipalityServicesError && <p className="municipality-feedback municipality-feedback-error" role="alert"><T>{municipalityServicesError}</T></p>}</T>
           <T>{municipalityServicesLoading && <p className="municipality-feedback" role="status"><T>{municipalityServiceType === "all" ? `We verzamelen nu alle gemeentelijke diensten voor ${municipalityName}, inclusief voorzieningen in de directe omgeving.` : `We zoeken ${municipalityServiceLabel.toLocaleLowerCase(intlLocale[locale])} ${municipalityServiceRadiusKm[municipalityServiceType] > 0 ? `in ${municipalityName} en tot ${municipalityServiceRadiusKm[municipalityServiceType]} km eromheen` : `in de gemeente ${municipalityName}`}.`}</T></p>}</T>
           <T>{municipalitySearchComplete && municipalityServiceType === "emergency" && (
