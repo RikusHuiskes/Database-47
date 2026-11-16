@@ -349,6 +349,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const {locale,t}=useLanguage();
   const [discoveryMode,setDiscoveryMode]=useState<'events'|'food'|'shops'|'practical'|'all'>('events');
   const guideRequest=useRef(0);
+  useEffect(()=>{
+    if(!discoveryPreview)return;
+    const syncHash=()=>{if(window.location.hash==='#gemeenten'){setDiscoveryMode('practical');setMunicipalityServiceType('parking');}};
+    syncHash();window.addEventListener('hashchange',syncHash);return()=>window.removeEventListener('hashchange',syncHash);
+  },[discoveryPreview]);
   const discoveryWords=locale==='nl'?{title:'Ontdek Duras en omgeving',intro:'Een uitje, een goed adres of praktische hulp. Alles voor jouw bezoek, op één plek.',place:'Jouw plaats',events:'Wat is er te doen?',guide:'Wat zoek je in de buurt?',all:'Alles',food:'Eten & drinken',shops:'Winkelen',practical:'Praktisch',local:'Maak er een gezellig dagje van',back:'Evenementen',test:'TESTVERSIE · Agenda en gemeentegids samen'}:locale==='en'?{title:'Discover Duras and the surrounding area',intro:'An outing, a great local address or practical help. Plan your visit in one place.',place:'Your town',events:'What’s on?',guide:'What’s nearby?',all:'Everything',food:'Eat & drink',shops:'Shopping',practical:'Practical',local:'Make a day of it',back:'Events',test:'PREVIEW · Calendar and local guide together'}:{title:'Découvrez Duras et ses environs',intro:'Une sortie, une bonne adresse ou un service utile. Tout pour préparer votre visite, au même endroit.',place:'Votre commune',events:'Que faire ?',guide:'Que trouver à proximité ?',all:'Tout',food:'Manger & boire',shops:'Commerces',practical:'Pratique',local:'Profitez de votre journée',back:'Événements',test:'APERÇU · Agenda et guide local réunis'};
 
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>(areaCatalog.areas);
@@ -1936,7 +1941,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
                 gap: 12,
               }}
             >
@@ -2176,7 +2181,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <a className="my-listing-link" href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T><span aria-hidden="true"><T>{"→"}</T></span></a>
           <A><nav className="primary-nav" aria-label="Hoofdnavigatie">
             <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
-            <a href="#agenda"><T>{"Agenda"}</T></a>
+            <a href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><T>{"Agenda"}</T></a>
             <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
             <a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeente informatie"}</T></a>
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
@@ -2197,7 +2202,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       {campaignPreview&&!discoveryPreview&&<aside style={{maxWidth:1200,margin:'16px auto',padding:16,background:'#fff4dc',borderRadius:12}}><a href="/campagnes/kerstmarkten" style={{color:'#244a3c',fontWeight:700}}>✦ Marchés de Noël · Bekijk de campagne / Voir la campagne →</a></aside>}
 
       {discoveryPreview&&<section id="local-discovery" className={discovery.hub}>
-        <p className={discovery.preview}>{discoveryWords.test}</p><p className={discovery.kicker}>CÔTE DE DURAS · {selectedArea?.name??'Duras'}</p>
+        {campaignPreview&&<p className={discovery.preview}>{discoveryWords.test}</p>}<p className={discovery.kicker}>CÔTE DE DURAS · {selectedArea?.name??'Duras'}</p>
         <h2>{discoveryWords.title}</h2><p>{discoveryWords.intro}</p>
         <label className={discovery.place}>{discoveryWords.place}<select value={selectedAreaId} onChange={e=>selectArea(e.target.value)}>{renderAreaOptions()}</select></label>
         <div className={discovery.choices}><button type="button" aria-pressed={discoveryMode==='events'} onClick={()=>chooseDiscovery('events')}><span>◷</span>{discoveryWords.events}<small>{locale==='nl'?'Markten, concerten en activiteiten':locale==='en'?'Markets, concerts and activities':'Marchés, concerts et activités'}</small></button><button type="button" aria-pressed={['shops','practical','food'].includes(discoveryMode)} onClick={()=>chooseDiscovery('practical')}><span>⌖</span>{discoveryWords.guide}<small>{locale==='nl'?'Restaurants, winkels en voorzieningen':locale==='en'?'Food, shops and local services':'Restaurants, commerces et services'}</small></button></div>
@@ -2312,7 +2317,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       </div>
       {discoveryPreview&&['shops','practical','all'].includes(discoveryMode)&&municipalityPanel}
       <A><section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
-        <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true"><T>{"▦"}</T></span><span><strong><T>{"Agenda"}</T></strong><small><T>{"Wat is er te doen?"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
+        <a className="discovery-tile discovery-agenda" href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><span className="discovery-icon" aria-hidden="true"><T>{"▦"}</T></span><span><strong><T>{"Agenda"}</T></strong><small><T>{"Wat is er te doen?"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
         <a className="discovery-tile discovery-towns" href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><span className="discovery-icon" aria-hidden="true"><T>{"⌖"}</T></span><span><strong><T>{"Gemeentegids"}</T></strong><small><T>{"Lokale diensten & adressen"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
       </section></A>
 
@@ -2329,7 +2334,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
               <div className="featured-event-body"><span className="date-tile"><strong><T>{date.day}</T></strong><small><T>{date.month}</T></small></span><div><T>{hasAdvertisingPlacement(event,"homepage") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}><T preserve={event.is_directory_entry===true}>{event.title}</T></button></h3><p><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{event.city || event.venue_name || "Lot-et-Garonne"}</T></p></div></div>
             </article>;
           })}</T>
-        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true"><T>{"✦"}</T></span><div><strong><T>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</T></strong><p><T>{"Kies een gemeente of bekijk de agenda voor Duras en omgeving."}</T></p></div><a className="text-arrow-link" href="#agenda"><T>{"Ontdek de agenda "}</T><span aria-hidden="true"><T>{"→"}</T></span></a></div>}</T>
+        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true"><T>{"✦"}</T></span><div><strong><T>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</T></strong><p><T>{"Kies een gemeente of bekijk de agenda voor Duras en omgeving."}</T></p></div><a className="text-arrow-link" href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><T>{"Ontdek de agenda "}</T><span aria-hidden="true"><T>{"→"}</T></span></a></div>}</T>
       </section>
 
 
@@ -2347,7 +2352,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} loading="lazy" decoding="async" /></A></span>
           <span className="brand-name"><strong><T>{"CÔTE DE DURAS"}</T></strong><small><T>{"Evenementen en informatie binnen 50 kilometer"}</T></small></span>
         </a></A>
-        <div><a href="#agenda"><T>{"Agenda"}</T></a><a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeenten"}</T></a><a href="/disclaimer"><T>{"Disclaimer"}</T></a><a href="/contact"><T>{"Contactgegevens"}</T></a><a href="/handleiding"><T>{"Handleiding"}</T></a><a href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T></a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><T>{"Beheerderslogin"}</T></button></div>
+        <div><a href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><T>{"Agenda"}</T></a><a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeenten"}</T></a><a href="/disclaimer"><T>{"Disclaimer"}</T></a><a href="/contact"><T>{"Contactgegevens"}</T></a><a href="/handleiding"><T>{"Handleiding"}</T></a><a href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T></a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><T>{"Beheerderslogin"}</T></button></div>
         <span className="footer-note"><T>{"Een streek vol verhalen, ontmoetingen en kleine ontdekkingen."}</T></span>
       </footer>
 
@@ -2381,7 +2386,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
           gap: 12,
           margin: "20px 0",
         }}
@@ -2516,7 +2521,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           </label>
           <label style={labelStyle}><T>{"Berichttekst * "}</T><A><textarea style={{ ...inputStyle, minHeight: 130, resize: "vertical" }} value={socialPostText} onChange={(event) => setSocialPostText(event.target.value)} placeholder="Plak de tekst van het bericht hier" /></A>
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 12 }}>
             <label style={labelStyle}><T>{"Evenementtitel * "}</T><A><input style={inputStyle} maxLength={180} value={socialPostTitle} onChange={(event) => setSocialPostTitle(event.target.value)} placeholder="Titel zoals die in de agenda mag staan" /></A>
             </label>
             <label style={labelStyle}><T>{"Plaats * "}</T><A><input style={inputStyle} value={socialPostCity} onChange={(event) => setSocialPostCity(event.target.value)} placeholder="Duras, Eymet, Marmande…" /></A>
@@ -2877,7 +2882,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
                     gap: 12,
                   }}
                 >

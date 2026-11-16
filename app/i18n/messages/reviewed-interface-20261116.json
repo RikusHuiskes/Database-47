@@ -1,0 +1,492 @@
+[
+  [
+    "Aanvraag niet gevonden",
+    "Request not found",
+    "Demande introuvable"
+  ],
+  [
+    "Adverteer met jouw bedrijf",
+    "Advertise your business",
+    "Faites connaître votre entreprise"
+  ],
+  [
+    "Advertentievoorbeeld",
+    "Advertisement preview",
+    "Aperçu publicitaire"
+  ],
+  [
+    "Advertentievoorbeeld ·",
+    "Advertisement preview ·",
+    "Aperçu publicitaire ·"
+  ],
+  [
+    "Automatische e-mailverzending staat uit. Bekijk Strato-mailverbinding om dit veilig in te schakelen.",
+    "Automatic email sending is disabled. Open the Strato email connection settings to enable it securely.",
+    "L’envoi automatique d’e-mails est désactivé. Consultez les paramètres de connexion Strato pour l’activer en toute sécurité."
+  ],
+  [
+    "BEHEERDERSTOOL",
+    "ADMINISTRATION",
+    "ADMINISTRATION"
+  ],
+  [
+    "Bedankt voor je bestelling",
+    "Thank you for your order",
+    "Merci pour votre commande"
+  ],
+  [
+    "Bedrijfsgegevens",
+    "Business details",
+    "Coordonnées de l’entreprise"
+  ],
+  [
+    "Bekijk de agenda",
+    "Explore the calendar",
+    "Consulter l’agenda"
+  ],
+  [
+    "Bekijk drie voorbeelden",
+    "Explore three examples",
+    "Découvrez trois exemples"
+  ],
+  [
+    "Bekijk hoe een advertentie in de gemeentegids eruitziet. Kies je advertentievorm en bekijk de voorbeelden hieronder.",
+    "See how an advertisement looks in the local directory. Choose an advertising format and explore the examples below.",
+    "Découvrez à quoi ressemble une publicité dans le guide local. Choisissez votre format publicitaire et consultez les exemples ci-dessous."
+  ],
+  [
+    "Betaalde vermelding",
+    "Sponsored listing",
+    "Annonce sponsorisée"
+  ],
+  [
+    "Btw-plichtig",
+    "Subject to VAT",
+    "Assujetti à la TVA"
+  ],
+  [
+    "Btw-regime",
+    "VAT status",
+    "Régime de TVA"
+  ],
+  [
+    "Btw-tarief (%)",
+    "VAT rate (%)",
+    "Taux de TVA (%)"
+  ],
+  [
+    "Btw-vermelding op de factuur",
+    "VAT wording on the invoice",
+    "Mention de TVA sur la facture"
+  ],
+  [
+    "De Strato-mailinstellingen zijn nog niet compleet. Facturen kunnen worden klaargezet, maar e-mail wordt pas verzonden zodra de mailkoppeling actief is.",
+    "The Strato email settings are incomplete. Invoices can be prepared, but emails will be sent only when the email connection is active.",
+    "Les paramètres de messagerie Strato sont incomplets. Les factures peuvent être préparées, mais les e-mails ne seront envoyés qu’une fois la connexion de messagerie activée."
+  ],
+  [
+    "De advertentie wordt pas geplaatst nadat Mollie de betaling heeft bevestigd. Je kunt je persoonlijke beheerlink gebruiken om de betaling opnieuw te openen.",
+    "Your advertisement will be published only after Mollie confirms payment. Use your personal management link to reopen the payment page.",
+    "Votre publicité ne sera publiée qu’après confirmation du paiement par Mollie. Utilisez votre lien personnel de gestion pour rouvrir la page de paiement."
+  ],
+  [
+    "De betaling is niet afgerond",
+    "Payment has not been completed",
+    "Le paiement n’a pas été finalisé"
+  ],
+  [
+    "De betaling wordt niet automatisch getoond omdat deze browser je persoonlijke beheerlink niet heeft. Open die link om de status veilig te controleren.",
+    "The payment is not shown automatically because this browser does not have your personal management link. Open that link to check the status securely.",
+    "Le paiement ne s’affiche pas automatiquement, car ce navigateur ne dispose pas de votre lien personnel de gestion. Ouvrez ce lien pour vérifier le statut en toute sécurité."
+  ],
+  [
+    "De btw-vermelding en het tarief moeten overeenkomen met jouw fiscale situatie. Factuurnummers worden pas uitgegeven als je een factuur handmatig opstelt.",
+    "The VAT wording and rate must match your tax status. Invoice numbers are assigned only when you manually create an invoice.",
+    "La mention et le taux de TVA doivent correspondre à votre situation fiscale. Les numéros de facture ne sont attribués que lorsque vous créez une facture manuellement."
+  ],
+  [
+    "Dit is een voorbeeldweergave. Er wordt niets aangevraagd of betaald vanaf deze pagina.",
+    "This is a preview. No requests or payments are made from this page.",
+    "Ceci est un aperçu. Aucune demande ni aucun paiement ne sont effectués depuis cette page."
+  ],
+  [
+    "E-mails opnieuw proberen",
+    "Retry failed emails",
+    "Réessayer l’envoi des e-mails"
+  ],
+  [
+    "E-mailwachtrij",
+    "Email queue",
+    "File d’envoi des e-mails"
+  ],
+  [
+    "EVENEMENTENKALENDER",
+    "EVENTS CALENDAR",
+    "AGENDA"
+  ],
+  [
+    "Eén bedrijfsvermelding · meerdere advertentiemogelijkheden.",
+    "One business listing · several advertising options.",
+    "Une fiche d’entreprise · plusieurs possibilités publicitaires."
+  ],
+  [
+    "Facturen beheer je los van de betaalmethode. Alleen wanneer jij per aanvraag op factuur opstellen klikt, krijgt die een opeenvolgend factuurnummer en wordt de factuur per e-mail aangeboden.",
+    "Invoices are managed separately from payment methods. A sequential invoice number is assigned and an invoice email prepared only when you choose to create an invoice for a request.",
+    "Les factures sont gérées indépendamment du mode de paiement. Un numéro de facture séquentiel est attribué et un e-mail de facturation est préparé uniquement lorsque vous choisissez de créer une facture pour une demande."
+  ],
+  [
+    "Facturen en advertentieaanvragen",
+    "Invoices and advertising requests",
+    "Factures et demandes publicitaires"
+  ],
+  [
+    "Facturen staan los van de betaalmethode. Je kiest per aanvraag wanneer je een factuur opstelt en verstuurt.",
+    "Invoicing is separate from the payment method. For each request, you decide when to create and send an invoice.",
+    "La facturation est indépendante du mode de paiement. Pour chaque demande, vous choisissez quand créer et envoyer la facture."
+  ],
+  [
+    "Factuur opstellen en versturen",
+    "Create and send invoice",
+    "Créer et envoyer la facture"
+  ],
+  [
+    "Factuurgegevens Côte de Duras",
+    "Côte de Duras invoicing details",
+    "Coordonnées de facturation de Côte de Duras"
+  ],
+  [
+    "Factuurinstellingen aanpassen",
+    "Edit invoice settings",
+    "Modifier les paramètres de facturation"
+  ],
+  [
+    "Factuurinstellingen opslaan",
+    "Save invoice settings",
+    "Enregistrer les paramètres de facturation"
+  ],
+  [
+    "Factuurinstellingen zijn opgeslagen.",
+    "Invoice settings have been saved.",
+    "Les paramètres de facturation ont été enregistrés."
+  ],
+  [
+    "Factuurlijst en advertentieaanvragen",
+    "Invoice list and advertising requests",
+    "Liste des factures et demandes publicitaires"
+  ],
+  [
+    "Frans intracommunautair btw-nummer (FR + 11 cijfers)",
+    "French intra-community VAT number (FR + 11 digits)",
+    "Numéro de TVA intracommunautaire français (FR + 11 chiffres)"
+  ],
+  [
+    "GEMEENTEGIDS",
+    "LOCAL DIRECTORY",
+    "GUIDE LOCAL"
+  ],
+  [
+    "Geef jouw bedrijf",
+    "Give your business",
+    "Offrez à votre entreprise"
+  ],
+  [
+    "Gefactureerd:",
+    "Invoiced:",
+    "Facturé :"
+  ],
+  [
+    "Goedkeuren",
+    "Approve",
+    "Approuver"
+  ],
+  [
+    "Helder voor de bezoeker",
+    "Clear for visitors",
+    "Clair pour les visiteurs"
+  ],
+  [
+    "Het nummer wordt gecontroleerd voordat het wordt opgeslagen.",
+    "The number is checked before it is saved.",
+    "Le numéro est vérifié avant d’être enregistré."
+  ],
+  [
+    "Ik bevestig dat de in de site getoonde advertentieprijzen inclusief btw zijn; deze bedragen vormen het factuurtotaal.",
+    "I confirm that the advertising prices shown on the website include VAT and represent the total amount invoiced.",
+    "Je confirme que les tarifs publicitaires affichés sur le site sont TTC et correspondent au montant total facturé."
+  ],
+  [
+    "Je betaling wordt gecontroleerd",
+    "Checking your payment",
+    "Vérification de votre paiement"
+  ],
+  [
+    "Je betaling wordt nog verwerkt",
+    "Your payment is still being processed",
+    "Votre paiement est en cours de traitement"
+  ],
+  [
+    "Je gaat verder met je persoonlijke beheerlink. Heb je nog geen beheerlink? Vraag dan eerst beheer aan. Na goedkeuring kun je deze keuze in één keer via Mollie betalen. We controleren de beschikbaarheid voordat je betaalt.",
+    "Continue with your personal management link. If you do not have one yet, first request access to manage your listing. After approval, you can pay for this selection in one payment through Mollie. Availability is checked before you pay.",
+    "Poursuivez avec votre lien personnel de gestion. Si vous n’en avez pas encore, demandez d’abord l’accès à la gestion de votre fiche. Après validation, vous pourrez régler cette sélection en une seule fois via Mollie. La disponibilité est vérifiée avant le paiement."
+  ],
+  [
+    "Je kiest per advertentieaanvraag of en wanneer je de factuur opstelt.",
+    "For each advertising request, you decide whether and when to create an invoice.",
+    "Pour chaque demande publicitaire, vous choisissez si et quand créer une facture."
+  ],
+  [
+    "Je kunt alle drie de advertentievormen combineren voor dezelfde vermelding. Vink je gewenste vormen aan en betaal het totaal in één keer via Mollie. Je vermelding blijft ook in de normale resultaten staan; actieve vetomrande vermeldingen komen bovenaan de zoekresultaten.",
+    "You can combine all three advertising formats for the same listing. Select your preferred formats and pay the total in one payment through Mollie. Your listing also remains in the standard results; active listings with a bold border appear at the top of search results.",
+    "Vous pouvez combiner les trois formats publicitaires pour une même fiche. Cochez les formats souhaités et réglez le total en une seule fois via Mollie. Votre fiche reste également dans les résultats habituels ; les annonces actives avec une bordure renforcée apparaissent en tête des résultats."
+  ],
+  [
+    "Kies daarna je bedrijf",
+    "Then choose your business",
+    "Sélectionnez ensuite votre entreprise"
+  ],
+  [
+    "Kies eerst je bestaande vermelding in de gemeentegids.",
+    "First choose your existing listing in the local directory.",
+    "Sélectionnez d’abord votre fiche existante dans le guide local."
+  ],
+  [
+    "Kies je advertentievormen",
+    "Choose your advertising formats",
+    "Choisissez vos formats publicitaires"
+  ],
+  [
+    "Kies je bedrijf →",
+    "Choose your business →",
+    "Choisir votre entreprise →"
+  ],
+  [
+    "Kies één of meer advertentievormen",
+    "Choose one or more advertising formats",
+    "Choisissez un ou plusieurs formats publicitaires"
+  ],
+  [
+    "Kopiëren, bewaren en een e-mailconcept zijn beschikbaar. Een e-mailconcept wordt niet automatisch verstuurd. Deel de link alleen met de gecontroleerde eigenaar.",
+    "You can copy or save the link, or prepare an email draft. Drafts are not sent automatically. Share this link only with the verified owner.",
+    "Vous pouvez copier ou enregistrer le lien, ou préparer un brouillon d’e-mail. Les brouillons ne sont pas envoyés automatiquement. Partagez ce lien uniquement avec le propriétaire dont l’identité a été vérifiée."
+  ],
+  [
+    "Lokale ondernemers en activiteiten, zichtbaar in de agenda en gemeentegids.",
+    "Local businesses and activities featured in the calendar and local directory.",
+    "Entreprises et activités locales à découvrir dans l’agenda et le guide local."
+  ],
+  [
+    "Lokale partners · uitgelicht",
+    "Featured local partners",
+    "Partenaires locaux à découvrir"
+  ],
+  [
+    "Meer klanten bereiken",
+    "Reach more customers",
+    "Touchez plus de clients"
+  ],
+  [
+    "Mijn vermelding openen",
+    "Open my listing",
+    "Ouvrir mon annonce"
+  ],
+  [
+    "Mollie heeft de betaling nog niet bevestigd. Je aanvraag blijft bewaard; controleer de betaalstatus zo opnieuw.",
+    "Mollie has not confirmed the payment yet. Your request has been saved; check the payment status again shortly.",
+    "Mollie n’a pas encore confirmé le paiement. Votre demande a été enregistrée ; vérifiez à nouveau le statut du paiement dans quelques instants."
+  ],
+  [
+    "Mollie-betaalstatus en facturen worden apart beheerd. Testaanvragen kun je verwijderen; uitgegeven facturen blijven bewaard.",
+    "Mollie payment statuses and invoices are managed separately. Test requests can be deleted; issued invoices are retained.",
+    "Les statuts de paiement Mollie et les factures sont gérés séparément. Les demandes de test peuvent être supprimées ; les factures émises sont conservées."
+  ],
+  [
+    "Netto",
+    "Net amount",
+    "Montant HT"
+  ],
+  [
+    "Nog zonder factuur",
+    "Not yet invoiced",
+    "Pas encore facturé"
+  ],
+  [
+    "Ontdek deze vermelding",
+    "Explore this listing",
+    "Découvrir cette annonce"
+  ],
+  [
+    "Ontdek wie de streek bijzonder maakt",
+    "Meet the people who make this area special",
+    "Découvrez ceux qui font vivre la région"
+  ],
+  [
+    "Open de gemeentegids om een echte bedrijfsvermelding te kiezen.",
+    "Open the local directory to select an existing business listing.",
+    "Ouvrez le guide local pour sélectionner la fiche d’une entreprise existante."
+  ],
+  [
+    "Open factuuroverzicht",
+    "Open invoice overview",
+    "Ouvrir la liste des factures"
+  ],
+  [
+    "Previewmodus: factuurmails gaan uitsluitend naar het eigen ingestelde mailboxadres.",
+    "Preview mode: invoice emails are sent only to the configured internal email address.",
+    "Mode aperçu : les e-mails de facturation sont envoyés uniquement à l’adresse interne configurée."
+  ],
+  [
+    "Status",
+    "Status",
+    "Statut"
+  ],
+  [
+    "Testaanvraag uit lijst verwijderen",
+    "Remove test request from the list",
+    "Retirer la demande de test de la liste"
+  ],
+  [
+    "Testaanvragen",
+    "Test requests",
+    "Demandes de test"
+  ],
+  [
+    "Totaal gefactureerd",
+    "Total invoiced",
+    "Total facturé"
+  ],
+  [
+    "Uitgelichte vermeldingen laden…",
+    "Loading featured listings…",
+    "Chargement des annonces à la une…"
+  ],
+  [
+    "Uitgesloten van de factuurteller",
+    "Excluded from invoice totals",
+    "Exclus du décompte des factures"
+  ],
+  [
+    "Vink één, twee of drie advertentievormen aan. Bekijk het voorbeeld en het gezamenlijke bedrag.",
+    "Select one, two or three advertising formats. Review the preview and the combined price.",
+    "Cochez un, deux ou trois formats publicitaires. Consultez l’aperçu et le montant total."
+  ],
+  [
+    "Voorbeeld van een aparte advertentie in de rechterkolom.",
+    "Example of a separate advertisement in the right-hand column.",
+    "Exemple de publicité distincte dans la colonne de droite."
+  ],
+  [
+    "Voorbeeld van een lokale bedrijfsvermelding.",
+    "Example of a local business listing.",
+    "Exemple de fiche d’une entreprise locale."
+  ],
+  [
+    "Voorbeeld voor lokale ondernemers",
+    "Preview for local businesses",
+    "Aperçu pour les entreprises locales"
+  ],
+  [
+    "Voorbeeld · Uitgelichte vermelding",
+    "Example · Featured listing",
+    "Exemple · Annonce à la une"
+  ],
+  [
+    "Voorbeeldweergave · geen echte aanbieder",
+    "Preview · fictional business",
+    "Aperçu · entreprise fictive"
+  ],
+  [
+    "Vrijgesteld van btw",
+    "VAT exempt",
+    "Exonéré de TVA"
+  ],
+  [
+    "We controleren je betaling rechtstreeks bij Mollie. Dit kan een paar seconden duren.",
+    "We are checking your payment directly with Mollie. This may take a few seconds.",
+    "Nous vérifions votre paiement directement auprès de Mollie. Cela peut prendre quelques secondes."
+  ],
+  [
+    "We konden de betaalde advertentieaanvraag niet aan deze vermelding koppelen. Open je persoonlijke beheerlink om de status te bekijken.",
+    "We could not link the paid advertising request to this listing. Open your personal management link to check its status.",
+    "Nous n’avons pas pu associer la demande publicitaire payée à cette annonce. Ouvrez votre lien personnel de gestion pour consulter son statut."
+  ],
+  [
+    "We kunnen de status op dit moment niet ophalen. Probeer het opnieuw via je persoonlijke beheerlink; je bestelling blijft bewaard.",
+    "We cannot retrieve the status right now. Try again using your personal management link; your order has been saved.",
+    "Nous ne pouvons pas consulter le statut pour le moment. Réessayez à l’aide de votre lien personnel de gestion ; votre commande a été enregistrée."
+  ],
+  [
+    "Wettelijke vrijstellingsvermelding",
+    "Statutory VAT exemption wording",
+    "Mention légale d’exonération de TVA"
+  ],
+  [
+    "Zie direct waar een vermelding opvalt.",
+    "See exactly where a listing stands out.",
+    "Voyez immédiatement où votre annonce sera mise en valeur."
+  ],
+  [
+    "Zo ziet een advertentie eruit.",
+    "This is how your advertisement will look.",
+    "Voici à quoi ressemble une publicité."
+  ],
+  [
+    "Zoek kinésithérapeutes op Doctolib",
+    "Find physiotherapists on Doctolib",
+    "Rechercher un kinésithérapeute sur Doctolib"
+  ],
+  [
+    "Zoek psychologues op Doctolib",
+    "Find psychologists on Doctolib",
+    "Rechercher un psychologue sur Doctolib"
+  ],
+  [
+    "aanvragen",
+    "requests",
+    "demandes"
+  ],
+  [
+    "facturen",
+    "invoices",
+    "factures"
+  ],
+  [
+    "kun je meteen één, twee of alle drie de advertentievormen combineren. Je ziet vooraf je eigen voorbeelden en één betaaloverzicht. Daarna vul je de evenement- en factuurgegevens in en gebruik je",
+    "you can combine one, two or all three advertising forms immediately. You will see your own examples and one payment statement in advance. Then fill in the event and invoice details and use your",
+    "vous pouvez combiner un, deux ou les trois formats publicitaires immédiatement. Vous verrez vos propres exemples et un relevé de paiement à l'avance. Ensuite, remplissez les détails de l'événement et de la facture et utilisez votre"
+  ],
+  [
+    "meer zichtbaarheid in",
+    "greater visibility in",
+    "plus de visibilité à"
+  ],
+  [
+    "mislukt",
+    "failed",
+    "en échec"
+  ],
+  [
+    "uitgegeven facturen",
+    "invoices issued",
+    "factures émises"
+  ],
+  [
+    "· Betaalstatus (Mollie):",
+    "· Payment status (Mollie):",
+    "· Statut du paiement (Mollie) :"
+  ],
+  [
+    "· Factuur:",
+    "· Invoice:",
+    "· Facture :"
+  ],
+  [
+    "· btw",
+    "· VAT",
+    "· TVA"
+  ],
+  [
+    "· e-mail:",
+    "· email:",
+    "· e-mail :"
+  ]
+]

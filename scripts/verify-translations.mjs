@@ -9,3 +9,8 @@ for(const locale of ['nl','en','fr']){
  console.log(`${locale}: ${keys.length} public texts covered`);
 }
 for(const locale of ['en','fr'])if(report.ui?.[locale]?.missing!==0)throw Error(`${locale}: interface translation coverage is incomplete.`);
+// Hand-reviewed corrections must stay attached to existing source identities.
+const reviewedDutch=JSON.parse(fs.readFileSync(new URL('../lib/translations/reviewed-public-nl.json',import.meta.url),'utf8'));
+const indexedKeys=new Set(keys);
+for(const [key,value]of Object.entries(reviewedDutch))if(!indexedKeys.has(key)||typeof value!=='string'||!value.trim())throw Error(`Invalid reviewed Dutch content: ${key}`);
+console.log(`nl: ${Object.keys(reviewedDutch).length} reviewed public-content corrections`);

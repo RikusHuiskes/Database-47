@@ -56,7 +56,7 @@ export function createTranslator(locale:Locale,dictionary:Dictionary){
  const folded=new Map(Object.entries(dictionary).map(([key,value])=>[key.toLocaleLowerCase('nl'),value]));
  const lookup=(source:string):string|undefined=>{
   const key=normalizeMessage(source),exact=Object.hasOwn(dictionary,key),value=exact?dictionary[key]:folded.get(key.toLocaleLowerCase('nl'));
-  if(value===undefined)return undefined;
+  if(typeof value!=='string'||!value.trim())return undefined;
   if(value.toLocaleLowerCase('nl')===key.toLocaleLowerCase('nl'))return source;
   const text=!exact&&key===key.toLocaleLowerCase('nl')&&!/^[A-Z]{2}/.test(value)?value.charAt(0).toLocaleLowerCase(locale)+value.slice(1):value;
   return source.slice(0,source.length-source.trimStart().length)+text+source.slice(source.trimEnd().length);
