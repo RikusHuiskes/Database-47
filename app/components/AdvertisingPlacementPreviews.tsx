@@ -1,10 +1,11 @@
 "use client";
-import {T} from '../i18n/Language';
+import {T,useLanguage} from '../i18n/Language';
 import type {AdvertisingType} from '../../lib/advertising';
 import s from './advertising-placement-previews.module.css';
 type Props={value:AdvertisingType[];title:string;city:string;category:string;image:string;description:string};
 export default function AdvertisingPlacementPreviews({value,title,city,category,image,description}:Props){
- const name=title.trim()||'Côte de Duras · voorbeeld',place=city.trim()||'Duras & omgeving',rubric=category||'Restaurants & Gastronomie';
+ const {t}=useLanguage();
+ const name=title.trim()||t('Côte de Duras · voorbeeld'),place=city.trim()||t('Duras & omgeving'),rubric=category||'Restaurants & Gastronomie';
  const photo=/^(blob:|https?:\/\/)/i.test(image)?image:'/cote-de-duras-logo.webp';
  const titles={highlight:'Vetomrand: bovenaan de zoekresultaten',category:'Categorieadvertentie: bij jouw categorie',homepage:'Homepageadvertentie: op de startpagina'};
  function ownCard(highlight=false){return <div className={s.listCard+' '+(highlight?s.highlight:'')} data-preview-listing={highlight?'highlight':'ordinary'}>{highlight&&<b className={s.adBanner}><T>Advertentie · Uitgelichte vermelding</T></b>}<div className={s.listCopy}><img src={photo} alt=""/><div><small><T>{rubric}</T> · {place}</small><strong>{name}</strong><p><T>{description||'Bekijk alle informatie over deze vermelding.'}</T></p></div></div></div>;}
