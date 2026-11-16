@@ -17,3 +17,10 @@ export function isChristmasMarket(event:{title?:string|null}) {
   if(/\b(?:courses?|randonnee|nordique|pedestre)\b/.test(title)&&!/(?:^|\s)marchés?(?=\s)/i.test(raw))return false;
   return /marche(?:s)?\b.{0,60}\bnoel|christmas\s+market|kerstmarkt|weihnachtsmarkt/.test(title);
 }
+
+/** Unknown distances go last; dates break ties at the same distance. */
+export function nearestMarketsFirst(a:{distance_km?:number|null;start_at:string},b:{distance_km?:number|null;start_at:string}) {
+ const first=Number.isFinite(a.distance_km)?a.distance_km!:Infinity;
+ const second=Number.isFinite(b.distance_km)?b.distance_km!:Infinity;
+ return (first===second?0:first-second)||a.start_at.localeCompare(b.start_at);
+}
