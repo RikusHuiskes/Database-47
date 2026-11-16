@@ -1,6 +1,6 @@
-export const SEARCH_RADIUS_OPTIONS = [5, 10, 25, 50] as const;
+export const SEARCH_RADIUS_OPTIONS = [10, 25, 50] as const;
 export type SearchRadiusKm = (typeof SEARCH_RADIUS_OPTIONS)[number];
-export const DEFAULT_SEARCH_RADIUS_KM: SearchRadiusKm = 5;
+export const DEFAULT_SEARCH_RADIUS_KM: SearchRadiusKm = 10;
 
 export type EventDateRange = { start: string; end: string };
 const frenchCalendar = new Intl.DateTimeFormat('en-CA', {
