@@ -1,3 +1,4 @@
+import {campaignPreviewRead} from '../../../lib/campaign-preview-read';
 import {decorateMunicipalDirectory} from "../../../lib/municipal-advertising-server";
 import {SHOP_TYPES} from "../../../lib/municipal-shops";
 import { NextRequest, NextResponse } from "next/server";
@@ -841,6 +842,7 @@ function mapOfficialLibrary(row: PublicLibraryRow, city: string, index: number) 
 }
 
 export async function GET(request: NextRequest) {
+  if(process.env.VERCEL_ENV==='preview'&&!process.env.NEXT_PUBLIC_SUPABASE_URL){const preview=await campaignPreviewRead(request,'municipality-services');if(preview)return preview;}
   const params = request.nextUrl.searchParams;
   const city = params.get("city")?.trim() ?? "";
   const suppliedCodeInsee = params.get("codeInsee")?.trim() ?? "";

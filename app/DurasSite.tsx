@@ -1,4 +1,5 @@
 "use client";
+import discovery from './components/local-discovery.module.css';
 import QuickDateFilters from './components/QuickDateFilters';
 import {CHRISTMAS_CATEGORY} from '../lib/event-period';
 import areaCatalog from "../lib/data/area-catalog.json";
@@ -344,8 +345,12 @@ function sourceLabel(value?: string | null): string {
   }
 }
 
-export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false,campaignPreview=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean;campaignPreview?:boolean}) {
+export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false,campaignPreview=false,discoveryPreview=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean;campaignPreview?:boolean;discoveryPreview?:boolean}) {
   const {locale,t}=useLanguage();
+  const [discoveryMode,setDiscoveryMode]=useState<'events'|'food'|'shops'|'practical'|'all'>('events');
+  const guideRequest=useRef(0);
+  const discoveryWords=locale==='nl'?{title:'Ontdek Duras en omgeving',intro:'Een uitje, een goed adres of praktische hulp. Alles voor jouw bezoek, op één plek.',place:'Jouw plaats',events:'Wat is er te doen?',guide:'Wat zoek je in de buurt?',all:'Alles',food:'Eten & drinken',shops:'Winkelen',practical:'Praktisch',local:'Maak er een gezellig dagje van',back:'Evenementen',test:'TESTVERSIE · Agenda en gemeentegids samen'}:locale==='en'?{title:'Discover Duras and the surrounding area',intro:'An outing, a great local address or practical help. Plan your visit in one place.',place:'Your town',events:'What’s on?',guide:'What’s nearby?',all:'Everything',food:'Eat & drink',shops:'Shopping',practical:'Practical',local:'Make a day of it',back:'Events',test:'PREVIEW · Calendar and local guide together'}:{title:'Découvrez Duras et ses environs',intro:'Une sortie, une bonne adresse ou un service utile. Tout pour préparer votre visite, au même endroit.',place:'Votre commune',events:'Que faire ?',guide:'Que trouver à proximité ?',all:'Tout',food:'Manger & boire',shops:'Commerces',practical:'Pratique',local:'Profitez de votre journée',back:'Événements',test:'APERÇU · Agenda et guide local réunis'};
+
   const [localAreas, setLocalAreas] = useState<LocalAreaOption[]>(areaCatalog.areas);
   const [municipalityInView,setMunicipalityInView]=useState(false);
   useEffect(()=>{const node=document.getElementById('gemeenten');if(!node)return;const observer=new IntersectionObserver(entries=>setMunicipalityInView(entries[0]?.isIntersecting||false));observer.observe(node);return()=>observer.disconnect();},[]);
@@ -753,10 +758,12 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
     locationRequest.current++;setLocating(false);setLocationNotice('');
     setVisitorLocation(null);
     setSelectedAreaId(areaId);
+    if(discoveryPreview)setMunicipalityAreaId(areaId);
   }
 
-  async function findMunicipalityServices(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function findMunicipalityServices(event?: {preventDefault:()=>void}) {
+    event?.preventDefault();
+    const request=++guideRequest.current;
     const area = areaOptions.find((candidate) => candidate.id === municipalityAreaId);
     setMunicipalityServicesError("");
     setMunicipalityServiceInfo(null);
@@ -779,11 +786,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       const response = await fetch(`/api/municipality-services?${params.toString()}`, { cache: "no-store" });
       const result = await readApiJson<MunicipalityServiceResponse>(response);
       if (!response.ok) throw new Error(result.error ?? "De gegevens konden niet worden opgehaald.");
-      setMunicipalityServiceInfo(result);
+      if(request===guideRequest.current)setMunicipalityServiceInfo(result);
     } catch (cause) {
-      setMunicipalityServicesError(cause instanceof Error ? cause.message : "De gemeentelijke informatie kon niet worden opgehaald.");
+      if(request===guideRequest.current)setMunicipalityServicesError(cause instanceof Error ? cause.message : "De gemeentelijke informatie kon niet worden opgehaald.");
     } finally {
-      setMunicipalityServicesLoading(false);
+      if(request===guideRequest.current)setMunicipalityServicesLoading(false);
     }
   }
 
@@ -2010,179 +2017,47 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       <T>{submissionNotice && <p role="status" style={{ padding: 12, background: "#ecfdf5", color: "#065f46", borderRadius: 8 }}><T>{submissionNotice}</T></p>}</T>
 
 </>;
-  if(newListingOnly)return <NewEventExperience title={title||submissionPayment?.title||''} city={cityChoice==='__other__'?customCity:cityChoice} category={categories.find(item=>item.id===categoryId)?.name||''}><T>{listingContent}</T></NewEventExperience>;
-
-  return (
-    <main className="visitor-site">
-      <header className="site-header">
-        <div className="site-nav">
-          <A><a className="brand-lockup" href="#top" aria-label="Côte de Duras, naar de startpagina">
-            <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} decoding="async" /></A></span>
-            <span className="brand-name"><strong><T>{"CÔTE DE DURAS"}</T></strong></span>
-          </a></A>
-          <a className="my-listing-link" href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T><span aria-hidden="true"><T>{"→"}</T></span></a>
-          <A><nav className="primary-nav" aria-label="Hoofdnavigatie">
-            <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
-            <a href="#agenda"><T>{"Agenda"}</T></a>
-            <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
-            <a href="#gemeenten"><T>{"Gemeente informatie"}</T></a>
-            <a href="/handleiding"><T>{"Handleiding"}</T></a>
-          </nav></A>
-        </div>
-        <div className="hero-grid" id="top">
-          <div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>
-          <div className="hero-shade" aria-hidden="true" />
-          <div className="hero-copy">
-            <p className="hero-kicker"><span aria-hidden="true" /><T>{" Leven, beleven en ontdekken in het zuidwesten"}</T></p>
-            <h1><T>{"Côte de Duras"}</T></h1>
-            <p className="hero-intro"><T>{"Evenementen en informatie voor elke dag binnen een straal van 50 kilometer"}</T></p>
-          </div>
-        </div>
-      </header>
-
-      <aside className="christmas-campaign-home" style={{maxWidth:1200,margin:'20px auto',padding:'26px 30px',background:'linear-gradient(120deg,#193f33,#315f45)',borderRadius:14,color:'#fff8e8',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap'}}><div><p style={{margin:'0 0 7px',fontSize:12,letterSpacing:2,color:'#ead09b'}}>✦ {locale==='nl'?'KERST ROND DURAS':locale==='en'?'CHRISTMAS AROUND DURAS':'NOËL AUTOUR DE DURAS'}</p><h2 style={{margin:'0 0 9px',fontFamily:'Georgia,serif',fontWeight:400,fontSize:30}}>{locale==='nl'?'Ontdek de mooiste kerstmarkten':locale==='en'?'Discover the Christmas markets':'Découvrez les marchés de Noël'}</h2><p style={{margin:0,fontSize:14,lineHeight:1.7}}>{locale==='nl'?'Van dichtbij Duras tot 50 km verder. Kies je datum en plan je uitje.':locale==='en'?'From Duras to 50 km away. Choose your dates and plan your outing.':'De Duras aux alentours, dans un rayon de 50 km. Choisissez vos dates et préparez votre sortie.'}</p></div><a href="/marches-de-noel" style={{background:'#fff4dc',padding:'14px 20px',borderRadius:7,color:'#214e3e',fontWeight:700,textDecoration:'none',fontSize:14}}>{locale==='nl'?'Bekijk de kerstmarkten':locale==='en'?'Explore the markets':'Voir les marchés'} →</a></aside>
-      {campaignPreview&&<aside style={{maxWidth:1200,margin:'16px auto',padding:16,background:'#fff4dc',borderRadius:12}}><a href="/campagnes/kerstmarkten" style={{color:'#244a3c',fontWeight:700}}>✦ Marchés de Noël · Bekijk de campagne / Voir la campagne →</a></aside>}
-
-      <section id="agenda" className="search-panel agenda-search-panel" aria-labelledby="nearby-heading">
-        <div className="search-heading">
-          <div>
-            <p className="section-kicker"><T>{"Agenda voor Duras en omgeving"}</T></p>
-            <h2 id="nearby-heading"><T>{"Vind jouw volgende uitje"}</T></h2>
-            <p><T>{"Zoek eenvoudig op datum, afstand, plaats en categorie."}</T></p>
-          </div>
-          <div className="search-count" aria-live="polite"><strong><T>{nearbyLoading ? "…" : visibleNearbyEvents.length}</T></strong><span><T>{"activiteiten"}</T><br /><T>{"in de buurt"}</T></span></div>
-        </div>
-        <div className="search-controls search-controls-primary">
-          <label className="field-label" style={labelStyle}><T>{"Zoek binnen "}</T><select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
-              <T>{SEARCH_RADIUS_OPTIONS.map((radius) => <option key={radius} value={radius}><T>{radius}</T><T>{" kilometer"}</T></option>)}</T>
-            </select>
-          </label>
-          <button className="location-button" type="button" disabled={locating} onClick={useCurrentLocation}>
-            <span aria-hidden="true"><T>{"⌖"}</T></span> <T>{locating?'Locatie bepalen…':'Gebruik mijn locatie'}</T>
-          </button>
-        </div>
-        <QuickDateFilters start={eventDateFrom} end={eventDateTo} onChange={(start,end)=>{setEventDateFrom(start);setEventDateTo(end);}} />
-        <div className="search-controls search-date-controls">
-          <label className="field-label" style={labelStyle}><T>{"Begindatum"}</T>
-            <input type="date" style={inputStyle} value={eventDateFrom} onChange={event => setEventDateFrom(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
-          </label>
-          <label className="field-label" style={labelStyle}><T>{"Einddatum"}</T>
-            <input type="date" style={inputStyle} value={eventDateTo} min={eventDateFrom || undefined} onChange={event => setEventDateTo(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
-          </label>
-          <button className="location-reset-button date-reset-button" type="button" disabled={!eventDateFrom && !eventDateTo} onClick={() => {setEventDateFrom('');setEventDateTo('');}}><T>{"Datums wissen"}</T></button>
-        </div>
-        <p id="event-date-help" className="date-filter-help"><T>{"Eén datum zoekt op die dag. Twee datums zoeken binnen die periode, inclusief begin- en einddag. Zonder datums zie je ook vaste vermeldingen."}</T></p>
-        {dateFilter.error && <p className="date-filter-error" role="alert"><T>{dateFilter.error}</T></p>}
-        <div className="search-controls search-controls-secondary">
-          <label className="field-label" style={labelStyle}><T>{"Plaats "}</T><select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
-              <T>{renderAreaOptions()}</T>
-            </select>
-          </label>
-          <label className="field-label" style={labelStyle}><T>{"Soort activiteit "}</T><select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-              <option value="all"><T>{"Alle soorten"}</T></option>
-              <T>{[...categories,...(campaignPreview&&!categories.some(category=>category.slug===CHRISTMAS_CATEGORY.slug)?[{...CHRISTMAS_CATEGORY,name:locale==='nl'?'Kerstmarkten':locale==='en'?'Christmas markets':CHRISTMAS_CATEGORY.name}]:[])].sort((a,b)=>t(a.name??a.slug??"").localeCompare(t(b.name??b.slug??""),locale,{sensitivity:"base"})).map((category) => <option key={category.id} value={category.id}><T>{category.name ?? category.slug ?? "Activiteit"}</T></option>)}</T>
-            </select>
-          </label>
-          <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
-            <input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} /><T>{"Alleen gratis activiteiten "}</T></label>
-        </div>
-        <div className="results-summary" role="status" aria-live="polite">
-          <span className="results-indicator" aria-hidden="true" />
-          <strong><T>{nearbyLoading ? "We zoeken iets leuks voor je…" : visibleNearbyEvents.length===1?`${visibleNearbyEvents.length} activiteit gevonden`:`${visibleNearbyEvents.length} activiteiten gevonden`}</T></strong>
-          <T>{!nearbyLoading && <span><T>{"binnen "}</T><T>{radiusKm}</T><T>{" km van "}</T><T preserve={!deferredVisitorLocation}>{searchLabel}</T><T>{categoryFilter !== "all" || dateFilter.range || freeOnly ? " met je huidige filters" : ""}</T></span>}</T>
-          {dateFilter.range && <span className="results-date-range"><T>{"Periode: "}</T>{new Date(dateFilter.range.start+'T12:00:00').toLocaleDateString(intlLocale[locale])}{dateFilter.range.end!==dateFilter.range.start && <> – {new Date(dateFilter.range.end+'T12:00:00').toLocaleDateString(intlLocale[locale])}</>}</span>}
-        </div>
-        <T>{visitorLocation && <p className="location-note"><T>{"Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. "}</T><button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}><T>{"Zoek weer rond "}</T><T>{selectedArea?.name ?? "de gekozen plaats"}</T></button></p>}</T>
-        <T>{locationNotice&&<p className="location-fallback-note" role="status"><T>{locationNotice}</T></p>}</T>
-      </section>
-
-      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm||municipalityInView} previewSample={previewAdSamplesEnabled?{placement:categoryFilter==='all'?'homepage':'category',categoryName:categoryFilter==='all'?undefined:categories.find(category=>category.id===categoryFilter)?.name}:undefined} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
-
-      <A><section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
-        <T>{nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}><T>{nearbyError}</T></p>}</T>
-        <T>{!nearbyLoading && !nearbyError && !dateFilter.error && visibleNearbyEvents.length === 0 && <p className="empty-results"><T>{"Geen activiteiten gevonden voor deze combinatie van datum, plaats, afstand en categorie. Pas je filters aan of wis de datums om ook vaste vermeldingen te zien."}</T></p>}</T>
-        <T>{!nearbyLoading&&!nearbyError&&!dateFilter.error&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p><T>{"Bekijk een groter gebied of verwijder je zoekfilters."}</T></p><button type="button" onClick={()=>setRadiusKm(50)}><T>{"Zoek binnen 50 kilometer"}</T></button><button type="button" onClick={()=>{setCategoryFilter('all');setFreeOnly(false);}}><T>{"Toon alle soorten activiteiten"}</T></button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(DEFAULT_SEARCH_RADIUS_KM);setEventDateFrom('');setEventDateTo('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Bekijk de streek rond Duras"}</T></button></div>}</T>
-        <T>{locationlessCount > 0 && <p className="location-note"><T>{locationlessCount}</T><T>{" aankomende "}</T><T>{locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"}</T><T>{" nog geen herkenbare plaats en kan daarom niet op afstand worden getoond."}</T></p>}</T>
-
-        <A><div className="event-grid" aria-label="Aankomende activiteiten">
-          {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="highlight" placement="highlight" categoryName={categoryFilter==='all'?undefined:categories.find(category=>category.id===categoryFilter)?.name}/>}
-          <T>{displayedNearbyEvents.map((event) => (
-            <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard"} className={`activity-card${hasAdvertisingPlacement(event,"highlight") ? " activity-card-highlighted" : ""}`} key={event.id}>
-              <T>{hasAdvertisingPlacement(event,"highlight") && <div className="activity-highlight-banner"><T>{"Uitgelichte advertentie"}</T></div>}</T>
-              <div className="activity-media">
-                <A><button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
-                  <EventImage className="activity-image" src={event.image_url} />
-                </button></A>
-                <span className="distance-pill"><T>{event.distance_is_approximate ? "ca. " : ""}</T><T>{event.distance_km}</T><T>{" km"}</T></span>
-              </div>
-              <div className="activity-card-content">
-                <div className="activity-tags">
-                  <T>{categoryIdsForSelection(event.category_ids, categoryFilter).length ? <span className="category-pill"><T>{categoryIdsForSelection(event.category_ids, categoryFilter).map(id => categories.find(category => category.id === id)?.name).filter(Boolean).join(" · ")}</T></span> : null}</T>
-                  <T>{event.is_free && <span className="free-pill"><T>{"Gratis"}</T></span>}</T>
-                  <T>{hasAdvertisingPlacement(event,"highlight") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T>
-                  <T>{categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && hasAdvertisingPlacement(event,"category") && <span className="sponsored-label"><T>{"Categoriepartner"}</T></span>}</T>
-                </div>
-                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T preserve={event.is_directory_entry===true&&!event.title.startsWith("VOORBEELD")}>{event.title}</T></button></h3>
-                <p className="activity-date"><T>{formatDate(event.start_at)}</T><T>{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</T></p>
-                <p className="activity-place"><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</T></p>
-                <T>{(event.short_description || event.description) && <p className="activity-description"><T>{event.short_description || event.description}</T></p>}</T>
-                <div className="activity-links">
-                  {!hasActiveAdvertising(event)&&<a className="activity-link" href={'/adverteren?eventId='+event.id}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a>}
-                  <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T>{"Bekijk evenementdetails "}</T><span aria-hidden="true"><T>{"→"}</T></span></button>
-                  <T>{publicEventUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={publicEventUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
-                  <T>{publicEventUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={publicEventUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
-                </div>
-                <p className="external-link-note"><T>{"Externe pagina’s openen in een nieuw tabblad; deze agenda blijft open."}</T></p>
-              </div>
-            </article>
-          ))}</T>
-        </div></A>
-        <T>{displayedNearbyEvents.length < standardNearbyEvents.length && <button className="show-more-events" type="button" onClick={() => setVisibleEventCount((count) => Math.min(count + 18, standardNearbyEvents.length))}><T>{"Toon meer activiteiten ("}</T><T>{standardNearbyEvents.length - displayedNearbyEvents.length}</T><T>{" resterend)"}</T></button>}</T>
-        <div className="tip-invitation" id="tip-activiteit">
-          <div><p className="section-kicker"><T>{"Ken jij de streek?"}</T></p><strong><T>{"Staat jouw favoriete activiteit er nog niet bij?"}</T></strong><p><T>{"Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien."}</T></p><p><T>{"Al een vermelding ingestuurd? "}</T><a href="/mijn-vermelding"><T>{"Beheer je vermelding →"}</T></a></p></div>
-          <button className="button button-dark" type="button" onClick={openEventEntryForm} aria-controls="activity-tip-form"><T>{"Een nieuw evenement/vermelding"}</T><span aria-hidden="true"><T>{"→"}</T></span>
-          </button>
-        </div>
-      </section></A>
-
-      <A><section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
-        <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true"><T>{"▦"}</T></span><span><strong><T>{"Agenda"}</T></strong><small><T>{"Wat is er te doen?"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
-        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true"><T>{"⌖"}</T></span><span><strong><T>{"Gemeentegids"}</T></strong><small><T>{"Lokale diensten & adressen"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
-      </section></A>
 
 
-      <section className="featured-section" aria-labelledby="featured-heading">
-        <div className="content-heading"><div><p className="section-kicker"><T>{"Ideeën voor binnenkort"}</T></p><h2 id="featured-heading"><T>{"Binnenkort in de buurt"}</T></h2></div><a className="text-arrow-link" href="#agenda-resultaten"><T>{"Naar de agenda "}</T><span aria-hidden="true"><T>{"→"}</T></span></a></div>
-        <T>{featuredEvents.length > 0 ? <div className="featured-events-grid">
-          <T>{featuredEvents.map((event) => {
-            const date = formatCardDate(event.start_at);
-            return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={"standard"} className={`featured-event-card${hasAdvertisingPlacement(event,"homepage") ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
-              <A><button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
-                <EventImage src={event.image_url} />
-              </button></A>
-              <div className="featured-event-body"><span className="date-tile"><strong><T>{date.day}</T></strong><small><T>{date.month}</T></small></span><div><T>{hasAdvertisingPlacement(event,"homepage") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}><T preserve={event.is_directory_entry===true}>{event.title}</T></button></h3><p><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{event.city || event.venue_name || "Lot-et-Garonne"}</T></p></div></div>
-            </article>;
-          })}</T>
-        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true"><T>{"✦"}</T></span><div><strong><T>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</T></strong><p><T>{"Kies een gemeente of bekijk de agenda voor Duras en omgeving."}</T></p></div><a className="text-arrow-link" href="#agenda"><T>{"Ontdek de agenda "}</T><span aria-hidden="true"><T>{"→"}</T></span></a></div>}</T>
-      </section>
-
-
-
-      <section className="area-explorer municipality-info-panel" id="gemeenten" aria-labelledby="area-heading">
+  function chooseDiscovery(mode:typeof discoveryMode){
+    setDiscoveryMode(mode);setEventDateFrom('');setEventDateTo('');setFreeOnly(false);
+    if(mode==='food')setCategoryFilter(categories.find(c=>c.slug==='restaurants-gastronomie')?.id??'all');
+    else setCategoryFilter('all');
+    setMunicipalityAreaId(selectedAreaId);
+    setMunicipalityServiceType(mode==='shops'?'bakery':mode==='practical'?'parking':'all');
+  }
+  useEffect(()=>{
+    if(!discoveryPreview||!['shops','practical','all'].includes(discoveryMode))return;
+    void findMunicipalityServices();
+    return()=>{guideRequest.current++;};
+  },[discoveryPreview,discoveryMode,municipalityAreaId,municipalityServiceType]);
+  function discoverFromEvent(mode:typeof discoveryMode){
+    if(!selectedVisitorEvent)return;
+    const area=areaOptions.find(a=>normalizePlaceName(a.name)===normalizePlaceName(selectedVisitorEvent.city??''));
+    if(!area)return;
+    setSelectedVisitorEvent(null);window.history.replaceState(null,'','#agenda');
+    selectArea(area.id);setMunicipalityAreaId(area.id);setDiscoveryMode(mode);setEventDateFrom('');setEventDateTo('');setFreeOnly(false);
+    setCategoryFilter(mode==='food'?(categories.find(c=>c.slug==='restaurants-gastronomie')?.id??'all'):'all');
+    setMunicipalityServiceType(mode==='shops'?'bakery':'parking');
+    requestAnimationFrame(()=>document.getElementById('local-discovery')?.scrollIntoView({behavior:'smooth'}));
+  }
+  const municipalityPanel=(<section className="area-explorer municipality-info-panel" id="gemeenten" aria-labelledby="area-heading">
         <div className="municipality-landscape" aria-hidden="true">
           <A><img src="/duras-landschapskaart.webp" alt="" width={1536} height={1024} loading="lazy" decoding="async" /></A>
         </div>
         <div className="area-explorer-copy municipality-info-copy">
           <p className="section-kicker"><T>{"Gemeentegids Côte de Duras en omgeving"}</T></p>
-          <h2 id="area-heading"><T>{"Praktische informatie per gemeente."}</T></h2>
+          <h2 id="area-heading">{discoveryPreview?(discoveryMode==='shops'?discoveryWords.shops:discoveryWords.practical)+' · '+municipalityName:<T>{"Praktische informatie per gemeente."}</T>}</h2>
           <p><T>{"Kies een plaats en dienst voor contactgegevens, adressen en waar beschikbaar openingstijden. De lijst gebruikt de officiële Franse overheidsdirectory en actuele kaartgegevens."}</T></p>
         </div>
         <div className="municipality-directory">
           <p><a className="text-arrow-link" href="/gemeentegids/adverteren"><T>{"Voor ondernemers: bekijk adverteren in de gemeentegids →"}</T></a></p>
           <p><a className="text-arrow-link" href="/gemeentegids/aanmelden"><T>Bedrijf aanmelden in de gemeentegids →</T></a></p>
+          {discoveryPreview&&<div className={discovery.tabs}>{(discoveryMode==='shops'?['bakery','butcher','fashion','souvenirs','all']:['parking','charging','tourism','pharmacy','all']).map(type=><button type="button" key={type} aria-pressed={municipalityServiceType===type} onClick={()=>setMunicipalityServiceType(type as MunicipalityServiceType)}>{t(municipalityServiceOptions.find(option=>option.id===type)?.label??type)}</button>)}</div>}
           <form className="municipality-service-controls" onSubmit={findMunicipalityServices}>
             <label className="field-label"><T>{"Gemeente of dorp "}</T><select className="municipality-select" value={municipalityAreaId} onChange={(event) => {
                 setMunicipalityAreaId(event.target.value);
+                if(discoveryPreview)selectArea(event.target.value);
                 setMunicipalityServiceInfo(null);
                 setMunicipalitySearchComplete(false);
                 setMunicipalityServicesError("");
@@ -2288,7 +2163,178 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             </div><MunicipalPartners listings={municipalityServiceInfo.municipalPartners??[]} city={municipalityName} previewAdSamplesEnabled={previewAdSamplesEnabled} categoryName={municipalityServiceType==='all'?undefined:municipalityServiceLabel}/></div>
           )}</T>
         </div>
+      </section>);
+  if(newListingOnly)return <NewEventExperience title={title||submissionPayment?.title||''} city={cityChoice==='__other__'?customCity:cityChoice} category={categories.find(item=>item.id===categoryId)?.name||''}><T>{listingContent}</T></NewEventExperience>;
+  return (
+    <main className={`visitor-site ${discoveryPreview?discovery.root:''} ${discoveryPreview&&discoveryMode==='food'?discovery.food:''}`}>
+      <header className="site-header">
+        <div className="site-nav">
+          <A><a className="brand-lockup" href="#top" aria-label="Côte de Duras, naar de startpagina">
+            <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} decoding="async" /></A></span>
+            <span className="brand-name"><strong><T>{"CÔTE DE DURAS"}</T></strong></span>
+          </a></A>
+          <a className="my-listing-link" href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T><span aria-hidden="true"><T>{"→"}</T></span></a>
+          <A><nav className="primary-nav" aria-label="Hoofdnavigatie">
+            <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
+            <a href="#agenda"><T>{"Agenda"}</T></a>
+            <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
+            <a href="#gemeenten"><T>{"Gemeente informatie"}</T></a>
+            <a href="/handleiding"><T>{"Handleiding"}</T></a>
+          </nav></A>
+        </div>
+        <div className="hero-grid" id="top">
+          <div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>
+          <div className="hero-shade" aria-hidden="true" />
+          <div className="hero-copy">
+            <p className="hero-kicker"><span aria-hidden="true" /><T>{" Leven, beleven en ontdekken in het zuidwesten"}</T></p>
+            <h1><T>{"Côte de Duras"}</T></h1>
+            <p className="hero-intro"><T>{"Evenementen en informatie voor elke dag binnen een straal van 50 kilometer"}</T></p>
+          </div>
+        </div>
+      </header>
+
+      <aside className="christmas-campaign-home" style={{maxWidth:1200,margin:'20px auto',padding:'26px 30px',background:'linear-gradient(120deg,#193f33,#315f45)',borderRadius:14,color:'#fff8e8',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap'}}><div><p style={{margin:'0 0 7px',fontSize:12,letterSpacing:2,color:'#ead09b'}}>✦ {locale==='nl'?'KERST ROND DURAS':locale==='en'?'CHRISTMAS AROUND DURAS':'NOËL AUTOUR DE DURAS'}</p><h2 style={{margin:'0 0 9px',fontFamily:'Georgia,serif',fontWeight:400,fontSize:30}}>{locale==='nl'?'Ontdek de mooiste kerstmarkten':locale==='en'?'Discover the Christmas markets':'Découvrez les marchés de Noël'}</h2><p style={{margin:0,fontSize:14,lineHeight:1.7}}>{locale==='nl'?'Van dichtbij Duras tot 50 km verder. Kies je datum en plan je uitje.':locale==='en'?'From Duras to 50 km away. Choose your dates and plan your outing.':'De Duras aux alentours, dans un rayon de 50 km. Choisissez vos dates et préparez votre sortie.'}</p></div><a href="/marches-de-noel" style={{background:'#fff4dc',padding:'14px 20px',borderRadius:7,color:'#214e3e',fontWeight:700,textDecoration:'none',fontSize:14}}>{locale==='nl'?'Bekijk de kerstmarkten':locale==='en'?'Explore the markets':'Voir les marchés'} →</a></aside>
+      {campaignPreview&&<aside style={{maxWidth:1200,margin:'16px auto',padding:16,background:'#fff4dc',borderRadius:12}}><a href="/campagnes/kerstmarkten" style={{color:'#244a3c',fontWeight:700}}>✦ Marchés de Noël · Bekijk de campagne / Voir la campagne →</a></aside>}
+
+      {discoveryPreview&&<section id="local-discovery" className={discovery.hub}>
+        <p className={discovery.preview}>{discoveryWords.test}</p><p className={discovery.kicker}>CÔTE DE DURAS · {selectedArea?.name??'Duras'}</p>
+        <h2>{discoveryWords.title}</h2><p>{discoveryWords.intro}</p>
+        <label className={discovery.place}>{discoveryWords.place}<select value={selectedAreaId} onChange={e=>selectArea(e.target.value)}>{renderAreaOptions()}</select></label>
+        <div className={discovery.choices}><button type="button" aria-pressed={discoveryMode==='events'} onClick={()=>chooseDiscovery('events')}><span>◷</span>{discoveryWords.events}<small>{locale==='nl'?'Markten, concerten en activiteiten':locale==='en'?'Markets, concerts and activities':'Marchés, concerts et activités'}</small></button><button type="button" aria-pressed={['shops','practical','food'].includes(discoveryMode)} onClick={()=>chooseDiscovery('practical')}><span>⌖</span>{discoveryWords.guide}<small>{locale==='nl'?'Restaurants, winkels en voorzieningen':locale==='en'?'Food, shops and local services':'Restaurants, commerces et services'}</small></button></div>
+        <div className={discovery.tabs} role="group" aria-label={discoveryWords.title}>{(['all','events','food','shops','practical'] as const).map(mode=><button type="button" key={mode} aria-pressed={discoveryMode===mode} onClick={()=>chooseDiscovery(mode)}>{mode==='events'?discoveryWords.back:discoveryWords[mode]}</button>)}</div>
+        {discoveryMode==='food'&&<div className={discovery.tabs}>{['restaurants-gastronomie','cafes'].map(slug=><button type="button" key={slug} aria-pressed={categoryFilter===categories.find(c=>c.slug===slug)?.id} onClick={()=>setCategoryFilter(categories.find(c=>c.slug===slug)?.id??'all')}>{slug==='cafes'?'Cafés':locale==='nl'?'Restaurants':'Restaurants'}</button>)}</div>}
+        <p className={discovery.note}>{locale==='nl'?'Je gekozen plaats blijft behouden bij het wisselen.':locale==='en'?'Your selected town stays the same when you switch.':'Votre commune reste sélectionnée lorsque vous changez de rubrique.'}</p>
+      </section>}
+      <div hidden={discoveryPreview&&['shops','practical'].includes(discoveryMode)}>
+      <section id="agenda" className="search-panel agenda-search-panel" aria-labelledby="nearby-heading">
+        <div className="search-heading">
+          <div>
+            <p className="section-kicker"><T>{"Agenda voor Duras en omgeving"}</T></p>
+            <h2 id="nearby-heading">{discoveryPreview&&discoveryMode==='food'?discoveryWords.food:<T>{"Vind jouw volgende uitje"}</T>}</h2>
+            <p><T>{"Zoek eenvoudig op datum, afstand, plaats en categorie."}</T></p>
+          </div>
+          <div className="search-count" aria-live="polite"><strong><T>{nearbyLoading ? "…" : visibleNearbyEvents.length}</T></strong><span><T>{"activiteiten"}</T><br /><T>{"in de buurt"}</T></span></div>
+        </div>
+        <div className="search-controls search-controls-primary">
+          <label className="field-label" style={labelStyle}><T>{"Zoek binnen "}</T><select style={inputStyle} value={radiusKm} onChange={(event) => setRadiusKm(Number(event.target.value))}>
+              <T>{SEARCH_RADIUS_OPTIONS.map((radius) => <option key={radius} value={radius}><T>{radius}</T><T>{" kilometer"}</T></option>)}</T>
+            </select>
+          </label>
+          <button className="location-button" type="button" disabled={locating} onClick={useCurrentLocation}>
+            <span aria-hidden="true"><T>{"⌖"}</T></span> <T>{locating?'Locatie bepalen…':'Gebruik mijn locatie'}</T>
+          </button>
+        </div>
+        <QuickDateFilters start={eventDateFrom} end={eventDateTo} onChange={(start,end)=>{setEventDateFrom(start);setEventDateTo(end);}} />
+        <div className="search-controls search-date-controls">
+          <label className="field-label" style={labelStyle}><T>{"Begindatum"}</T>
+            <input type="date" style={inputStyle} value={eventDateFrom} onChange={event => setEventDateFrom(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
+          </label>
+          <label className="field-label" style={labelStyle}><T>{"Einddatum"}</T>
+            <input type="date" style={inputStyle} value={eventDateTo} min={eventDateFrom || undefined} onChange={event => setEventDateTo(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
+          </label>
+          <button className="location-reset-button date-reset-button" type="button" disabled={!eventDateFrom && !eventDateTo} onClick={() => {setEventDateFrom('');setEventDateTo('');}}><T>{"Datums wissen"}</T></button>
+        </div>
+        <p id="event-date-help" className="date-filter-help"><T>{"Eén datum zoekt op die dag. Twee datums zoeken binnen die periode, inclusief begin- en einddag. Zonder datums zie je ook vaste vermeldingen."}</T></p>
+        {dateFilter.error && <p className="date-filter-error" role="alert"><T>{dateFilter.error}</T></p>}
+        <div className="search-controls search-controls-secondary">
+          <label className="field-label" style={labelStyle}><T>{"Plaats "}</T><select style={inputStyle} value={selectedAreaId} onChange={(event) => selectArea(event.target.value)}>
+              <T>{renderAreaOptions()}</T>
+            </select>
+          </label>
+          <label className="field-label" style={labelStyle}><T>{"Soort activiteit "}</T><select style={inputStyle} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+              <option value="all"><T>{"Alle soorten"}</T></option>
+              <T>{[...categories,...(campaignPreview&&!categories.some(category=>category.slug===CHRISTMAS_CATEGORY.slug)?[{...CHRISTMAS_CATEGORY,name:locale==='nl'?'Kerstmarkten':locale==='en'?'Christmas markets':CHRISTMAS_CATEGORY.name}]:[])].sort((a,b)=>t(a.name??a.slug??"").localeCompare(t(b.name??b.slug??""),locale,{sensitivity:"base"})).map((category) => <option key={category.id} value={category.id}><T>{category.name ?? category.slug ?? "Activiteit"}</T></option>)}</T>
+            </select>
+          </label>
+          <label className="free-filter" style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 9, paddingBottom: 12 }}>
+            <input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} /><T>{"Alleen gratis activiteiten "}</T></label>
+        </div>
+        <div className="results-summary" role="status" aria-live="polite">
+          <span className="results-indicator" aria-hidden="true" />
+          <strong><T>{nearbyLoading ? "We zoeken iets leuks voor je…" : visibleNearbyEvents.length===1?`${visibleNearbyEvents.length} activiteit gevonden`:`${visibleNearbyEvents.length} activiteiten gevonden`}</T></strong>
+          <T>{!nearbyLoading && <span><T>{"binnen "}</T><T>{radiusKm}</T><T>{" km van "}</T><T preserve={!deferredVisitorLocation}>{searchLabel}</T><T>{categoryFilter !== "all" || dateFilter.range || freeOnly ? " met je huidige filters" : ""}</T></span>}</T>
+          {dateFilter.range && <span className="results-date-range"><T>{"Periode: "}</T>{new Date(dateFilter.range.start+'T12:00:00').toLocaleDateString(intlLocale[locale])}{dateFilter.range.end!==dateFilter.range.start && <> – {new Date(dateFilter.range.end+'T12:00:00').toLocaleDateString(intlLocale[locale])}</>}</span>}
+        </div>
+        <T>{visitorLocation && <p className="location-note"><T>{"Je zoekt rond je huidige locatie. Deze locatie wordt alleen voor deze zoekopdracht gebruikt. "}</T><button className="location-reset-button" type="button" onClick={() => setVisitorLocation(null)}><T>{"Zoek weer rond "}</T><T>{selectedArea?.name ?? "de gekozen plaats"}</T></button></p>}</T>
+        <T>{locationNotice&&<p className="location-fallback-note" role="status"><T>{locationNotice}</T></p>}</T>
       </section>
+
+      <FloatingPromotions key={categoryFilter} events={categoryFilter==='all'?homepagePromotionEvents:categoryPromotionEvents} title={categoryFilter==='all'?'Uitgelicht op de homepage':'Uitgelicht in '+(categories.find(category=>category.id===categoryFilter)?.name??'deze categorie')} headingId={categoryFilter==='all'?'homepage-promotion-heading':'category-promotion-heading'} suppressed={!!selectedVisitorEvent||showForm||municipalityInView} previewSample={previewAdSamplesEnabled?{placement:categoryFilter==='all'?'homepage':'category',categoryName:categoryFilter==='all'?undefined:categories.find(category=>category.id===categoryFilter)?.name}:undefined} onOpen={event=>openVisitorEvent(event,categoryFilter==='all'?'homepage':'category')}/>
+
+      <A><section id="agenda-resultaten" className="agenda-results-panel" aria-label="Agendaresultaten">
+        <T>{nearbyError && <p role="alert" style={{ padding: 12, background: "#fff1f2", color: "#9f1239", borderRadius: 8 }}><T>{nearbyError}</T></p>}</T>
+        <T>{!nearbyLoading && !nearbyError && !dateFilter.error && visibleNearbyEvents.length === 0 && <p className="empty-results"><T>{"Geen activiteiten gevonden voor deze combinatie van datum, plaats, afstand en categorie. Pas je filters aan of wis de datums om ook vaste vermeldingen te zien."}</T></p>}</T>
+        <T>{!nearbyLoading&&!nearbyError&&!dateFilter.error&&standardNearbyEvents.length===0&&<div className="empty-search-actions"><p><T>{"Bekijk een groter gebied of verwijder je zoekfilters."}</T></p><button type="button" onClick={()=>setRadiusKm(50)}><T>{"Zoek binnen 50 kilometer"}</T></button><button type="button" onClick={()=>{setCategoryFilter('all');setFreeOnly(false);}}><T>{"Toon alle soorten activiteiten"}</T></button><button type="button" onClick={()=>{selectArea('duras');setRadiusKm(DEFAULT_SEARCH_RADIUS_KM);setEventDateFrom('');setEventDateTo('');setCategoryFilter('all');setFreeOnly(false);}}><T>{"Bekijk de streek rond Duras"}</T></button></div>}</T>
+        <T>{locationlessCount > 0 && <p className="location-note"><T>{locationlessCount}</T><T>{" aankomende "}</T><T>{locationlessCount === 1 ? "activiteit heeft" : "activiteiten hebben"}</T><T>{" nog geen herkenbare plaats en kan daarom niet op afstand worden getoond."}</T></p>}</T>
+
+        <A><div className="event-grid" aria-label="Aankomende activiteiten">
+          {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="highlight" placement="highlight" categoryName={categoryFilter==='all'?undefined:categories.find(category=>category.id===categoryFilter)?.name}/>}
+          <T>{displayedNearbyEvents.map((event) => (
+            <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard"} className={`activity-card${hasAdvertisingPlacement(event,"highlight") ? " activity-card-highlighted" : ""}`} key={event.id}>
+              <T>{hasAdvertisingPlacement(event,"highlight") && <div className="activity-highlight-banner"><T>{"Uitgelichte advertentie"}</T></div>}</T>
+              {discoveryPreview&&<p className={discovery.cardType}>{event.is_directory_entry?(locale==='nl'?'Lokaal adres':locale==='en'?'Local address':'Adresse locale'):(locale==='nl'?'Evenement':locale==='en'?'Event':'Événement')}</p>}
+              <div className="activity-media">
+                <A><button className="activity-image-trigger" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")} aria-label={`Bekijk ${event.title}`}>
+                  <EventImage className="activity-image" src={event.image_url} />
+                </button></A>
+                <span className="distance-pill"><T>{event.distance_is_approximate ? "ca. " : ""}</T><T>{event.distance_km}</T><T>{" km"}</T></span>
+              </div>
+              <div className="activity-card-content">
+                <div className="activity-tags">
+                  <T>{categoryIdsForSelection(event.category_ids, categoryFilter).length ? <span className="category-pill"><T>{categoryIdsForSelection(event.category_ids, categoryFilter).map(id => categories.find(category => category.id === id)?.name).filter(Boolean).join(" · ")}</T></span> : null}</T>
+                  <T>{event.is_free && <span className="free-pill"><T>{"Gratis"}</T></span>}</T>
+                  <T>{hasAdvertisingPlacement(event,"highlight") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T>
+                  <T>{categoryFilter !== "all" && event.category_ids?.includes(categoryFilter) && hasAdvertisingPlacement(event,"category") && <span className="sponsored-label"><T>{"Categoriepartner"}</T></span>}</T>
+                </div>
+                <h3><button className="activity-title-button" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T preserve={event.is_directory_entry===true&&!event.title.startsWith("VOORBEELD")}>{event.title}</T></button></h3>
+                <p className="activity-date"><T>{formatDate(event.start_at)}</T><T>{event.end_at ? ` – ${formatDate(event.end_at)}` : ""}</T></p>
+                <p className="activity-place"><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{[event.venue_name, event.address, event.postcode, event.city].filter(Boolean).join(", ") || event.city}</T></p>
+                <T>{(event.short_description || event.description) && <p className="activity-description"><T>{event.short_description || event.description}</T></p>}</T>
+                <div className="activity-links">
+                  {!hasActiveAdvertising(event)&&<a className="activity-link" href={'/adverteren?eventId='+event.id}><T>Meer klanten bereiken</T><span aria-hidden="true"> →</span></a>}
+                  <button className="activity-link activity-link-detail" type="button" onClick={() => openVisitorEvent(event, hasAdvertisingPlacement(event,"highlight") ? "highlight" : "standard")}><T>{"Bekijk evenementdetails "}</T><span aria-hidden="true"><T>{"→"}</T></span></button>
+                  <T>{publicEventUrl(event.booking_url) && <a className="activity-link activity-link-primary" data-analytics-channel="booking" href={publicEventUrl(event.booking_url)!} target="_blank" rel="noreferrer"><T>{"Reserveren "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                  <T>{publicEventUrl(event.website_url) && <a className="activity-link" data-analytics-channel="website" href={publicEventUrl(event.website_url)!} target="_blank" rel="noreferrer"><T>{"Website "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
+                </div>
+                <p className="external-link-note"><T>{"Externe pagina’s openen in een nieuw tabblad; deze agenda blijft open."}</T></p>
+              </div>
+            </article>
+          ))}</T>
+        </div></A>
+        <T>{displayedNearbyEvents.length < standardNearbyEvents.length && <button className="show-more-events" type="button" onClick={() => setVisibleEventCount((count) => Math.min(count + 18, standardNearbyEvents.length))}><T>{"Toon meer activiteiten ("}</T><T>{standardNearbyEvents.length - displayedNearbyEvents.length}</T><T>{" resterend)"}</T></button>}</T>
+        <div className="tip-invitation" id="tip-activiteit">
+          <div><p className="section-kicker"><T>{"Ken jij de streek?"}</T></p><strong><T>{"Staat jouw favoriete activiteit er nog niet bij?"}</T></strong><p><T>{"Geef de tip door. De beheerder controleert de informatie voordat bezoekers het evenement zien."}</T></p><p><T>{"Al een vermelding ingestuurd? "}</T><a href="/mijn-vermelding"><T>{"Beheer je vermelding →"}</T></a></p></div>
+          <button className="button button-dark" type="button" onClick={openEventEntryForm} aria-controls="activity-tip-form"><T>{"Een nieuw evenement/vermelding"}</T><span aria-hidden="true"><T>{"→"}</T></span>
+          </button>
+        </div>
+      </section></A>
+
+      </div>
+      {discoveryPreview&&['shops','practical','all'].includes(discoveryMode)&&municipalityPanel}
+      <A><section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
+        <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true"><T>{"▦"}</T></span><span><strong><T>{"Agenda"}</T></strong><small><T>{"Wat is er te doen?"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
+        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true"><T>{"⌖"}</T></span><span><strong><T>{"Gemeentegids"}</T></strong><small><T>{"Lokale diensten & adressen"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
+      </section></A>
+
+
+      <section className="featured-section" aria-labelledby="featured-heading">
+        <div className="content-heading"><div><p className="section-kicker"><T>{"Ideeën voor binnenkort"}</T></p><h2 id="featured-heading"><T>{"Binnenkort in de buurt"}</T></h2></div><a className="text-arrow-link" href="#agenda-resultaten"><T>{"Naar de agenda "}</T><span aria-hidden="true"><T>{"→"}</T></span></a></div>
+        <T>{featuredEvents.length > 0 ? <div className="featured-events-grid">
+          <T>{featuredEvents.map((event) => {
+            const date = formatCardDate(event.start_at);
+            return <article data-analytics-card="true" data-analytics-event={event.id} data-analytics-placement={"standard"} className={`featured-event-card${hasAdvertisingPlacement(event,"homepage") ? " featured-event-card-sponsored" : ""}`} key={`featured-${event.id}`}>
+              <A><button className="featured-event-image" type="button" onClick={() => openVisitorEvent(event)} aria-label={`Bekijk ${event.title}`}>
+                <EventImage src={event.image_url} />
+              </button></A>
+              <div className="featured-event-body"><span className="date-tile"><strong><T>{date.day}</T></strong><small><T>{date.month}</T></small></span><div><T>{hasAdvertisingPlacement(event,"homepage") && <span className="sponsored-label"><T>{"Uitgelicht"}</T></span>}</T><h3><button className="featured-event-title" type="button" onClick={() => openVisitorEvent(event)}><T preserve={event.is_directory_entry===true}>{event.title}</T></button></h3><p><span aria-hidden="true"><T>{"⌖"}</T></span> <T>{event.city || event.venue_name || "Lot-et-Garonne"}</T></p></div></div>
+            </article>;
+          })}</T>
+        </div> : <div className="featured-empty"><span className="featured-empty-icon" aria-hidden="true"><T>{"✦"}</T></span><div><strong><T>{nearbyLoading ? "We zoeken activiteiten in de buurt…" : "Er wordt gewerkt aan de agenda voor deze plaats."}</T></strong><p><T>{"Kies een gemeente of bekijk de agenda voor Duras en omgeving."}</T></p></div><a className="text-arrow-link" href="#agenda"><T>{"Ontdek de agenda "}</T><span aria-hidden="true"><T>{"→"}</T></span></a></div>}</T>
+      </section>
+
+
+
+      {!discoveryPreview&&municipalityPanel}
 
       <div className="visitor-guides"><PaidListingsCarousel /></div>
 
@@ -2959,6 +3005,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                 <T>{publicEventUrl(selectedVisitorEvent.website_url) && <a data-analytics-channel="website" href={publicEventUrl(selectedVisitorEvent.website_url)!} target="_blank" rel="noopener noreferrer"><T>{"Website organisator "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>}</T>
               </div>
               <p className="event-detail-note"><T>{"Externe pagina’s openen in een nieuw tabblad. Je kunt hierna direct terug naar de agenda."}</T></p>
+              {discoveryPreview&&areaOptions.some(a=>normalizePlaceName(a.name)===normalizePlaceName(selectedVisitorEvent.city??''))&&<aside className={discovery.eventLinks}><h3>{discoveryWords.local} · {selectedVisitorEvent.city}</h3><p>{locale==='nl'?'Ontdek adressen en voorzieningen in dezelfde plaats.':locale==='en'?'Discover addresses and services in the same town.':'Découvrez les bonnes adresses et les services de cette commune.'}</p><div className={discovery.tabs}>{(['food','shops','practical'] as const).map(mode=><button type="button" key={mode} onClick={()=>discoverFromEvent(mode)}>{discoveryWords[mode]} →</button>)}</div></aside>}
               <p className="event-management-link"><a href={'/mijn-vermelding?'+new URLSearchParams({eventId:selectedVisitorEvent.id,title:selectedVisitorEvent.title})}><T>Mijn vermelding: beheren of een correctie doorgeven →</T></a></p><button className="event-detail-back event-detail-back-bottom" type="button" onClick={closeVisitorEvent}><span aria-hidden="true"><T>{"←"}</T></span><T>{" Terug naar de agenda"}</T></button>
             </div>
           </section>
