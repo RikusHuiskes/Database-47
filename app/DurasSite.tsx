@@ -2178,7 +2178,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
             <a href="#agenda"><T>{"Agenda"}</T></a>
             <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
-            <a href="#gemeenten"><T>{"Gemeente informatie"}</T></a>
+            <a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeente informatie"}</T></a>
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
           </nav></A>
         </div>
@@ -2194,7 +2194,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       </header>
 
       <aside className="christmas-campaign-home" style={{maxWidth:1200,margin:'20px auto',padding:'26px 30px',background:'linear-gradient(120deg,#193f33,#315f45)',borderRadius:14,color:'#fff8e8',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap'}}><div><p style={{margin:'0 0 7px',fontSize:12,letterSpacing:2,color:'#ead09b'}}>✦ {locale==='nl'?'KERST ROND DURAS':locale==='en'?'CHRISTMAS AROUND DURAS':'NOËL AUTOUR DE DURAS'}</p><h2 style={{margin:'0 0 9px',fontFamily:'Georgia,serif',fontWeight:400,fontSize:30}}>{locale==='nl'?'Ontdek de mooiste kerstmarkten':locale==='en'?'Discover the Christmas markets':'Découvrez les marchés de Noël'}</h2><p style={{margin:0,fontSize:14,lineHeight:1.7}}>{locale==='nl'?'Van dichtbij Duras tot 50 km verder. Kies je datum en plan je uitje.':locale==='en'?'From Duras to 50 km away. Choose your dates and plan your outing.':'De Duras aux alentours, dans un rayon de 50 km. Choisissez vos dates et préparez votre sortie.'}</p></div><a href="/marches-de-noel" style={{background:'#fff4dc',padding:'14px 20px',borderRadius:7,color:'#214e3e',fontWeight:700,textDecoration:'none',fontSize:14}}>{locale==='nl'?'Bekijk de kerstmarkten':locale==='en'?'Explore the markets':'Voir les marchés'} →</a></aside>
-      {campaignPreview&&<aside style={{maxWidth:1200,margin:'16px auto',padding:16,background:'#fff4dc',borderRadius:12}}><a href="/campagnes/kerstmarkten" style={{color:'#244a3c',fontWeight:700}}>✦ Marchés de Noël · Bekijk de campagne / Voir la campagne →</a></aside>}
+      {campaignPreview&&!discoveryPreview&&<aside style={{maxWidth:1200,margin:'16px auto',padding:16,background:'#fff4dc',borderRadius:12}}><a href="/campagnes/kerstmarkten" style={{color:'#244a3c',fontWeight:700}}>✦ Marchés de Noël · Bekijk de campagne / Voir la campagne →</a></aside>}
 
       {discoveryPreview&&<section id="local-discovery" className={discovery.hub}>
         <p className={discovery.preview}>{discoveryWords.test}</p><p className={discovery.kicker}>CÔTE DE DURAS · {selectedArea?.name??'Duras'}</p>
@@ -2313,7 +2313,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
       {discoveryPreview&&['shops','practical','all'].includes(discoveryMode)&&municipalityPanel}
       <A><section className="discovery-section" id="ontdekken" aria-label="Ontdek de streek">
         <a className="discovery-tile discovery-agenda" href="#agenda"><span className="discovery-icon" aria-hidden="true"><T>{"▦"}</T></span><span><strong><T>{"Agenda"}</T></strong><small><T>{"Wat is er te doen?"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
-        <a className="discovery-tile discovery-towns" href="#gemeenten"><span className="discovery-icon" aria-hidden="true"><T>{"⌖"}</T></span><span><strong><T>{"Gemeentegids"}</T></strong><small><T>{"Lokale diensten & adressen"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
+        <a className="discovery-tile discovery-towns" href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><span className="discovery-icon" aria-hidden="true"><T>{"⌖"}</T></span><span><strong><T>{"Gemeentegids"}</T></strong><small><T>{"Lokale diensten & adressen"}</T></small></span><span className="discovery-arrow" aria-hidden="true"><T>{"→"}</T></span></a>
       </section></A>
 
 
@@ -2347,7 +2347,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           <span className="brand-mark" aria-hidden="true"><A><img src="/cote-de-duras-logo.webp" alt="" width={240} height={180} loading="lazy" decoding="async" /></A></span>
           <span className="brand-name"><strong><T>{"CÔTE DE DURAS"}</T></strong><small><T>{"Evenementen en informatie binnen 50 kilometer"}</T></small></span>
         </a></A>
-        <div><a href="#agenda"><T>{"Agenda"}</T></a><a href="#gemeenten"><T>{"Gemeenten"}</T></a><a href="/disclaimer"><T>{"Disclaimer"}</T></a><a href="/contact"><T>{"Contactgegevens"}</T></a><a href="/handleiding"><T>{"Handleiding"}</T></a><a href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T></a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><T>{"Beheerderslogin"}</T></button></div>
+        <div><a href="#agenda"><T>{"Agenda"}</T></a><a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeenten"}</T></a><a href="/disclaimer"><T>{"Disclaimer"}</T></a><a href="/contact"><T>{"Contactgegevens"}</T></a><a href="/handleiding"><T>{"Handleiding"}</T></a><a href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T></a><button className="footer-admin-link" type="button" onClick={() => { const panel = document.getElementById("beheer") as HTMLDetailsElement | null; if (panel) { panel.open = true; panel.scrollIntoView({ behavior: "smooth", block: "start" }); } }}><T>{"Beheerderslogin"}</T></button></div>
         <span className="footer-note"><T>{"Een streek vol verhalen, ontmoetingen en kleine ontdekkingen."}</T></span>
       </footer>
 
