@@ -857,7 +857,11 @@ export async function GET(request: NextRequest) {
   }
 
   const catalog = municipalCatalog(city, latitude, longitude, service, suppliedCodeInsee);
-  if(service === "all" && params.get("fast") === "1") return NextResponse.json(await decorateMunicipalDirectory(catalog,suppliedCodeInsee,service));
+  if(service === "all" && params.get("fast") === "1") {
+    const seen=new Map<string,number>();
+    const services=catalog.services.filter(entry=>{const count=seen.get(entry.type)??0;seen.set(entry.type,count+1);return count<6;});
+    return NextResponse.json(await decorateMunicipalDirectory({...catalog,services},suppliedCodeInsee,service));
+  }
   const dynamicallyEnrichedHealthService = service === "physiotherapist" || service === "psychologist";
   const directoryRadiusKm = dynamicallyEnrichedHealthService ? 25 : catalog.radiusKm;
   const serviceRadiusKm = (type: string) =>

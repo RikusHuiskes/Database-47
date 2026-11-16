@@ -349,6 +349,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const {locale,t}=useLanguage();
   const [discoveryMode,setDiscoveryMode]=useState<'events'|'food'|'shops'|'practical'|'all'>('events');
   const guideRequest=useRef(0);
+  const [guideVisibleCounts,setGuideVisibleCounts]=useState<Record<string,number>>({});
   const guideCache=useRef(new Map<string,{at:number;data:MunicipalityServiceResponse}>());
   useEffect(()=>{
     if(!discoveryPreview)return;
@@ -361,6 +362,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
   const [municipalityInView,setMunicipalityInView]=useState(false);
   useEffect(()=>{const node=document.getElementById('gemeenten');if(!node)return;const observer=new IntersectionObserver(entries=>setMunicipalityInView(entries[0]?.isIntersecting||false));observer.observe(node);return()=>observer.disconnect();},[]);
   const [municipalityAreaId, setMunicipalityAreaId] = useState("duras");
+  useEffect(()=>setGuideVisibleCounts({}),[municipalityAreaId]);
   const [municipalityServiceType, setMunicipalityServiceType] = useState<MunicipalityServiceType>("all");
   const [municipalityServiceInfo, setMunicipalityServiceInfo] = useState<MunicipalityServiceResponse | null>(null);
   const [municipalitySearchComplete, setMunicipalitySearchComplete] = useState(false);
@@ -2151,7 +2153,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                   return <section className="municipality-service-group" key={option.id}>
                     <div className="municipality-service-group-heading"><div><p className="section-kicker"><T>{"Gemeentegids · "}</T><T>{municipalityName}</T></p><h3><T>{option.label}</T></h3></div><span><T>{groupEntries.length}</T><T>{" vermeldingen · "}</T><T>{groupEntries.filter(entry=>entry.image_url).length}</T><T>{" met foto"}</T></span></div>
                     <T>{equipmentCount && <p className="municipality-data-note"><strong><T>{"INSEE "}</T><T>{equipmentCount.year}</T><T>{":"}</T></strong> <T>{equipmentCount.basis}</T><T>{" De bronnen hieronder tonen "}</T><T>{localEntryCount}</T><T>{" concrete vermeldingen in "}</T><T>{municipalityName}</T><T>{nearbyEntryCount ? ` en ${nearbyEntryCount} in de omgeving` : ""}</T><T>{"."}</T><T>{localEntryCount < equipmentCount.count ? ` Voor ${equipmentCount.count - localEntryCount} voorzieningen kon nog geen afzonderlijk openbaar adres worden bevestigd.` : ""}</T></p>}</T>
-                    <T>{groupEntries.length ? <div className="municipality-service-group-cards"><T>{groupEntries.map((entry, index) => renderMunicipalityServiceCard(entry, index, option.id))}</T></div> : <div className="municipality-empty-result">
+                    <T>{groupEntries.length ? <div className="municipality-service-group-cards"><T>{groupEntries.slice(0,guideVisibleCounts[option.id]??6).map((entry, index) => renderMunicipalityServiceCard(entry, index, option.id))}</T></div> : <div className="municipality-empty-result">
                       <strong><T>{equipmentCount?.count ? `INSEE registreert ${equipmentCount.count} ${option.label.toLocaleLowerCase(intlLocale[locale])} in ${municipalityName}, maar de gekoppelde openbare adresbronnen geven op dit moment geen individuele vermeldingen terug.` : `Geen controleerbaar adres gevonden voor ${option.label.toLocaleLowerCase(intlLocale[locale])} ${radius > 0 ? `in ${municipalityName} of binnen ${radius} km` : `in ${municipalityName}`}.`}</T></strong>
                     <T>{equipmentCount && <p><T>{"De officiële telling geeft het aantal voorzieningen. Namen en adressen worden alleen getoond wanneer een openbare bron die per voorziening bevestigt."}</T></p>}</T>
                       <p><T>{"We vullen alleen namen en contactgegevens in wanneer een bron ze bevestigt."}</T></p>
@@ -2162,6 +2164,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
                         <a href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${option.label} ${municipalityName}`)}`} target="_blank" rel="noreferrer"><T>{"OpenStreetMap "}</T><span aria-hidden="true"><T>{"↗"}</T></span></a>
                       </div>
                     </div>}</T>
+                    {groupEntries.length>(guideVisibleCounts[option.id]??6)&&<button type="button" className="municipality-more" onClick={()=>setGuideVisibleCounts(counts=>({...counts,[option.id]:(counts[option.id]??6)+12}))}>{locale==='nl'?'Meer adressen tonen':locale==='en'?'Show more addresses':'Afficher plus d’adresses'} →</button>}
                     {previewAdSamplesEnabled&&<CoteDeDurasAdvertisement variant="municipal" placement="municipal" categoryName={option.label}/>}
                   </section>;
                 })}</T>

@@ -1325,3 +1325,5 @@ input[type=date],input[type=datetime-local],input[type=time] { font-size:16px!im
 .municipality-directory .municipality-service-group{padding:20px}
 @media(max-width:1000px){.municipality-directory>form.municipality-service-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.municipality-service-controls .municipality-search-button{grid-column:1/-1}}
 @media(max-width:600px){.municipality-directory>form.municipality-service-controls{grid-template-columns:minmax(0,1fr)}.municipality-directory .municipality-service-group{padding:14px}.municipality-business-links{gap:10px;margin-bottom:18px}}
+
+.municipality-more{grid-column:1/-1;justify-self:start;padding:10px 15px;border:1px solid #b6c7ad;border-radius:9px;background:#fff;color:#234f3c;font:600 13px Arial;cursor:pointer}
