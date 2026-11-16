@@ -2083,7 +2083,6 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         <div className="municipality-directory">
           <div className="municipality-business-links"><p><a className="text-arrow-link" href="/gemeentegids/adverteren"><T>{"Voor ondernemers: bekijk adverteren in de gemeentegids →"}</T></a></p>
           <p><a className="text-arrow-link" href="/gemeentegids/aanmelden"><T>Bedrijf aanmelden in de gemeentegids →</T></a></p></div>
-          {discoveryPreview&&<div className={discovery.tabs}>{(discoveryMode==='shops'?['bakery','butcher','fashion','souvenirs','all']:['all','tourism','pharmacy','charging','parking']).map(type=><button type="button" key={type} aria-pressed={municipalityServiceType===type} onClick={()=>setMunicipalityServiceType(type as MunicipalityServiceType)}>{t(municipalityServiceOptions.find(option=>option.id===type)?.label??type)}</button>)}</div>}
           <form className="municipality-service-controls" onSubmit={findMunicipalityServices}>
             <label className="field-label"><T>{"Gemeente of dorp "}</T><select className="municipality-select" value={municipalityAreaId} onChange={(event) => {
                 setMunicipalityAreaId(event.target.value);
