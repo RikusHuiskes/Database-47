@@ -2067,7 +2067,11 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
         </div>
         <div className="search-controls search-date-controls">
           <label className="field-label" style={labelStyle}><T>{"Begindatum"}</T>
-            <input type="date" style={inputStyle} value={eventDateFrom} onChange={event => setEventDateFrom(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
+            <input type="date" style={inputStyle} value={eventDateFrom} onChange={event => {
+              const start = event.currentTarget.value;
+              setEventDateFrom(start);
+              if (start && eventDateTo && eventDateTo < start) setEventDateTo("");
+            }} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
           </label>
           <label className="field-label" style={labelStyle}><T>{"Einddatum"}</T>
             <input type="date" style={inputStyle} value={eventDateTo} min={eventDateFrom || undefined} onChange={event => setEventDateTo(event.target.value)} aria-describedby="event-date-help" aria-invalid={!!dateFilter.error} />
