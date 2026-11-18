@@ -30,6 +30,7 @@ export default function SocialLinks({compact = false}: {compact?: boolean}) {
   const [message, setMessage] = useState('');
   const facebook = profileUrl(profiles.facebook, 'facebook.com');
   const instagram = profileUrl(profiles.instagram, 'instagram.com');
+  const youtube = profileUrl(profiles.youtube, 'youtube.com');
   async function share() {
     setMessage('');
     try {
@@ -45,10 +46,11 @@ export default function SocialLinks({compact = false}: {compact?: boolean}) {
     }
   }
   return <section className={`${styles.panel} ${compact ? styles.compact : ''}`} aria-labelledby={headingId}>
-    <div><h2 id={headingId}>{facebook || instagram ? text.follow : text.title}</h2><p>{text.description}</p></div>
+    <div><h2 id={headingId}>{facebook || instagram || youtube ? text.follow : text.title}</h2><p>{text.description}</p></div>
     <div className={styles.actions}>
       {facebook && <a href={facebook} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Suivre sur Facebook' : locale === 'en' ? 'Follow on Facebook' : 'Volg op Facebook'} ↗</a>}
       {instagram && <a href={instagram} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Suivre sur Instagram' : locale === 'en' ? 'Follow on Instagram' : 'Volg op Instagram'} ↗</a>}
+      {youtube && <a href={youtube} target="_blank" rel="noopener noreferrer">{locale === 'fr' ? 'Voir sur YouTube' : locale === 'en' ? 'Watch on YouTube' : 'Bekijk op YouTube'} ↗</a>}
       {!compact && <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`} target="_blank" rel="noopener noreferrer">{text.facebook} ↗</a>}
       {!compact && <button type="button" onClick={share}>{text.share}</button>}
     </div>
