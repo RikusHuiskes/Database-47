@@ -10,6 +10,7 @@ import {loadUiDictionary} from './i18n/ui-dictionary';
 import {LOCALE_COOKIE,localeFrom} from '../lib/i18n';
 
 const sourceMetadata: Metadata = {
+  verification: { google: 'P-nL5uAqapzy7enFRbZ0kqGr6mmjaOHyUhvLO0V3xSc' },
   metadataBase: new URL(SITE_ORIGIN),
   openGraph: siteOpenGraph,
   twitter: {card: "summary_large_image", title: "Côte de Duras — Agenda & guide local", description: "Événements et bonnes adresses autour de Duras.", images: [SITE_SOCIAL_IMAGE]},
