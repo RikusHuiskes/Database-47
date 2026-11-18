@@ -13,8 +13,8 @@ const sourceMetadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),
   openGraph: siteOpenGraph,
   twitter: {card: "summary_large_image", title: "Côte de Duras — Agenda & guide local", description: "Événements et bonnes adresses autour de Duras.", images: [SITE_SOCIAL_IMAGE]},
-  title: "Côte de Duras | Evenementen en informatie",
-  description: "Evenementen en informatie voor elke dag binnen een straal van 50 kilometer rond Duras.",
+  title: "Côte de Duras | Agenda en gemeentegids rond Duras",
+  description: "Ontdek markten, brocantes, evenementen, restaurants en lokale diensten binnen 50 kilometer van Duras.",
   icons: {
     icon: [{ url: "/cote-de-duras-icon.png", type: "image/png", sizes: "64x64" }],
     apple: [{ url: "/cote-de-duras-apple-icon.png", sizes: "180x180" }],
