@@ -3,7 +3,11 @@ import {localizeMetadata} from '../i18n/server';
 import {T, A} from '../i18n/Language';
 import type { Metadata } from "next";
 
-const sourceMetadata: Metadata = { title: "Contactgegevens | Côte de Duras" };
+const sourceMetadata: Metadata = {
+  title: "Contactgegevens | Côte de Duras",
+  description: "Voor vragen over de website, evenementen, advertenties of het doorgeven van een correctie kunt u contact met ons opnemen.",
+  alternates: { canonical: "/contact" },
+};
 export async function generateMetadata(){return localizeMetadata(sourceMetadata);}
 
 

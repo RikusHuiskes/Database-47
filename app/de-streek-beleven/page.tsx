@@ -4,7 +4,7 @@ import {localizeMetadata} from '../i18n/server';
 import {T, A} from '../i18n/Language';
 import './region.css';
 
-const sourceMetadata:Metadata={title:"De streek beleven | Côte de Duras",description:"Uitjes, lokale adressen en praktische hulp rond Duras. Ontdek de agenda, gemeentegids en mogelijkheden voor je eigen vermelding."};
+const sourceMetadata:Metadata={title:"De streek beleven | Côte de Duras",description:"Uitjes, lokale adressen en praktische hulp rond Duras. Ontdek de agenda, gemeentegids en mogelijkheden voor je eigen vermelding.",alternates:{canonical:"/de-streek-beleven"}};
 export async function generateMetadata(){return localizeMetadata(sourceMetadata);}
 
 export default function RegionIntroduction(){return <main className="region-introduction region-guide">
@@ -21,6 +21,7 @@ export default function RegionIntroduction(){return <main className="region-intr
     <h2><T>{"Vind iets dat bij jouw dag past"}</T></h2>
     <p><T>{"Markten en brocantes, muziek, workshops, natuur, cultuur of gastronomie: in de agenda vind je evenementen én vaste adressen, zoals restaurants en accommodaties. Kies je plaats en categorie en bepaal je afstand: 5, 10, 25 of 50 kilometer. De zoekopdracht begint op 5 kilometer. Kies een datum of een begin- en einddatum om evenementen tijdens jouw bezoek te vinden. Wis de datums om ook vaste adressen te bekijken."}</T></p><p><T>{"Liever vlak bij waar je nu bent? Gebruik je locatie. Met Alleen gratis activiteiten vind je de als gratis vermelde activiteiten binnen je selectie. De resultaten verschijnen direct onder het zoekblok."}</T></p>
     <a className="region-action" href="/#agenda"><T>{"Ontdek de agenda →"}</T></a>
+    <p><a className="region-action" href="/marches-de-noel"><T>{"Kerstmarkten rond Duras →"}</T></a></p>
   </section>
   <section id="op-pad">
     <h2><T>{"Van een mooi plan naar een echt uitje"}</T></h2>
