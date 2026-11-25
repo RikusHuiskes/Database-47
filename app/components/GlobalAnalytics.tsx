@@ -16,6 +16,6 @@ export default function GlobalAnalytics(){
   const {data}=client.auth.onAuthStateChange((_event,session)=>{setBlocked(true);queueMicrotask(()=>{if(active)void check(!!session)})});
   return()=>{active=false;data.subscription.unsubscribe()};
  },[travaux]);
- if(!ANALYTICS_PAGES.includes(path))return null;
+ if(travaux||!ANALYTICS_PAGES.includes(path))return null;
  return <Consent disabled={blocked}/>;
 }

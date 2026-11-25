@@ -9,6 +9,11 @@ export async function GET(request: Request) {
     const db = travauxEnabled() && await adminService(request);
     if (!db) throw new TravauxError('Accès réservé à la modération.', 403);
     const params = new URL(request.url).searchParams;
+    if (params.get('stats') === '1') {
+      const days = Number(params.get('days') ?? '30');
+      if (![7,30,90].includes(days)) throw new TravauxError('Demande invalide.');
+      return travauxJson(checked(await db.rpc('travaux_analytics', { p_days: days })));
+    }
     const provider = params.get('provider');
     const page = Number(params.get('page') ?? '0');
     if (!Number.isSafeInteger(page) || page < 0 || page > 10000 || (provider && !uuid(provider))) {

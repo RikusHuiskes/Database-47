@@ -2,7 +2,7 @@
 
 import { useLanguage } from '../i18n/Language';
 import { companyCopy, companySizes, legalForms, type CompanyDetails } from '../../lib/travaux-company';
-import { travauxCategories, travauxCategoryLabel, type TravauxCategory } from '../../lib/travaux';
+import { travauxCategories, travauxCategoryLabel, travauxGroups, travauxText, type TravauxCategory } from '../../lib/travaux';
 import { travauxCopy } from '../../lib/travaux-copy';
 import styles from './travaux.module.css';
 
@@ -31,7 +31,17 @@ export default function CompanyFields({ profile, email }: { profile: {
         {companySizes.map(size => <option key={size}>{size}</option>)}</select></label>
     </div>
     <label>{c('cert')}<textarea name="certifications" defaultValue={d?.certifications} rows={2} maxLength={400} placeholder="RGE, Qualibat…" /></label>
-    <label>{c('specialty')}<select name="specialties" multiple size={5} defaultValue={d?.specialties ?? []} required>
-      {(Object.keys(travauxCategories) as TravauxCategory[]).map(key => <option value={key} key={key}>{travauxCategoryLabel(key, locale)}</option>)}</select></label>
+    <fieldset><legend>{c('specialty')}</legend>
+      {Object.entries(travauxGroups).map(([group, label]) => <section key={group}>
+        <strong>{travauxText(label, locale)}</strong>
+        <div className={styles.fields}>
+          {(Object.keys(travauxCategories) as TravauxCategory[]).filter(key => travauxCategories[key][0] === group)
+            .map(key => <label key={key} className={styles.check}>
+              <input type="checkbox" name="specialties" value={key} defaultChecked={d?.specialties.includes(key)} />
+              {travauxCategoryLabel(key, locale)}
+            </label>)}
+        </div>
+      </section>)}
+    </fieldset>
   </>;
 }

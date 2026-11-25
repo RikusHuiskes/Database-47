@@ -10,6 +10,8 @@ import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
 import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
+import Stats from './Stats';
+import AnalyticsConsent from '../components/AnalyticsConsent';
 import CompanyFields from './CompanyFields';
 import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
 import panels from '../../lib/travaux-panels.json';
@@ -254,6 +256,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
       searchLabel={t("Rechercher par commune ou code postal")} groups={communeGroups} value={value} onChoose={onChoose} />;
 
   return <div className={styles.body} id="espace">
+    {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
     <nav className={styles.tabs} aria-label={copy.jobs}>
       {(['jobs', 'guide', 'contact', ...(dashboard?.admin ? ['admin'] as const : [])] as const).map(tab =>
         <button type="button" key={tab} className={styles.secondary} aria-pressed={panel === tab}
@@ -265,6 +268,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
       <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
     </Card>}
      {panel === 'admin' && dashboard?.admin && token && <>
+      <Stats token={token} />
       <Registry token={token} />
       {Boolean(dashboard?.pending.length) && <Card title={t("Demandes à modérer")}>
           <p>{t("Vérifiez que le titre et la description préservent l’anonymat du demandeur avant de publier.")}</p>
