@@ -248,6 +248,8 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
   const provider = dashboard?.provider ?? null;
   const jobTown = communes.find(place => place.code === commune);
   const ownJobs = new Set(dashboard?.jobs.map(job => job.id));
+  const pendingOwnJobs = dashboard?.jobs.filter(job => job.status === 'pending') ?? [];
+  const reviewedOwnJobs = dashboard?.jobs.filter(job => job.status !== 'pending') ?? [];
   const answeredJobs = new Map(dashboard?.sent.map(reply => [reply.job_id, reply.job?.contact]));
   const specialties = new Set(provider?.details?.specialties ?? []);
   const visibleJobs = jobs;
@@ -414,21 +416,34 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
               <button className={styles.button} disabled={busy || !category || !commune}>{t("Envoyer ma demande gratuite")}</button>
             </form>
           </Card>
-          <Card title={t("Mes demandes et mes contacts")}>
-            {!dashboard?.jobs.length && <p>{dashboard ? t("Aucune demande déposée.") : t("Chargement des demandes…")}</p>}
-            {dashboard?.jobs.map(job => <article className={styles.item} key={job.id}>
+          {pendingOwnJobs.length > 0 && <Card title={t("Mes demandes en attente")}>
+            <p>{t("Ces demandes sont privées jusqu’à leur approbation.")}</p>
+            {pendingOwnJobs.map(job => <article className={styles.item} key={job.id}>
+              <JobSummary job={job} />
+              <p className={styles.meta}>{t(jobStatus.pending)}</p>
+              <button className={styles.secondary} disabled={busy} onClick={() => {
+                if (window.confirm(t("Clôturer cette demande ?"))) void send({ action: 'close', id: job.id }, t("Demande clôturée."));
+              }}>{t("Clôturer la demande")}</button>
+            </article>)}
+          </Card>}
+          {(!pendingOwnJobs.length || reviewedOwnJobs.length > 0) && <Card title={t("Mes demandes et mes contacts")}>
+            {!reviewedOwnJobs.length && <p>{dashboard ? t("Aucune demande déposée.") : t("Chargement des demandes…")}</p>}
+            {reviewedOwnJobs.map(job => <article className={styles.item} key={job.id}>
               <JobSummary job={job} /><p className={styles.meta}>{t(jobStatus[job.status])} · {job.responses?.length ?? 0}/3 {t("contacts")}</p>
               {[...(job.responses ?? [])].sort((a, b) => a.slot - b.slot).map(reply => <div key={reply.slot} className={styles.reply}>
                 <strong>{reply.company}</strong><p>{reply.email} · {reply.phone}</p>
                 {reply.quote_cents !== null && <p>{t("Montant proposé")}&nbsp;: {eur.format(reply.quote_cents / 100)}</p>}
                 {reply.message && <p className={styles.description}>{reply.message}</p>}
               </div>)}
-              {['open', 'pending'].includes(job.status) && <button className={styles.secondary} disabled={busy} onClick={() => {
+              {job.status === 'open' && <button className={styles.secondary} disabled={busy} onClick={() => {
                 if (window.confirm(t("Clôturer cette demande ?"))) void send({ action: 'close', id: job.id }, t("Demande clôturée."));
               }}>{t("Clôturer la demande")}</button>}
             </article>)}
-            {token && <button className={styles.secondary} disabled={busy} onClick={() => void run(() => refresh(token))}>{t("Actualiser mes contacts")}</button>}
-          </Card>
+          </Card>}
+          {token && <button className={styles.secondary} disabled={busy} onClick={() => void run(async () => {
+            await refresh(token);
+            await refreshJobs();
+          })}>{t("Actualiser mes contacts")}</button>}
         </> : <>
           <Card title={t("Mon abonnement professionnel")}>
             {!dashboard ? <p>{t("Chargement de l’abonnement…")}</p> : provider?.subscribed ? <>
