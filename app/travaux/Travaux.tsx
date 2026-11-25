@@ -8,6 +8,7 @@ import { intlLocale } from '../../lib/i18n';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
+import { travauxMail, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
 import CompanyFields from './CompanyFields';
 import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
@@ -46,8 +47,14 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className={styles.card}><h2>{title}</h2>{children}</section>;
 }
 
-function ContactDetails({ contact }: { contact: Contact }) {
-  return <p><strong>{contact.name}</strong> · <a href={'mailto:' + contact.email}>{contact.email}</a> · <a href={'tel:' + contact.phone}>{contact.phone}</a></p>;
+function ContactDetails({ contact, title }: { contact: Contact; title: string }) {
+  const { locale } = useLanguage();
+  return <div className={styles.actions}>
+    <strong>{contact.name}</strong>
+    <span>{contact.email}</span>
+    <a className={styles.secondary} href={travauxMailLink(locale, contact, title)}>{travauxMail[locale].label}</a>
+    <a href={'tel:' + contact.phone}>{contact.phone}</a>
+  </div>;
 }
 
 function JobSummary({ job }: { job: PublicJob }) {
@@ -291,7 +298,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
           {session && ownJobs.has(job.id) && <p>{t("Votre demande")}</p>}
           {session && answeredJobs.has(job.id) && <div className={styles.reply}>
             <p>{t("Vous avez déjà répondu")}</p>
-            {contact && <ContactDetails contact={contact} />}
+            {contact && <ContactDetails contact={contact} title={job.title} />}
           </div>}
           {session && dashboard?.active && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) &&
             <button type="button" className={styles.button} disabled={busy}
@@ -419,7 +426,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
           <Card title={t("Mes réponses")}>
             {!dashboard?.sent.length && <p>{t("Aucune réponse envoyée.")}</p>}
             {dashboard?.sent.map(({ job, job_id }) => job?.contact && <article key={job_id} className={styles.item}>
-              <h3>{job.title}</h3><ContactDetails contact={job.contact} />
+              <h3>{job.title}</h3><ContactDetails contact={job.contact} title={job.title} />
             </article>)}
           </Card>
         </>}
