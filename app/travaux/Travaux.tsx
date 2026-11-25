@@ -8,7 +8,7 @@ import { intlLocale } from '../../lib/i18n';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
-import { travauxMail, travauxMailLink } from '../../lib/travaux-mail';
+import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
 import CompanyFields from './CompanyFields';
 import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
@@ -49,11 +49,35 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 
 function ContactDetails({ contact, title }: { contact: Contact; title: string }) {
   const { locale } = useLanguage();
-  return <div className={styles.actions}>
-    <strong>{contact.name}</strong>
-    <span>{contact.email}</span>
-    <a className={styles.secondary} href={travauxMailLink(locale, contact, title)}>{travauxMail[locale].label}</a>
-    <a href={'tel:' + contact.phone}>{contact.phone}</a>
+  const copy = travauxMail[locale];
+  const initial = travauxMailDraft(locale, contact, title);
+  const [subject, setSubject] = useState<string | null>(null);
+  const [body, setBody] = useState<string | null>(null);
+  const [status, setStatus] = useState('');
+  const copyArea = useRef<HTMLTextAreaElement>(null);
+  const text = [copy.to + ': ' + contact.email, copy.subjectLabel + ': ' + (subject ?? initial.subject), '', body ?? initial.body].join('\n');
+  return <div>
+    <div className={styles.actions}>
+      <strong>{contact.name}</strong><span>{contact.email}</span>
+      <a href={'tel:' + contact.phone}>{contact.phone}</a>
+    </div>
+    <details className={styles.jobReply}>
+      <summary className={styles.secondary}>{copy.label}</summary>
+      <div className={styles.form}>
+        <label>{copy.to}<input value={contact.email} readOnly /></label>
+        <label>{copy.subjectLabel}<input value={subject ?? initial.subject} onChange={e => { setSubject(e.target.value); setStatus(''); }} /></label>
+        <label>{copy.bodyLabel}<textarea rows={6} value={body ?? initial.body} onChange={e => { setBody(e.target.value); setStatus(''); }} /></label>
+        <div className={styles.actions}>
+          <button type="button" className={styles.button} onClick={async () => {
+            try { await navigator.clipboard.writeText(text); setStatus('copied'); }
+            catch { setStatus('manual'); requestAnimationFrame(() => { copyArea.current?.focus(); copyArea.current?.select(); }); }
+          }}>{copy.copy}</button>
+          <a className={styles.secondary} href={travauxMailLink(contact.email, subject ?? initial.subject, body ?? initial.body)}>{copy.open}</a>
+        </div>
+        {status === 'manual' && <textarea ref={copyArea} aria-label={copy.copy} readOnly rows={7} value={text} />}
+        {status && <p role="status">{status === 'copied' ? copy.copied : copy.manual}</p>}
+      </div>
+    </details>
   </div>;
 }
 
