@@ -40,3 +40,20 @@
   .pathways .card { margin-bottom: 0; }
   .pathways { margin-bottom: 18px; }
 }
+
+.filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 0 0 17px; }
+.picker { display: grid; align-content: start; gap: 5px; font-weight: 600; min-width: 0; }
+.picker > button { width: 100%; justify-content: start; text-align: left; overflow-wrap: anywhere; }
+.dialog { width: min(640px, calc(100% - 28px)); max-height: min(80vh, 680px); padding: 0; border: 1px solid #93a99b; border-radius: 16px; background: #fffdf7; color: #193d3a; box-shadow: 0 14px 66px #12282368; }
+.dialog::backdrop { background: #102b26a0; }
+.dialogContent { padding: clamp(15px, 3vw, 25px); }
+.dialogHeading { display: flex; gap: 9px; align-items: start; justify-content: space-between; margin-bottom: 12px; }
+.dialogHeading h2 { margin: 0; }
+.dialogContent input { width: 100%; padding: 10px; border: 1px solid #a8b6ac; border-radius: 8px; font: inherit; }
+.choiceGroup { margin-top: 10px; }
+.choiceGroup ul { padding: 0; margin: 5px 0; list-style: none; }
+.groupButton, .choice { display: grid; gap: 3px; width: 100%; padding: 10px; border: 1px solid #d9dfd5; border-radius: 8px; text-align: left; color: #193d3a; background: #fff; cursor: pointer; font: inherit; }
+.groupButton { background: #edf1e8; font-weight: 700; }
+.choice { margin: 3px 0; }
+.choice span { font-size: .92rem; font-weight: 400; }
+.choice:hover, .choice[aria-pressed="true"] { background: #e6efe5; }

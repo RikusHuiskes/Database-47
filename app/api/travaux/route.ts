@@ -1,3 +1,4 @@
+import { localeFrom } from '../../../lib/i18n';
 import { adminService } from '../../../lib/admin-service';
 import { travauxCategories } from '../../../lib/travaux';
 import {
@@ -45,8 +46,9 @@ export async function POST(request: Request) {
     if (!body || typeof body !== 'object') throw new TravauxError('Demande invalide.');
 
     if (body.action === 'checkout') {
+      if (body.consent !== true) throw new TravauxError('Confirmez le prix et le renouvellement de l’abonnement.');
       return travauxJson(await startTravauxCheckout(db, request, user.id, email,
-        field(body.company, 'entreprise', 120), phoneField(body.phone)));
+        field(body.company, 'entreprise', 120), phoneField(body.phone), localeFrom(body.locale)));
     }
     if (body.action === 'cancel') {
       await cancelTravauxSubscription(db, user.id);
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
     if (body.action === 'publish') {
       const commune = travauxCommunes.find(item => item.code === body.commune);
       if (!commune) throw new TravauxError('Choisissez une commune dans un rayon de 50 km autour de Duras.');
-      if (!Object.hasOwn(travauxCategories, body.category)) throw new TravauxError('Choisissez un type de travaux.');
+      if (typeof body.category !== 'string' || !Object.hasOwn(travauxCategories, body.category)) throw new TravauxError('Choisissez un type de travaux.');
       const title = field(body.title, 'titre', 100, 5);
       const description = field(body.description, 'description', 2000, 20);
       if (body.consent !== true) throw new TravauxError('Confirmez le partage des coordonnées.');

@@ -30,6 +30,11 @@ export function LanguageProvider({initialLocale,initialDictionary,children}:{ini
    if(request!==languageRequest.current)return;
    setLanguage({locale:next,dictionary:nextDictionary});document.documentElement.lang=next;
    document.cookie=`${LOCALE_COOKIE}=${next}; Path=/; SameSite=Lax${location.protocol==='https:'?'; Secure':''}`;
+   const currentUrl=new URL(location.href);
+   if(currentUrl.pathname==='/travaux'&&currentUrl.searchParams.has('lang')){
+    currentUrl.searchParams.set('lang',next);
+    history.replaceState(history.state,'',currentUrl);
+   }
    router.refresh();
   }catch{/* Retain the current language if the requested dictionary cannot load. */}
  };

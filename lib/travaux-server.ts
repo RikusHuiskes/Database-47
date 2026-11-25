@@ -1,12 +1,25 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import catalog from './data/area-catalog.json';
 import centres from './data/commune-centres.json';
 import { distanceInKm } from './local-area';
 import { createServiceClient } from './supabase-server';
 
 const duras = centres.find(commune => commune.code === '47086')!;
-export const travauxCommunes = centres
-  .filter(commune => distanceInKm(duras.latitude, duras.longitude, commune.latitude, commune.longitude) <= 50)
-  .map(({ code, name, postcode }) => ({ code, name, postcode }))
+const preferred = new Map(catalog.areas.map(area => [area.code_insee, area]));
+const regionalCentres = new Map(centres.map(centre => [centre.code, centre]));
+for (const area of catalog.areas) {
+  if (!regionalCentres.has(area.code_insee)) {
+    regionalCentres.set(area.code_insee, { ...area, code: area.code_insee });
+  }
+}
+export const travauxCommunes = Array.from(regionalCentres.values())
+  .map(centre => {
+    const area = preferred.get(centre.code);
+    const location = area ?? centre;
+    const distance = distanceInKm(duras.latitude, duras.longitude, location.latitude, location.longitude);
+    return { code: centre.code, name: location.name, postcode: location.postcode, distance, featured: Boolean(area) };
+  })
+  .filter(commune => commune.distance <= 50)
   .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 
 export const travauxEnabled = () => process.env.TRAVAUX_ENABLED === 'true';

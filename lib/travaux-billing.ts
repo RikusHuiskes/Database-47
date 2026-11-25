@@ -1,3 +1,5 @@
+import { intlLocale, type Locale } from './i18n';
+import { monthBoundary } from './recurring-billing';
 import { billingOrigin } from './recurring-server';
 import { mollieRequest } from './mollie';
 import { isPaymentCheckoutUrl } from './payment-checkout-url';
@@ -10,12 +12,6 @@ const description = 'Côte de Duras — Abonnement Travaux';
 const parisDay = (date: Date) => new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
 }).format(date);
-
-function nextMonth(day: string) {
-  const [year, month, number] = day.split('-').map(Number);
-  const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-  return new Date(Date.UTC(year, month, Math.min(number, last))).toISOString().slice(0, 10);
-}
 
 function molliePost(path: string, idempotencyKey: string, body: object) {
   return mollieRequest(path, {
@@ -31,7 +27,7 @@ function travauxBillingOrigin(request: Request) {
   return origin;
 }
 
-export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string) {
+export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale) {
   const origin = travauxBillingOrigin(request);
   checked(await db.from('travaux_providers').upsert({
     user_id: userId, email, name, phone, test_mode: travauxTestMode(),
@@ -68,7 +64,8 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
     payment = await molliePost('payments', 'travaux-checkout-' + key, {
       amount, description, customerId, sequenceType: 'first',
       metadata: { product, userId, checkoutKey: key },
-      redirectUrl: origin + travauxPath + '?paiement=retour',
+      locale: intlLocale[locale].replace('-', '_'),
+      redirectUrl: origin + travauxPath + '?paiement=retour&lang=' + locale,
       webhookUrl: origin + '/api/travaux/mollie',
     });
   }
@@ -113,7 +110,7 @@ export async function reconcileTravauxPayment(db: TravauxDb, id: string, origin:
     const path = base + '/subscriptions';
     const known = (await mollieRequest(path + '?limit=50'))._embedded?.subscriptions?.find(
       (item: { metadata?: { firstPayment?: string } }) => item.metadata?.firstPayment === id);
-    const startDate = [nextMonth(day), parisDay(new Date())].sort()[1];
+    const startDate = [monthBoundary(day, 1), parisDay(new Date())].sort()[1];
     const subscription = known ?? await molliePost(path, 'travaux-subscription-' + id, {
       amount, description, startDate, interval: '1 month', mandateId: payment.mandateId,
       metadata: { product, firstPayment: id }, webhookUrl: origin + '/api/travaux/mollie',
