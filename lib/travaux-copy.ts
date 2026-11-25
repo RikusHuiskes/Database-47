@@ -2,6 +2,8 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "Vérifiez votre adresse e-mail (ex. nom@exemple.fr).": ["Vérifiez votre adresse e-mail (ex. nom@exemple.fr).", "Check your email address (e.g. name@example.com).", "Controleer je e-mailadres (bijv. naam@voorbeeld.nl)."],
+  "Patientez avant de demander un nouveau lien.": ["Patientez avant de demander un nouveau lien.", "Wait a moment before requesting another link.", "Wacht even voordat je een nieuwe inloglink aanvraagt."],
   "Complet": ["Complet", "Full", "Vol"],
   "Toutes les demandes": ["Toutes les demandes", "All projects", "Alle klussen"],
   "Recommandées pour moi": ["Recommandées pour moi", "Recommended for me", "Aanbevolen voor mij"],

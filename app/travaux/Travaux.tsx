@@ -309,14 +309,22 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
       {loading ? <p role="status">{t("Chargement de votre espace…")}</p> : !session ? <Card title={t("Accéder à mon espace")}>
         <form className={styles.form} onSubmit={submit(data => void run(async () => {
           if (!auth) throw Error("Connexion indisponible.");
+          const email = String(data.get('email') ?? '').trim();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
           const { error: authError } = await auth.auth.signInWithOtp({
-            email: String(data.get('email')).trim(),
+            email,
             options: { emailRedirectTo: window.location.origin + travauxPath + '?' + new URLSearchParams({ lang: locale, ...(view === 'provider' && { espace: 'pro' }) }) },
           });
+          if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
+            throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
+          }
+          if (authError?.code === 'over_email_send_rate_limit' || authError?.code === 'over_request_rate_limit') {
+            throw Error('Patientez avant de demander un nouveau lien.');
+          }
           if (authError) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
           setNotice(t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion."));
         }))}>
-          <label>{t("Adresse e-mail")}<input name="email" type="email" autoComplete="email" required /></label>
+          <label>{t("Adresse e-mail")}<input name="email" type="text" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={254} required /></label>
           <button className={styles.button} disabled={busy}>{t("Recevoir mon lien de connexion")}</button>
         </form>
       </Card> : <>
