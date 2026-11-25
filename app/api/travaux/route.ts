@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       db.from('travaux_providers').select('name,phone,cancelled_at,subscription_id,details').eq('user_id', user.id).maybeSingle(),
       db.from('travaux_jobs').select(`${jobFields}, responses:travaux_responses(${contactFields})`)
         .eq('owner_id', user.id).order('created_at', { ascending: false }).limit(100),
-      db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,address,email,phone))')
+      db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,email,phone))')
         .eq('provider_id', user.id).order('job_id').limit(100),
       adminService(request),
     ]);

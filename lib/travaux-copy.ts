@@ -2,6 +2,7 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "Ajouter un message ou un devis": ["Ajouter un message ou un devis", "Add a message or quote", "Voeg een bericht of offerte toe"],
   "Vérifiez votre adresse e-mail (ex. nom@exemple.fr).": ["Vérifiez votre adresse e-mail (ex. nom@exemple.fr).", "Check your email address (e.g. name@example.com).", "Controleer je e-mailadres (bijv. naam@voorbeeld.nl)."],
   "Patientez avant de demander un nouveau lien.": ["Patientez avant de demander un nouveau lien.", "Wait a moment before requesting another link.", "Wacht even voordat je een nieuwe inloglink aanvraagt."],
   "Complet": ["Complet", "Full", "Vol"],
@@ -68,7 +69,7 @@ const copy = {
   "Téléphone": ["Téléphone", "Phone", "Telefoon"],
   "Adresse des travaux": ["Adresse des travaux", "Project address", "Adres van de klus"],
   "Adresse e-mail partagée avec les répondants retenus": ["Adresse e-mail partagée avec les répondants retenus", "Email shared with eligible tradespeople", "E-mailadres dat naar de vakmensen gaat"],
-  "J’accepte que mon nom, mon adresse, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.": ["J’accepte que mon nom, mon adresse, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.", "I agree to share my name, address, phone number and email with the first three subscribed tradespeople who reply.", "Ik ga ermee akkoord dat mijn naam, adres, telefoonnummer en e-mailadres worden gedeeld met de eerste drie vakmensen met een abonnement die reageren."],
+  "J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.": ["J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.", "I agree to share my name, phone number and email with the first three subscribed tradespeople who reply.", "Ik ga ermee akkoord dat mijn naam, telefoonnummer en e-mailadres worden gedeeld met de eerste drie vakmensen met een abonnement die reageren."],
   "Envoyer ma demande gratuite": ["Envoyer ma demande gratuite", "Submit my free project listing", "Verstuur mijn gratis klusaanvraag"],
   "Mes demandes et mes contacts": ["Mes demandes et mes contacts", "My projects and contacts", "Mijn klussen en contacten"],
   "Aucune demande déposée.": ["Aucune demande déposée.", "You haven’t posted a project yet.", "Je hebt nog geen klus geplaatst."],

@@ -26,7 +26,7 @@ function travauxAuth() {
 }
 
 type Commune = { code: string; name: string; postcode: string; featured: boolean };
-type Contact = { name: string; address: string; email: string; phone: string };
+type Contact = { name: string; email: string; phone: string };
 type Reply = { company: string; email: string; phone: string; message: string | null; quote_cents: number | null; slot: number };
 type PublicJob = {
   id: string; title: string; description: string; commune: string; category: TravauxCategory; responseCount?: number;
@@ -44,6 +44,10 @@ const jobStatus = { pending: 'En cours de vérification', open: 'En ligne', reje
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return <section className={styles.card}><h2>{title}</h2>{children}</section>;
+}
+
+function ContactDetails({ contact }: { contact: Contact }) {
+  return <p><strong>{contact.name}</strong> · <a href={'mailto:' + contact.email}>{contact.email}</a> · <a href={'tel:' + contact.phone}>{contact.phone}</a></p>;
 }
 
 function JobSummary({ job }: { job: PublicJob }) {
@@ -208,7 +212,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
   const provider = dashboard?.provider ?? null;
   const jobTown = communes.find(place => place.code === commune);
   const ownJobs = new Set(dashboard?.jobs.map(job => job.id));
-  const answeredJobs = new Set(dashboard?.sent.map(reply => reply.job_id));
+  const answeredJobs = new Map(dashboard?.sent.map(reply => [reply.job_id, reply.job?.contact]));
   const specialties = new Set(provider?.details?.specialties ?? []);
   const visibleJobs = jobs;
   const categoryPicker = (value: string, onChoose: (next: string) => void) =>
@@ -276,15 +280,26 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
         {jobsError && <p role="alert">{t("Les demandes sont temporairement indisponibles.")}</p>}
         {!jobsError && !visibleJobs && <p role="status">{t("Chargement des demandes…")}</p>}
         {!jobsError && visibleJobs?.length === 0 && <p>{t("Aucune nouvelle demande disponible.")}</p>}
-        {visibleJobs?.map(job => <article className={styles.item} key={job.id}>
+        {visibleJobs?.map(job => {
+          const contact = answeredJobs.get(job.id);
+          return <article className={styles.item} key={job.id}>
           <JobSummary job={job} />
           <div className={styles.actions}>
             <span className={styles.meta}>{job.responseCount ?? 0}/3 {t("réponses")}{job.responseCount === 3 ? " · " + t("Complet") : ""}</span>
             {specialties.has(job.category) && <span className={styles.match}>{t("Correspond à vos spécialités")}</span>}
           </div>
           {session && ownJobs.has(job.id) && <p>{t("Votre demande")}</p>}
-          {session && answeredJobs.has(job.id) && <p>{t("Vous avez déjà répondu")}</p>}
-          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.button}>{t("Répondre à cette demande")}</summary>
+          {session && answeredJobs.has(job.id) && <div className={styles.reply}>
+            <p>{t("Vous avez déjà répondu")}</p>
+            {contact && <ContactDetails contact={contact} />}
+          </div>}
+          {session && dashboard?.active && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) &&
+            <button type="button" className={styles.button} disabled={busy}
+              onClick={() => {
+                setView('provider');
+                void send({ action: 'respond', id: job.id, message: '', quote: null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
+              }}>{t("Répondre à cette demande")}</button>}
+          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
             {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#compte" onClick={() => setView('provider')}>{t("abonnez-vous pour 25 € par mois")}</a></p> : <>
             <p>{guide[locale].beforeReply}</p>
             <form className={styles.form} onSubmit={submit(data => {
@@ -297,7 +312,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
               <button className={styles.button} disabled={busy}>{t("Envoyer ma réponse")}</button>
             </form></>}
           </details>}
-        </article>)}
+        </article>})}
         {hasMoreJobs && <button className={styles.button} disabled={busy} type="button"
           onClick={() => void run(() => refreshJobs(undefined, jobsPage + 1))}>{t("Afficher plus de demandes")}</button>}
         {(jobs || jobsError) && <button className={styles.secondary} disabled={busy}
@@ -359,7 +374,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
                 <label>{t("Adresse e-mail")}<input type="email" value={userEmail ?? ""} readOnly autoComplete="email" /></label>
                 <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}</p>
               </fieldset>
-              <label className={styles.check}><input name="consent" type="checkbox" required /> {t("J’accepte que mon nom, mon adresse, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
+              <label className={styles.check}><input name="consent" type="checkbox" required /> {t("J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
               <button className={styles.button} disabled={busy || !category || !commune}>{t("Envoyer ma demande gratuite")}</button>
             </form>
           </Card>
@@ -404,8 +419,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
           <Card title={t("Mes réponses")}>
             {!dashboard?.sent.length && <p>{t("Aucune réponse envoyée.")}</p>}
             {dashboard?.sent.map(({ job, job_id }) => job?.contact && <article key={job_id} className={styles.item}>
-              <h3>{job.title}</h3><p>{job.contact.name} · {job.contact.address}</p>
-              <p>{job.contact.email} · {job.contact.phone}</p>
+              <h3>{job.title}</h3><ContactDetails contact={job.contact} />
             </article>)}
           </Card>
         </>}

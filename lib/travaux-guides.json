@@ -4,7 +4,7 @@
     "resident": {"title":"Je dépose des travaux","items":[
       "Le dépôt est gratuit. Connectez-vous avec le lien envoyé à votre adresse e-mail. Choisissez un métier et une commune, puis décrivez ce qui doit être fait, avec les dimensions, les matériaux, les contraintes et le délai souhaité.",
       "Le nom complet, l’adresse précise du chantier, le téléphone et l’e-mail vérifié sont obligatoires et enregistrés séparément, avec votre demande. Saisissez uniquement des coordonnées exactes que vous êtes autorisé à partager. Gardez les coordonnées et tout détail identifiant hors du titre et de la description.",
-      "Après vérification, le public voit le titre, le métier, la commune et la description. Votre nom, votre adresse précise, votre téléphone et votre e-mail sont transmis uniquement aux trois premiers abonnés dont la réponse est acceptée. Vous voyez leurs coordonnées et, s’ils en ont proposé un, leur prix dans « Mes demandes et mes contacts ».",
+      "Après vérification, le public voit le titre, le métier, la commune et la description. Votre nom, votre téléphone et votre e-mail sont transmis uniquement aux trois premiers abonnés dont la réponse est acceptée. Vous voyez leurs coordonnées et, s’ils en ont proposé un, leur prix dans « Mes demandes et mes contacts ».",
       "Vous pouvez recevoir zéro à trois réponses. Comparez les propositions et demandez un devis écrit avec le périmètre, le prix et le délai. Vérifiez les références et, le cas échéant, l’assurance de l’entreprise. Vous choisissez librement de donner suite et pouvez clôturer votre demande à tout moment. La clôture empêche de nouveaux partages."
     ]},
     "provider": {"title":"Je suis artisan","items":[
@@ -22,7 +22,7 @@
     "resident":{"title":"Posting a project","items":[
       "Posting is free. Sign in with the link sent to your email. Choose a trade and town, then describe the work, including measurements, materials, constraints and preferred timing.",
       "Your full name, exact project address, phone number and verified email are required and stored separately with your project. Provide accurate details that you are entitled to share. Keep contact details and identifying information out of the title and description.",
-      "After review, the public sees the title, trade, town and description. Your name, exact address, phone number and email go only to the first three subscribers whose reply is accepted. Find their details and any proposed amounts under “My projects and contacts”.",
+      "After review, the public sees the title, trade, town and description. Your name, phone number and email go only to the first three subscribers whose reply is accepted. Find their details and any proposed amounts under “My projects and contacts”.",
       "You may receive zero to three replies. Compare proposals and ask for a written quote covering scope, price and timing. Check references and relevant insurance. You decide whether to proceed and can close the project at any time. Closing stops new disclosures."
     ]},
     "provider":{"title":"Working as a tradesperson","items":[
@@ -40,7 +40,7 @@
     "resident":{"title":"Ik plaats een klus","items":[
       "Een klus plaatsen is gratis. Log in met de link in je e-mail. Kies een vakgebied en plaats en beschrijf het werk. Vermeld afmetingen, materialen, bijzonderheden en je gewenste termijn.",
       "Je volledige naam, exacte klusadres, telefoonnummer en geverifieerde e-mailadres zijn verplicht. Ze worden apart opgeslagen bij je klus. Gebruik juiste gegevens die je mag delen. Houd contactgegevens en andere herkenbare informatie uit de titel en omschrijving.",
-      "Na controle zijn de titel, het vakgebied, de plaats en de omschrijving openbaar. Je naam, exacte adres, telefoonnummer en e-mailadres gaan alleen naar de eerste drie abonnees van wie de reactie wordt geaccepteerd. Je vindt hun contactgegevens en eventuele bedragen bij ‘Mijn klussen en contacten’.",
+      "Na controle zijn de titel, het vakgebied, de plaats en de omschrijving openbaar. Je naam, telefoonnummer en e-mailadres gaan alleen naar de eerste drie abonnees van wie de reactie wordt geaccepteerd. Je vindt hun contactgegevens en eventuele bedragen bij ‘Mijn klussen en contacten’.",
       "Je kunt nul tot drie reacties krijgen. Vergelijk de voorstellen en vraag om een schriftelijke offerte met werkzaamheden, prijs en planning. Controleer referenties en waar van toepassing de verzekering. Je beslist zelf of je verdergaat en kunt je klus altijd sluiten. Daarna worden je gegevens niet meer aan nieuwe vakmensen vrijgegeven."
     ]},
     "provider":{"title":"Ik ben vakman","items":[
