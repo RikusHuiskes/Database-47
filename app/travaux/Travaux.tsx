@@ -8,6 +8,7 @@ import { intlLocale } from '../../lib/i18n';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
+import ContactForm from './ContactForm';
 import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
 import Stats from './Stats';
@@ -269,7 +270,9 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     </nav>
     {panel === 'guide' && <Guide />}
     {panel === 'contact' && <Card title={copy.contact}>
-      <p>{copy.help}</p><p><a href="mailto:info@cotededuras.com">info@cotededuras.com</a> · <a href="/contact">{copy.platformContact}</a></p>
+      <p>{copy.help}</p>
+      <ContactForm email={userEmail} role={view === 'provider' ? 'professional' : 'requester'} />
+      <p><a href="/contact">{copy.platformContact}</a></p>
       <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
     </Card>}
      {panel === 'admin' && dashboard?.admin && token && <>
