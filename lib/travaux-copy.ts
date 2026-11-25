@@ -2,6 +2,8 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "Connexion à l’administration": ["Connexion à l’administration", "Sign in to administration", "Inloggen voor Beheer"],
+  "Ce compte n’a pas accès à l’administration.": ["Ce compte n’a pas accès à l’administration.", "This account does not have access to administration.", "Dit account heeft geen toegang tot Beheer."],
   "e-mail": ["e-mail", "email", "e-mailadres"],
   "Mes demandes en attente": ["Mes demandes en attente", "My requests awaiting review", "Mijn klussen in afwachting"],
   "Ces demandes sont privées jusqu’à leur approbation.": ["Ces demandes sont privées jusqu’à leur approbation.", "These requests remain private until approved.", "Deze klussen zijn privé tot de beheerder ze goedkeurt."],

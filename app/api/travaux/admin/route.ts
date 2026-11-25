@@ -1,12 +1,13 @@
 import { adminService } from '../../../../lib/admin-service';
 import { parisToday } from '../../../../lib/recurring-server';
-import { checked, travauxEnabled, travauxFailure, travauxJson, TravauxError, uuid } from '../../../../lib/travaux-server';
+import { checked, isTravauxOwner, travauxUser, travauxFailure, travauxJson, TravauxError, uuid } from '../../../../lib/travaux-server';
 
 const pageSize = 25;
 
 export async function GET(request: Request) {
   try {
-    const db = travauxEnabled() && await adminService(request);
+    const { user } = await travauxUser(request);
+    const db = isTravauxOwner(user.id) && await adminService(request);
     if (!db) throw new TravauxError('Accès réservé à la modération.', 403);
     const params = new URL(request.url).searchParams;
     if (params.get('stats') === '1') {

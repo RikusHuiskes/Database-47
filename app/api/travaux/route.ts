@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         .eq('owner_id', user.id).order('created_at', { ascending: false }).limit(100),
       db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,email,phone))')
         .eq('provider_id', user.id).order('job_id').limit(100),
-      adminService(request),
+      isTravauxOwner(user.id) ? adminService(request) : null,
     ]);
     const active = Boolean(checked(paid));
     const provider = checked(profile);
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
 
     if (!uuid(body.id)) throw new TravauxError('Demande introuvable.', 404);
     if (body.action === 'moderate') {
-      const admin = await adminService(request);
+      const admin = isTravauxOwner(user.id) && await adminService(request);
       if (!admin) throw new TravauxError('Accès réservé à la modération.', 403);
       if (!['open', 'rejected'].includes(body.status)) throw new TravauxError('Décision invalide.');
       const job = checked(await admin.from('travaux_jobs').update({ status: body.status })

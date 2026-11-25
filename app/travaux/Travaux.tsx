@@ -165,13 +165,15 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
       if (currentSession.current?.user.id !== next?.user.id) {
         if (!next) setRecommended(false);
         setDashboard(null);
-        setPanel(previous => previous === 'admin' ? 'jobs' : previous);
+        if (!next && currentSession.current) setPanel(previous => previous === 'admin' ? 'jobs' : previous);
       }
       currentSession.current = next;
       setSession(next);
       setLoading(false);
     });
-    if (['paiement', 'espace'].some(name => new URLSearchParams(window.location.search).has(name))) setView('provider');
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('espace') === 'admin') setPanel('admin');
+    else if (params.has('paiement') || params.get('espace') === 'pro') setView('provider');
     return () => data.subscription.unsubscribe();
   }, [auth]);
 
@@ -262,21 +264,58 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     <Picker label={t("Commune des travaux")} placeholder={t("Choisir une commune")}
       searchLabel={t("Rechercher par commune ou code postal")} groups={communeGroups} value={value} onChoose={onChoose} />;
 
+  function signInForm(management: boolean) {
+    return <form className={styles.form} onSubmit={submit(data => void run(async () => {
+          if (!auth) throw Error("Connexion indisponible.");
+          const email = String(data.get('email') ?? '').trim();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
+          const { error: authError } = await auth.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: !management, emailRedirectTo: window.location.origin + travauxPath + '?' + new URLSearchParams({ lang: locale, ...(management ? { espace: 'admin' } : view === 'provider' ? { espace: 'pro' } : {}) }) },
+          });
+          if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
+            throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
+          }
+          if (authError?.code === 'over_email_send_rate_limit' || authError?.code === 'over_request_rate_limit') {
+            throw Error('Patientez avant de demander un nouveau lien.');
+          }
+          if (authError) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
+          setNotice(t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion."));
+        }))}>
+          <label>{t("Adresse e-mail")}<input name="email" type="text" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={254} required /></label>
+          <button className={styles.button} disabled={busy}>{t("Recevoir mon lien de connexion")}</button>
+        </form>;
+  }
+
   return <div className={styles.body} id="espace">
     {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
     <nav className={styles.tabs} aria-label={copy.jobs}>
-      {(['jobs', 'guide', 'contact', ...(dashboard?.admin ? ['admin'] as const : [])] as const).map(tab =>
+      {(['jobs', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
         <button type="button" key={tab} className={styles.secondary} aria-pressed={panel === tab}
           onClick={() => setPanel(tab)}>{copy[tab]}</button>)}
     </nav>
-    {panel === 'guide' && <Guide />}
+    {panel === 'guide' && <Guide onContact={() => setPanel('contact')} />}
     {panel === 'contact' && <Card title={copy.contact}>
       <p>{copy.help}</p>
       <ContactForm email={userEmail} role={view === 'provider' ? 'professional' : 'requester'} />
       <p><a href="/contact">{copy.platformContact}</a></p>
       <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
     </Card>}
-     {panel === 'admin' && dashboard?.admin && token && <>
+    {panel === 'admin' && !dashboard?.admin && <Card title={t("Connexion à l’administration")}>
+      {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
+      {notice && <p className={styles.status} role="status">{notice}</p>}
+      {loading || (session && !dashboard && !error) ? <p>{t("Chargement de votre espace…")}</p> :
+        session ? <>
+          <p>{t("Ce compte n’a pas accès à l’administration.")}</p>
+          <button className={styles.secondary} type="button" disabled={busy}
+            onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); setPanel('admin'); })}>{t("Se déconnecter")}</button>
+        </> : signInForm(true)}
+    </Card>}
+    {panel === 'admin' && dashboard?.admin && token && <>
+      <div className={styles.account}><span>{userEmail}</span>
+        <button type="button" className={styles.secondary} disabled={busy}
+          onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); })}>{t("Se déconnecter")}</button>
+      </div>
       <Stats token={token} />
       <Registry token={token} />
       {dashboard.owner && <OwnerContacts token={token} />}
@@ -367,26 +406,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
 
     {!enabled ? <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p> : <div id="compte" aria-busy={busy || loading}>
       {loading ? <p role="status">{t("Chargement de votre espace…")}</p> : !session ? <Card title={t("Accéder à mon espace")}>
-        <form className={styles.form} onSubmit={submit(data => void run(async () => {
-          if (!auth) throw Error("Connexion indisponible.");
-          const email = String(data.get('email') ?? '').trim();
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
-          const { error: authError } = await auth.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: window.location.origin + travauxPath + '?' + new URLSearchParams({ lang: locale, ...(view === 'provider' && { espace: 'pro' }) }) },
-          });
-          if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
-            throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
-          }
-          if (authError?.code === 'over_email_send_rate_limit' || authError?.code === 'over_request_rate_limit') {
-            throw Error('Patientez avant de demander un nouveau lien.');
-          }
-          if (authError) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
-          setNotice(t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion."));
-        }))}>
-          <label>{t("Adresse e-mail")}<input name="email" type="text" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={254} required /></label>
-          <button className={styles.button} disabled={busy}>{t("Recevoir mon lien de connexion")}</button>
-        </form>
+        {signInForm(false)}
       </Card> : <>
         <div className={styles.account}>
           <span>{userEmail}</span>
