@@ -41,6 +41,7 @@ export default function RegionIntroduction(){return <main className="region-intr
   <section id="meedoen">
     <h2><T>{"Een plek op de kaart voor jouw initiatief"}</T></h2>
     <p><T>{"Organiseer je iets of heb je een winkel, praktijk, restaurant of accommodatie? Via Vermelding toevoegen / beheren meld je gratis een evenement of een bedrijf in de gemeentegids aan, met je eigen foto en contactgegevens. Een bedrijf heeft geen evenementdatum nodig. Handmatige inzendingen worden vóór publicatie gecontroleerd."}</T></p><p><T>{"Staat je vermelding er al? Zoek haar op en vraag beheer aan of geef een correctie door. Met je persoonlijke beheerlink kun je gegevens en foto aanpassen, hulp bij toegang krijgen en je advertenties en betalingen beheren. Die link is privé."}</T></p><p><T>{"Extra zichtbaarheid nodig? Bekijk de voorbeelden en kies een vetomrande vermelding, een categorie- of homepageadvertentie. In de gemeentegids kun je ook rubriekpartner of gemeentepartner worden. Je ziet de looptijd en het totaal vooraf, betaalt via Mollie en vindt je betaalstatus terug bij je eigen vermelding. Een factuur wordt na opstelling per e-mail verzonden."}</T></p>
+    <p><a className="region-action" href="/gemeentegids/aanmelden"><T>{"Bedrijf aanmelden in de gemeentegids →"}</T></a></p>
     <a className="region-action" href="/mijn-vermelding"><T>{"Vermelding toevoegen / beheren →"}</T></a>
   </section>
   <section id="samen">
