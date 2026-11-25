@@ -2,6 +2,9 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "Reprenez la formule du paiement déjà commencé.": ["Reprenez la formule du paiement déjà commencé.", "Continue with the plan used for the pending payment.", "Kies de betaaloptie waarmee je al een betaling bent begonnen."],
+  "Choisissez une formule de paiement.": ["Choisissez une formule de paiement.", "Choose a payment plan.", "Kies een betaaloptie."],
+  "La facturation par e-mail est temporairement indisponible.": ["La facturation par e-mail est temporairement indisponible.", "Email invoicing is temporarily unavailable.", "Facturen per e-mail zijn tijdelijk niet beschikbaar."],
   "Ajouter un message ou un devis": ["Ajouter un message ou un devis", "Add a message or quote", "Voeg een bericht of offerte toe"],
   "Vérifiez votre adresse e-mail (ex. nom@exemple.fr).": ["Vérifiez votre adresse e-mail (ex. nom@exemple.fr).", "Check your email address (e.g. name@example.com).", "Controleer je e-mailadres (bijv. naam@voorbeeld.nl)."],
   "Patientez avant de demander un nouveau lien.": ["Patientez avant de demander un nouveau lien.", "Wait a moment before requesting another link.", "Wacht even voordat je een nieuwe inloglink aanvraagt."],

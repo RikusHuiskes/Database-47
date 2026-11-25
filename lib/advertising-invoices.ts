@@ -55,7 +55,7 @@ export function advertisingInvoicePdf(snapshot:Snapshot){
  add(647,`Émise le ${date(snapshot.issuedAt)}`,10);
  add(604,'FACTURÉ À',10,true);
  let y=584;
- for(const line of [c.company,c.name,c.address,[c.postcode,c.city].filter(Boolean).join(' '),c.vatNumber?`N° TVA : ${c.vatNumber}`:''].filter((x):x is string=>Boolean(x))){for(const part of wrapPdfText(line,65)){add(y,part,10);y-=16;}}
+ for(const line of [c.company,c.name,c.address,[c.postcode,c.city].filter(Boolean).join(' '),c.vatNumber?`N° TVA : ${c.vatNumber}`:'',c.siret?`SIRET : ${c.siret}`:''].filter((x):x is string=>Boolean(x))){for(const part of wrapPdfText(line,65)){add(y,part,10);y-=16;}}
  y-=20;
  add(y,'PRESTATION',9,true);add(y-20,wrapPdfText(snapshot.lineDescription,75)[0]??'',10);
  let descriptionLines=wrapPdfText(snapshot.lineDescription,75);for(let i=1;i<descriptionLines.length;i++)add(y-20-i*15,descriptionLines[i],10);

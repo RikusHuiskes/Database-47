@@ -11,8 +11,10 @@ import Guide from './Guide';
 import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
 import Stats from './Stats';
+import Invoices from './Invoices';
 import AnalyticsConsent from '../components/AnalyticsConsent';
 import CompanyFields from './CompanyFields';
+import type { TravauxPlan } from '../../lib/travaux-plans';
 import TradeFields from './TradeFields';
 import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
 import panels from '../../lib/travaux-panels.json';
@@ -40,7 +42,7 @@ type Job = PublicJob & {
   responses?: Reply[];
 };
 type Dashboard = {
-  active: boolean; admin: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; subscribed: boolean; cancelled: boolean } | null;
+  active: boolean; admin: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; cancelled: boolean } | null;
   jobs: Job[]; pending: Job[];
   sent: { job_id: string; job: { title: string; commune: string; contact: Contact | null } | null }[];
 };
@@ -291,7 +293,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
       <section className={styles.card}>
         <div><h2>{t("Je suis artisan")}</h2>
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
-        <p className={styles.price}><strong>{eur.format(25).replace(/[.,]00(?=\s|$)/, '')}</strong> {t("/ mois · paiement via Mollie")}</p></div>
+        <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
         <div className={styles.pathwayActions}>{enabled && <a className={styles.button} href="#demandes" onClick={() => setView('provider')}>{t("Voir les demandes de travaux")}</a>}
         {enabled && <a className={styles.secondary} href="#compte" onClick={() => setView('provider')}>{t("Accéder à l’espace pro")}</a>}</div>
       </section>
@@ -301,7 +303,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     {notice && <p className={styles.status} role="status">{notice}</p>}
     {enabled && <div id="demandes">
       <Card title={t("Demandes de travaux")}>
-        {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#compte" onClick={() => setView('provider')}>{t("abonnez-vous pour 25 € par mois")}</a>.</p>}
+        {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#compte" onClick={() => setView('provider')}>{company("plan")}</a>.</p>}
         {session && <div className={styles.tabs}>
           <button type="button" className={styles.secondary} aria-pressed={!recommended} onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
           <button type="button" className={styles.secondary} aria-pressed={recommended} onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
@@ -336,7 +338,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
                 void send({ action: 'respond', id: job.id, message: '', quote: null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
               }}>{t("Répondre à cette demande")}</button>}
           {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
-            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#compte" onClick={() => setView('provider')}>{t("abonnez-vous pour 25 € par mois")}</a></p> : <>
+            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#compte" onClick={() => setView('provider')}>{company("plan")}</a></p> : <>
             <p>{guide[locale].beforeReply}</p>
             <form className={styles.form} onSubmit={submit(data => {
               const quote = String(data.get('quote'));
@@ -431,7 +433,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
           <Card title={t("Mon abonnement professionnel")}>
             {!dashboard ? <p>{t("Chargement de l’abonnement…")}</p> : provider?.subscribed ? <>
               <p>{dashboard.active ? t("Accès actif pour la période payée.") : t("Aucun accès actif pour la période en cours.")}</p>
-              {provider.cancelled ? <p>{t("Le renouvellement automatique est arrêté.")}</p> :
+              {provider.plan === 'annual' ? <p>{company('annualActive')}</p> : provider.cancelled ? <p>{t("Le renouvellement automatique est arrêté.")}</p> :
                 <button className={styles.secondary} disabled={busy} onClick={() => {
                   if (window.confirm(t("Arrêter le renouvellement mensuel ?"))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
                 }}>{t("Arrêter le renouvellement")}</button>}
@@ -442,6 +444,12 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
             }, provider?.subscribed ? company('saved') : t("Paiement confirmé. Votre accès a été actualisé.")))}>
               <CompanyFields profile={provider} email={userEmail} />
               {!provider?.subscribed && <>
+                <fieldset><legend>{company('plan')}</legend>
+                  {(['monthly', 'annual'] as const).map(plan => <label key={plan} className={styles.check}>
+                    <input type="radio" name="plan" value={plan} defaultChecked={plan === (provider?.plan ?? 'monthly')}
+                      required /> {company(plan)}
+                  </label>)}
+                </fieldset>
                 <details><summary>{company('terms')}</summary><p>{company('termsText')}</p>
                   <p>{copy.market} {copy.guarantees} {copy.liability}</p></details>
                 <label className={styles.check}><input name="billingConsent" type="checkbox" required /> {company('accept')}</label>
@@ -450,6 +458,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
                 : provider ? t("Reprendre ou vérifier mon paiement") : t("S’abonner avec Mollie")}</button>
             </form>}
           </Card>
+          {token && provider && <Invoices token={token} />}
           <Card title={t("Mes réponses")}>
             {!dashboard?.sent.length && <p>{t("Aucune réponse envoyée.")}</p>}
             {dashboard?.sent.map(({ job, job_id }) => job?.contact && <article key={job_id} className={styles.item}>

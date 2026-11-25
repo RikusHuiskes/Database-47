@@ -29,13 +29,13 @@ export async function GET(request: Request) {
 
     const today = parisToday();
     const rows = checked(await db.from('travaux_providers')
-      .select('user_id,name,email,phone,test_mode,subscription_id,cancelled_at,details,terms_version,terms_accepted_at,coverage:travaux_payments(id)')
+      .select('user_id,name,email,phone,test_mode,subscription_id,cancelled_at,details,terms_version,terms_accepted_at,billing_plan,coverage:travaux_payments(id)')
       .eq('coverage.paid', true).lte('coverage.starts_on', today).gt('coverage.ends_on', today)
       .order('name').order('user_id').range(start, start + pageSize));
     return travauxJson({
-      rows: rows.slice(0, pageSize).map(({ user_id, name, email, phone, test_mode, subscription_id, cancelled_at, details, terms_version, terms_accepted_at, coverage }) => ({
+      rows: rows.slice(0, pageSize).map(({ user_id, name, email, phone, test_mode, subscription_id, cancelled_at, details, terms_version, terms_accepted_at, billing_plan, coverage }) => ({
         id: user_id, name, email, phone, test: test_mode, subscription: subscription_id,
-        details, termsVersion: terms_version, termsAcceptedAt: terms_accepted_at, cancelled: Boolean(cancelled_at), active: Boolean(subscription_id && coverage.length),
+        details, termsVersion: terms_version, termsAcceptedAt: terms_accepted_at, cancelled: Boolean(cancelled_at), active: Boolean(coverage.length), plan: billing_plan,
       })),
       more: rows.length > pageSize,
     });

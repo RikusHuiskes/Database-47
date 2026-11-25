@@ -1,3 +1,5 @@
+import { after } from 'next/server';
+import { processAdvertisingInvoiceMailOutbox } from '../../../../lib/advertising-invoices';
 import { billingOrigin } from '../../../../lib/recurring-server';
 import { createServiceClient } from '../../../../lib/supabase-server';
 import { reconcileTravauxPayment } from '../../../../lib/travaux-billing';
@@ -13,6 +15,7 @@ export async function POST(request: Request) {
   if (!db) return new Response(null, { status: 503 });
   try {
     await reconcileTravauxPayment(db, id, billingOrigin(request));
+    after(() => processAdvertisingInvoiceMailOutbox().catch(() => undefined));
     return new Response(null, { status: 200 });
   } catch {
     return new Response(null, { status: 503 });

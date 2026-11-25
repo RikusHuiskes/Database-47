@@ -38,3 +38,15 @@ Pour une future évaluation, utiliser le couple `(job_id, provider_id)` déjà u
 Appliquer également `20261125170000_travaux_provider_profile.sql` avant d’activer les formulaires. Le profil professionnel est conservé dans le registre privé, avec le SIRET au format 14 chiffres, les spécialités, l’effectif et les certifications déclarées. La version des conditions et la date d’acceptation sont enregistrées avant la redirection vers Mollie. Vérifier les conditions contractuelles définitives avant mise en production.
 
 Appliquer `20261125190000_travaux_public_feed.sql` pour le compteur public des réponses. La projection expose le contenu modéré et le total, sans identité des répondants. Une demande complète reste visible à 3/3 et ne peut plus recevoir de réponses. Les recommandations filtrent sur les spécialités du profil authentifié avant pagination.
+
+## Paiements et factures
+
+Appliquer `20261125210000_travaux_billing_plans.sql` après les migrations Travaux, statistiques et facturation publicitaire. Les prix serveur sont 25 € par mois (première autorisation par un moyen compatible, renouvellement par prélèvement SEPA) et 250 € pour 12 mois (paiement unique). Configurer les moyens Mollie et l’envoi SMTP dans un environnement isolé. Vérifier le régime fiscal et les coordonnées du vendeur dans les réglages de facturation existants. Le retour navigateur ne valide pas un paiement. Le serveur lit la transaction Mollie, puis enregistre la période, la facture et sa mise en file dans une transaction. Une facture par paiement, y compris lors d’un renouvellement. La file existante réessaie via le cron de messagerie. Les factures sont également téléchargeables depuis l’espace professionnel.
+
+### Recette
+
+- Créer une demande avec des coordonnées fictives, approuver, vérifier l’anonymat public, puis accepter trois réponses et rejeter la quatrième (y compris sous concurrence).
+- Tester un paiement annuel, un premier paiement mensuel et son renouvellement SEPA. Tester un échec, rejouer la notification et contrôler qu’un seul PDF et e-mail soient émis pour le même paiement.
+- Contrôler la réception SMTP sur la boîte de test, la durée de 12 mois de l’option annuelle, l’arrêt du renouvellement mensuel et l’accès aux PDF du seul acheteur.
+- En mode test, les factures sont marquées TEST et le transport existant redirige les e-mails vers le compte de test configuré.
+- Une contestation ou un remboursement suspend l’accès pour la période concernée. Traiter l’éventuel avoir dans le circuit comptable.

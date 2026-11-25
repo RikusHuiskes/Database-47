@@ -1,13 +1,16 @@
 import { termsVersion, type CompanyDetails } from './travaux-company';
 import { intlLocale, type Locale } from './i18n';
 import { monthBoundary } from './recurring-billing';
-import { billingOrigin } from './recurring-server';
+import { loadAdvertisingInvoiceProfile } from './advertising-invoices';
+import { mailConfiguration } from './mail';
+import { travauxPlans, type TravauxPlan } from './travaux-plans';
+import { billingOrigin, firstMethods } from './recurring-server';
 import { mollieRequest } from './mollie';
 import { isPaymentCheckoutUrl } from './payment-checkout-url';
 import { travauxPath } from './travaux';
 import { checked, TravauxError, travauxTestMode, type TravauxDb } from './travaux-server';
 
-const amount = { value: '25.00', currency: 'EUR' };
+const amountFor = (plan: TravauxPlan) => ({ value: travauxPlans[plan].amount, currency: 'EUR' });
 const product = 'travaux-cote-de-duras';
 const description = 'Côte de Duras — Abonnement Travaux';
 const parisDay = (date: Date) => new Intl.DateTimeFormat('en-CA', {
@@ -28,18 +31,37 @@ function travauxBillingOrigin(request: Request) {
   return origin;
 }
 
-export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale, details: CompanyDetails) {
+export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale, details: CompanyDetails, plan: TravauxPlan) {
   const origin = travauxBillingOrigin(request);
+  if (!mailConfiguration().deliveryEnabled || !(await loadAdvertisingInvoiceProfile(db)).profile) {
+    throw new TravauxError('La facturation par e-mail est temporairement indisponible.', 503);
+  }
+  const amount = amountFor(plan);
   checked(await db.from('travaux_providers').upsert({
     user_id: userId, email, name, phone, details, test_mode: travauxTestMode(),
   }, { onConflict: 'user_id', ignoreDuplicates: true }));
-  const profile = checked(await db.from('travaux_providers').select('*').eq('user_id', userId).single());
+  let profile = checked(await db.from('travaux_providers').select('*').eq('user_id', userId).single());
   if (profile.test_mode !== travauxTestMode()) throw new TravauxError('Ce profil appartient à un autre environnement de paiement.', 409);
+  const resetCheckout = async () => checked(await db.from('travaux_providers').update({
+    checkout_key: crypto.randomUUID(), first_payment_id: null, billing_plan: null,
+    subscription_id: null, cancelled_at: null,
+  }).eq('user_id', userId).eq('checkout_key', profile.checkout_key).select('*').single());
+  if ((profile.billing_plan === 'annual' || profile.cancelled_at) && profile.first_payment_id) {
+    const recorded = checked(await db.from('travaux_payments').select('id').eq('id', profile.first_payment_id).maybeSingle());
+    if (recorded && !checked(await db.rpc('travaux_paid', { p_user: userId, p_test: travauxTestMode() }))) {
+      profile = await resetCheckout();
+    }
+  }
   if (profile.subscription_id) throw new TravauxError('Un abonnement existe déjà pour ce compte.', 409);
+  if (profile.billing_plan && profile.billing_plan !== plan) {
+    const previous = profile.first_payment_id ? await mollieRequest('payments/' + profile.first_payment_id) : null;
+    if (previous && ['expired', 'canceled', 'failed'].includes(previous.status)) profile = await resetCheckout();
+    else throw new TravauxError('Reprenez la formule du paiement déjà commencé.', 409);
+  }
 
   const savedProfile = checked(await db.from('travaux_providers').update({
-    email, name, phone, details, terms_version: termsVersion, terms_accepted_at: new Date().toISOString(),
-  }).eq('user_id', userId).is('subscription_id', null).select('user_id').maybeSingle());
+    email, name, phone, details, billing_plan: plan, terms_version: termsVersion, terms_accepted_at: new Date().toISOString(),
+  }).eq('user_id', userId).eq('checkout_key', profile.checkout_key).or('billing_plan.is.null,billing_plan.eq.' + plan).is('subscription_id', null).select('user_id').maybeSingle());
   if (!savedProfile) throw new TravauxError('Un abonnement existe déjà pour ce compte.', 409);
 
   let customerId = profile.customer_id;
@@ -68,8 +90,9 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
   }
   if (!payment) {
     payment = await molliePost('payments', 'travaux-checkout-' + key, {
-      amount, description, customerId, sequenceType: 'first',
-      metadata: { product, userId, checkoutKey: key },
+      amount, description, customerId, sequenceType: plan === 'monthly' ? 'first' : 'oneoff',
+      ...(plan === 'monthly' ? { method: await firstMethods('sepa', travauxPlans.monthly.cents) } : {}),
+      metadata: { product, userId, checkoutKey: key, plan },
       locale: intlLocale[locale].replace('-', '_'),
       redirectUrl: origin + travauxPath + '?paiement=retour&lang=' + locale,
       webhookUrl: origin + '/api/travaux/mollie',
@@ -93,26 +116,30 @@ export async function reconcileTravauxPayment(db: TravauxDb, id: string, origin:
   const payment = await mollieRequest('payments/' + id);
   if (!/^cst_[A-Za-z0-9]+$/.test(payment.customerId ?? '')) return;
   const profile = checked(await db.from('travaux_providers').select('*').eq('customer_id', payment.customerId).maybeSingle());
-  if (!profile || profile.test_mode !== travauxTestMode() || payment.mode !== (profile.test_mode ? 'test' : 'live')
-    || payment.amount?.currency !== amount.currency || payment.amount?.value !== amount.value) return;
+  if (!profile || profile.test_mode !== travauxTestMode() || payment.mode !== (profile.test_mode ? 'test' : 'live')) return;
+  const plan: TravauxPlan = payment.metadata?.plan === 'annual' ? 'annual' : 'monthly';
+  const amount = amountFor(plan);
+  if (payment.amount?.currency !== amount.currency || payment.amount?.value !== amount.value) return;
 
-  const first = payment.sequenceType === 'first';
+  const first = payment.sequenceType === (plan === 'annual' ? 'oneoff' : 'first');
   if (first) {
-    if (payment.metadata?.product !== product || payment.metadata?.userId !== profile.user_id
-      || payment.metadata?.checkoutKey !== profile.checkout_key
-      || (profile.first_payment_id && profile.first_payment_id !== id)) return;
-  } else if (payment.sequenceType !== 'recurring' || !profile.subscription_id || payment.subscriptionId !== profile.subscription_id) {
-    return;
-  }
+    if (payment.metadata?.product !== product || payment.metadata?.userId !== profile.user_id) return;
+    if (payment.metadata?.checkoutKey !== profile.checkout_key || (profile.first_payment_id && profile.first_payment_id !== id)) {
+      const previous = plan === 'annual' && checked(await db.from('travaux_payments').select('id')
+        .eq('id', id).eq('provider_id', profile.user_id).maybeSingle());
+      if (!previous) return;
+    } else if ((profile.billing_plan ?? 'monthly') !== plan) return;
+  } else if (plan !== 'monthly' || payment.sequenceType !== 'recurring' || payment.method !== 'directdebit'
+    || !profile.subscription_id || payment.subscriptionId !== profile.subscription_id) return;
 
   const disputed = Number(payment.amountRefunded?.value ?? 0) > 0 || Number(payment.amountChargedBack?.value ?? 0) > 0;
   if (payment.status !== 'paid' && !disputed) return;
   const day = parisDay(new Date(first ? payment.paidAt ?? payment.createdAt : payment.createdAt));
-  if (first && !profile.subscription_id && !disputed) {
+  if (plan === 'monthly' && first && !profile.subscription_id && !disputed) {
     if (!/^mdt_[A-Za-z0-9]+$/.test(payment.mandateId ?? '')) throw Error('Missing Travaux mandate');
     const base = 'customers/' + profile.customer_id;
     const mandate = await mollieRequest(base + '/mandates/' + payment.mandateId);
-    if (mandate.status !== 'valid') throw Error('Travaux mandate is not valid yet');
+    if (mandate.status !== 'valid' || mandate.method !== 'directdebit') throw Error('Travaux mandate is not valid yet');
     const path = base + '/subscriptions';
     const known = (await mollieRequest(path + '?limit=50'))._embedded?.subscriptions?.find(
       (item: { metadata?: { firstPayment?: string } }) => item.metadata?.firstPayment === id);
@@ -124,8 +151,10 @@ export async function reconcileTravauxPayment(db: TravauxDb, id: string, origin:
     checked(await db.from('travaux_providers').update({ subscription_id: subscription.id, first_payment_id: id })
       .eq('user_id', profile.user_id).eq('checkout_key', profile.checkout_key).is('subscription_id', null));
   }
-  checked(await db.rpc('travaux_record_payment', {
-    p_id: id, p_user: profile.user_id, p_day: day, p_paid: !disputed, p_observed: observed,
+  const invoice = disputed ? null : (await loadAdvertisingInvoiceProfile(db)).profile;
+  if (!disputed && !invoice) throw Error('Missing Travaux invoice configuration');
+  checked(await db.rpc('travaux_settle_payment', {
+    p_id: id, p_user: profile.user_id, p_day: day, p_plan: plan, p_paid: !disputed, p_observed: observed, p_profile: invoice,
   }));
   if (first && disputed && profile.subscription_id && !profile.cancelled_at) {
     await cancelTravauxSubscription(db, profile.user_id);

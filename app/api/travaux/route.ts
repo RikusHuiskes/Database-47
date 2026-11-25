@@ -1,4 +1,7 @@
 import { projectAddress, readCompanyDetails } from '../../../lib/travaux-company-server';
+import { isTravauxPlan } from '../../../lib/travaux-plans';
+import { processAdvertisingInvoiceMailOutbox } from '../../../lib/advertising-invoices';
+import { after } from 'next/server';
 import { termsVersion } from '../../../lib/travaux-company';
 import { localeFrom } from '../../../lib/i18n';
 import { adminService } from '../../../lib/admin-service';
@@ -17,7 +20,7 @@ export async function GET(request: Request) {
     const { db, user } = await travauxUser(request);
     const [paid, profile, jobs, sent, admin] = await Promise.all([
       db.rpc('travaux_paid', { p_user: user.id, p_test: travauxTestMode() }),
-      db.from('travaux_providers').select('name,phone,cancelled_at,subscription_id,details').eq('user_id', user.id).maybeSingle(),
+      db.from('travaux_providers').select('name,phone,cancelled_at,subscription_id,details,billing_plan').eq('user_id', user.id).maybeSingle(),
       db.from('travaux_jobs').select(`${jobFields}, responses:travaux_responses(${contactFields})`)
         .eq('owner_id', user.id).order('created_at', { ascending: false }).limit(100),
       db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,email,phone))')
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
       active, admin: Boolean(admin), pending, jobs: checked(jobs), sent: checked(sent),
       provider: provider && {
         name: provider.name, phone: provider.phone, details: provider.details, cancelled: Boolean(provider.cancelled_at),
-        subscribed: Boolean(provider.subscription_id),
+        subscribed: Boolean((provider.subscription_id && (!provider.cancelled_at || active)) || (provider.billing_plan === 'annual' && active)), plan: provider.billing_plan,
       },
     });
   } catch (error) { return travauxFailure(error); }
@@ -60,7 +63,10 @@ export async function POST(request: Request) {
       if (body.consent !== true || body.termsVersion !== termsVersion) {
         throw new TravauxError('Confirmez le prix et le renouvellement de l’abonnement.');
       }
-      return travauxJson(await startTravauxCheckout(db, request, user.id, email, company, phone, localeFrom(body.locale), details));
+      if (!isTravauxPlan(body.plan)) throw new TravauxError('Choisissez une formule de paiement.');
+      const result = await startTravauxCheckout(db, request, user.id, email, company, phone, localeFrom(body.locale), details, body.plan);
+      if (result.ok) after(() => processAdvertisingInvoiceMailOutbox().catch(() => undefined));
+      return travauxJson(result);
     }
     if (body.action === 'cancel') {
       await cancelTravauxSubscription(db, user.id);
