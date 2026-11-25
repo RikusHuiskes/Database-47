@@ -17,7 +17,7 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{__html: JSON.stringify(website).replace(/</g, '\\u003c')}}
       />
-      <DurasSite campaignPreview={process.env.VERCEL_ENV==='preview'} discoveryPreview/>
+      <DurasSite campaignPreview={process.env.VERCEL_ENV==='preview'} discoveryPreview travauxEnabled={process.env.TRAVAUX_ENABLED === 'true'}/>
     </>
   );
 }

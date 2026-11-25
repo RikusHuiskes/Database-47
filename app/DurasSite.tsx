@@ -345,7 +345,7 @@ function sourceLabel(value?: string | null): string {
   }
 }
 
-export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false,campaignPreview=false,discoveryPreview=false}:{newListingOnly?:boolean;previewAdSamplesEnabled?:boolean;campaignPreview?:boolean;discoveryPreview?:boolean}) {
+export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=false,campaignPreview=false,discoveryPreview=false,travauxEnabled=false}:{travauxEnabled?:boolean;newListingOnly?:boolean;previewAdSamplesEnabled?:boolean;campaignPreview?:boolean;discoveryPreview?:boolean}) {
   const {locale,t}=useLanguage();
   const [discoveryMode,setDiscoveryMode]=useState<'events'|'food'|'shops'|'practical'|'all'>('events');
   const guideRequest=useRef(0);
@@ -2210,6 +2210,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <a href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><T>{"Agenda"}</T></a>
             <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
             <a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeente informatie"}</T></a>
+            {travauxEnabled && <a href="/travaux">{locale === 'nl' ? 'Klussen' : locale === 'en' ? 'Home projects' : 'Travaux'}</a>}
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
           </nav></A>
         </div>
