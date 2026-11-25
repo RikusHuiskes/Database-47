@@ -7,7 +7,7 @@ import { localeFrom } from '../../../lib/i18n';
 import { adminService } from '../../../lib/admin-service';
 import { travauxCategories } from '../../../lib/travaux';
 import {
-  checked, field, phoneField, travauxCommunes, TravauxError, travauxFailure,
+  checked, field, isTravauxOwner, phoneField, travauxCommunes, TravauxError, travauxFailure,
   travauxJson, travauxTestMode, travauxUser, uuid,
 } from '../../../lib/travaux-server';
 import { cancelTravauxSubscription, startTravauxCheckout } from '../../../lib/travaux-billing';
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     const pending = admin ? checked(await db.from('travaux_jobs').select(jobFields)
       .eq('status', 'pending').order('created_at').limit(100)) : [];
     return travauxJson({
-      active, admin: Boolean(admin), pending, jobs: checked(jobs), sent: checked(sent),
+      active, admin: Boolean(admin), owner: Boolean(admin && isTravauxOwner(user.id)), pending, jobs: checked(jobs), sent: checked(sent),
       provider: provider && {
         name: provider.name, phone: provider.phone, details: provider.details, cancelled: Boolean(provider.cancelled_at),
         subscribed: Boolean((provider.subscription_id && (!provider.cancelled_at || active)) || (provider.billing_plan === 'annual' && active)), plan: provider.billing_plan,

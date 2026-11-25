@@ -2,6 +2,7 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "e-mail": ["e-mail", "email", "e-mailadres"],
   "Mes demandes en attente": ["Mes demandes en attente", "My requests awaiting review", "Mijn klussen in afwachting"],
   "Ces demandes sont privées jusqu’à leur approbation.": ["Ces demandes sont privées jusqu’à leur approbation.", "These requests remain private until approved.", "Deze klussen zijn privé tot de beheerder ze goedkeurt."],
   "Reprenez la formule du paiement déjà commencé.": ["Reprenez la formule du paiement déjà commencé.", "Continue with the plan used for the pending payment.", "Kies de betaaloptie waarmee je al een betaling bent begonnen."],

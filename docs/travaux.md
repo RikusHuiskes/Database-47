@@ -50,3 +50,5 @@ Appliquer `20261125210000_travaux_billing_plans.sql` après les migrations Trava
 - Contrôler la réception SMTP sur la boîte de test, la durée de 12 mois de l’option annuelle, l’arrêt du renouvellement mensuel et l’accès aux PDF du seul acheteur.
 - En mode test, les factures sont marquées TEST et le transport existant redirige les e-mails vers le compte de test configuré.
 - Une contestation ou un remboursement suspend l’accès pour la période concernée. Traiter l’éventuel avoir dans le circuit comptable.
+
+Le registre « Coordonnées privées des demandeurs » utilise la table existante `travaux_contacts`, liée à chaque demande. Pour le rendre accessible au propriétaire, définir côté serveur `TRAVAUX_OWNER_USER_ID` sur l’UUID de son compte Supabase vérifié. Ce compte doit également être administrateur. Sans cette configuration, le registre reste fermé à tous les comptes. Modifier l’e-mail de contact dans ce registre ne change pas la connexion du demandeur. Les artisans ayant répondu avec succès continuent de recevoir le nom, l’e-mail et le téléphone, sans adresse.

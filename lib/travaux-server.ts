@@ -75,3 +75,8 @@ export function phoneField(value: unknown) {
 
 export const uuid = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
+
+export function isTravauxOwner(userId: string) {
+  const configured = process.env.TRAVAUX_OWNER_USER_ID?.trim();
+  return uuid(configured) && configured.toLowerCase() === userId.toLowerCase();
+}

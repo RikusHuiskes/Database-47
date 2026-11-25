@@ -11,6 +11,7 @@ import Guide from './Guide';
 import ContactForm from './ContactForm';
 import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
+import OwnerContacts from './OwnerContacts';
 import Stats from './Stats';
 import Invoices from './Invoices';
 import AnalyticsConsent from '../components/AnalyticsConsent';
@@ -43,7 +44,7 @@ type Job = PublicJob & {
   responses?: Reply[];
 };
 type Dashboard = {
-  active: boolean; admin: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; cancelled: boolean } | null;
+  active: boolean; admin: boolean; owner: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; cancelled: boolean } | null;
   jobs: Job[]; pending: Job[];
   sent: { job_id: string; job: { title: string; commune: string; contact: Contact | null } | null }[];
 };
@@ -278,6 +279,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
      {panel === 'admin' && dashboard?.admin && token && <>
       <Stats token={token} />
       <Registry token={token} />
+      {dashboard.owner && <OwnerContacts token={token} />}
       {Boolean(dashboard?.pending.length) && <Card title={t("Demandes à modérer")}>
           <p>{t("Vérifiez que le titre et la description préservent l’anonymat du demandeur avant de publier.")}</p>
           {dashboard?.pending.map(job => <article key={job.id} className={styles.item}>
