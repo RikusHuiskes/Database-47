@@ -44,7 +44,7 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
   if (profile.test_mode !== travauxTestMode()) throw new TravauxError('Ce profil appartient à un autre environnement de paiement.', 409);
   const resetCheckout = async () => checked(await db.from('travaux_providers').update({
     checkout_key: crypto.randomUUID(), first_payment_id: null, billing_plan: null,
-    subscription_id: null, cancelled_at: null,
+    subscription_id: null, cancelled_at: null, notice_ends_on: null,
   }).eq('user_id', userId).eq('checkout_key', profile.checkout_key).select('*').single());
   if ((profile.billing_plan === 'annual' || profile.cancelled_at) && profile.first_payment_id) {
     const recorded = checked(await db.from('travaux_payments').select('id').eq('id', profile.first_payment_id).maybeSingle());
@@ -161,16 +161,20 @@ export async function reconcileTravauxPayment(db: TravauxDb, id: string, origin:
   }
 }
 
-export async function cancelTravauxSubscription(db: TravauxDb, userId: string) {
+export async function cancelTravauxSubscription(db: TravauxDb, userId: string, withNotice = false) {
   const profile = checked(await db.from('travaux_providers').select('*').eq('user_id', userId).maybeSingle());
   if (!profile?.subscription_id || profile.test_mode !== travauxTestMode()) {
     throw new TravauxError('Aucun abonnement à résilier.', 409);
   }
   if (profile.cancelled_at) return;
+  const cancelledAt = new Date();
   const path = 'customers/' + profile.customer_id + '/subscriptions/' + profile.subscription_id;
   const subscription = await mollieRequest(path);
   if (!['canceled', 'completed'].includes(subscription.status)) {
     await mollieRequest(path, { method: 'DELETE' });
   }
-  checked(await db.from('travaux_providers').update({ cancelled_at: new Date().toISOString() }).eq('user_id', userId));
+  checked(await db.from('travaux_providers').update({
+    cancelled_at: cancelledAt.toISOString(),
+    notice_ends_on: withNotice ? monthBoundary(parisDay(cancelledAt), 1) : null,
+  }).eq('user_id', userId).eq('subscription_id', profile.subscription_id).is('cancelled_at', null));
 }

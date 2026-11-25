@@ -45,7 +45,7 @@ type Job = PublicJob & {
   responses?: Reply[];
 };
 type Dashboard = {
-  active: boolean; admin: boolean; owner: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; cancelled: boolean } | null;
+  active: boolean; admin: boolean; owner: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; noticeUntil: string | null; cancelled: boolean } | null;
   jobs: Job[]; pending: Job[];
   sent: { job_id: string; job: { title: string; commune: string; contact: Contact | null } | null }[];
 };
@@ -480,9 +480,14 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
           <Card title={t("Mon abonnement professionnel")}>
             {!dashboard ? <p>{t("Chargement de l’abonnement…")}</p> : provider?.subscribed ? <>
               <p>{dashboard.active ? t("Accès actif pour la période payée.") : t("Aucun accès actif pour la période en cours.")}</p>
-              {provider.plan === 'annual' ? <p>{company('annualActive')}</p> : provider.cancelled ? <p>{t("Le renouvellement automatique est arrêté.")}</p> :
+              {provider.plan === 'annual' ? <p>{company('annualActive')}</p> : provider.cancelled ? <p>
+                {t("Le renouvellement automatique est arrêté.")}
+                {provider.noticeUntil && <> {company('noticeUntil')} {new Intl.DateTimeFormat(intlLocale[locale], {
+                  dateStyle: 'long', timeZone: 'Europe/Paris',
+                }).format(new Date(provider.noticeUntil + 'T12:00:00Z'))}.</>}
+              </p> :
                 <button className={styles.secondary} disabled={busy} onClick={() => {
-                  if (window.confirm(t("Arrêter le renouvellement mensuel ?"))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
+                  if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
                 }}>{t("Arrêter le renouvellement")}</button>}
             </> : null}
             {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={styles.form} onSubmit={submit(data => void send({
@@ -494,7 +499,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
                 <fieldset><legend>{company('plan')}</legend>
                   {(['monthly', 'annual'] as const).map(plan => <label key={plan} className={styles.check}>
                     <input type="radio" name="plan" value={plan} defaultChecked={plan === (provider?.plan ?? 'monthly')}
-                      required /> {company(plan)}
+                      required /> {company(plan)}{plan === 'monthly' && <> · {company('notice')}</>}
                   </label>)}
                 </fieldset>
                 <details><summary>{company('terms')}</summary><p>{company('termsText')}</p>
