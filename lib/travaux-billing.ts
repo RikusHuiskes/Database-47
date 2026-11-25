@@ -1,3 +1,4 @@
+import { termsVersion, type CompanyDetails } from './travaux-company';
 import { intlLocale, type Locale } from './i18n';
 import { monthBoundary } from './recurring-billing';
 import { billingOrigin } from './recurring-server';
@@ -27,19 +28,24 @@ function travauxBillingOrigin(request: Request) {
   return origin;
 }
 
-export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale) {
+export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale, details: CompanyDetails) {
   const origin = travauxBillingOrigin(request);
   checked(await db.from('travaux_providers').upsert({
-    user_id: userId, email, name, phone, test_mode: travauxTestMode(),
+    user_id: userId, email, name, phone, details, test_mode: travauxTestMode(),
   }, { onConflict: 'user_id', ignoreDuplicates: true }));
   const profile = checked(await db.from('travaux_providers').select('*').eq('user_id', userId).single());
   if (profile.test_mode !== travauxTestMode()) throw new TravauxError('Ce profil appartient à un autre environnement de paiement.', 409);
   if (profile.subscription_id) throw new TravauxError('Un abonnement existe déjà pour ce compte.', 409);
 
+  const savedProfile = checked(await db.from('travaux_providers').update({
+    email, name, phone, details, terms_version: termsVersion, terms_accepted_at: new Date().toISOString(),
+  }).eq('user_id', userId).is('subscription_id', null).select('user_id').maybeSingle());
+  if (!savedProfile) throw new TravauxError('Un abonnement existe déjà pour ce compte.', 409);
+
   let customerId = profile.customer_id;
   if (!customerId) {
     const customer = await molliePost('customers', 'travaux-customer-' + userId, {
-      name: profile.name, email: profile.email, metadata: { product, userId },
+      name, email, metadata: { product, userId },
     });
     customerId = customer.id;
     checked(await db.from('travaux_providers').update({ customer_id: customerId }).eq('user_id', userId).is('customer_id', null));

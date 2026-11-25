@@ -2,6 +2,18 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "Complet": ["Complet", "Full", "Vol"],
+  "Toutes les demandes": ["Toutes les demandes", "All projects", "Alle klussen"],
+  "Recommandées pour moi": ["Recommandées pour moi", "Recommended for me", "Aanbevolen voor mij"],
+  "Correspond à vos spécialités": ["Correspond à vos spécialités", "Matches your specialties", "Past bij je specialismen"],
+  "Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.": ["Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.", "Add your specialties in your professional account to get recommendations.", "Vul je specialismen in je vakmensenaccount in voor aanbevelingen."],
+  "réponses": ["réponses", "replies", "reacties"],
+  "Vous avez déjà répondu": ["Vous avez déjà répondu", "You have already replied", "Je hebt al gereageerd"],
+  "Votre demande": ["Votre demande", "Your project", "Jouw klus"],
+  "Un abonnement actif est nécessaire pour envoyer votre réponse.": ["Un abonnement actif est nécessaire pour envoyer votre réponse.", "An active subscription is required to send your reply.", "Je hebt een actief abonnement nodig om je reactie te versturen."],
+  "ville": ["ville", "town", "plaats"],
+  "certifications": ["certifications", "certifications", "certificeringen"],
+  "Vérifiez le code postal, le SIRET, la forme juridique, l’effectif et les spécialités.": ["Vérifiez le code postal, le SIRET, la forme juridique, l’effectif et les spécialités.", "Check the postcode, SIRET, legal form, employee count and specialties.", "Controleer de postcode, het SIRET-nummer, de rechtsvorm, het aantal werknemers en de specialismen."],
   "Travaux et artisans": ["Travaux et artisans", "Home projects and tradespeople", "Klussen en vakmensen"],
   "Travaux et artisans autour de Duras": ["Travaux et artisans autour de Duras", "Home projects and tradespeople around Duras", "Klussen en vakmensen rond Duras"],
   "Dans un rayon de 50 km autour de Duras": ["Dans un rayon de 50 km autour de Duras", "Within 50 km of Duras", "Binnen 50 km rond Duras"],

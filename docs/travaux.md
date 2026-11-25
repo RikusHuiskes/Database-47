@@ -18,3 +18,23 @@ La page `/travaux` utilise le logo, le visuel et les styles de Côte de Duras. L
 5. Avant ouverture publique, valider les mentions de confidentialité et les conditions de l’abonnement, les modalités de facturation et la durée de conservation des coordonnées. Utiliser une base distincte pour les essais et une clé Mollie live uniquement dans l’environnement de production. La configuration de production utilise l’origine HTTPS canonique `PUBLIC_SITE_URL` si elle est définie.
 
 Test local des règles PostgreSQL avec `node --test lib/travaux-sql.test.mjs`.
+
+## Comparaison locale
+
+| Service | Ce qu’il propose | Choix Côte de Duras |
+| --- | --- | --- |
+| [AlloVoisins à Duras](https://www.allovoisins.com/r/0/123/25045/0/Duras/service/Bricolage-travaux) | Annonces locales par commune et spécialité, particuliers et professionnels | Consultation libre et filtres locaux, réponses réservées aux abonnés |
+| [Travaux.com](https://www.travaux.com/comment-ca-marche) | Description détaillée, comparaison d’offres et coordonnées transmises aux artisans choisis | Conseils pour préciser et comparer les offres. Transmission aux trois premières réponses éligibles selon la règle affichée |
+| [Habitatpresto Pro](https://www.habitatpresto.com/pro/inscription-chantiers) | Demandes de devis selon le métier et la zone | Filtres métier et commune, tarif mensuel annoncé et propositions facultatives |
+
+L’e-mail utilisé pour le contact est l’adresse vérifiée du compte. La table travaux_contacts est liée à la demande par sa clé primaire, sans lecture publique. La modération courante affiche les seuls champs de l’annonce. Le guide ne remplace pas les mentions RGPD complètes à valider avant activation publique, dont la durée de conservation et le fondement du traitement. [Repères CNIL](https://www.cnil.fr/fr/conformite-rgpd-information-des-personnes-et-transparence).
+
+## Registre et future évaluation
+
+L’onglet Administration, réservé aux comptes qui passent `is_admin()`, affiche les artisans, leur référence d’abonnement Mollie, l’accès payé, le mode test et le renouvellement. L’historique d’un artisan est paginé et affiche le chantier, la place, le message et le montant éventuel. L’API d’administration n’envoie ni l’adresse ni les coordonnées du demandeur.
+
+Pour une future évaluation, utiliser le couple `(job_id, provider_id)` déjà unique dans `travaux_responses`. Vérifier que l’auteur est le propriétaire du chantier et que l’artisan a obtenu une place. Enregistrer au plus une évaluation par couple. Décider du déclencheur après réalisation, de la modération et de la visibilité avant d’ouvrir les avis.
+
+Appliquer également `20261125170000_travaux_provider_profile.sql` avant d’activer les formulaires. Le profil professionnel est conservé dans le registre privé, avec le SIRET au format 14 chiffres, les spécialités, l’effectif et les certifications déclarées. La version des conditions et la date d’acceptation sont enregistrées avant la redirection vers Mollie. Vérifier les conditions contractuelles définitives avant mise en production.
+
+Appliquer `20261125190000_travaux_public_feed.sql` pour le compteur public des réponses. La projection expose le contenu modéré et le total, sans identité des répondants. Une demande complète reste visible à 3/3 et ne peut plus recevoir de réponses. Les recommandations filtrent sur les spécialités du profil authentifié avant pagination.

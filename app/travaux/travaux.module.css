@@ -57,3 +57,16 @@
 .choice { margin: 3px 0; }
 .choice span { font-size: .92rem; font-weight: 400; }
 .choice:hover, .choice[aria-pressed="true"] { background: #e6efe5; }
+
+.guide { padding: 10px 0; border-top: 1px solid #d9dfd5; }
+.guide summary { cursor: pointer; font-weight: 700; }
+.guide ol { padding-inline-start: 24px; }
+.guide li + li { margin-top: 8px; }
+
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.tabs [aria-pressed="true"] { color: #fff; background: #265449; border-color: #265449; }
+
+.match { padding: 3px 8px; border-radius: 6px; background: #e6efe5; color: #244e43; font-size: .88rem; }
+.jobReply { margin-top: 10px; }
+.jobReply > summary { width: fit-content; }
+.jobReply[open] > summary { margin-bottom: 10px; }

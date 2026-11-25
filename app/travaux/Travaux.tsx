@@ -6,6 +6,12 @@ import { travauxCategories, travauxCategoryLabel, travauxGroups, travauxPath, tr
 import { travauxCopy, travauxErrorText } from '../../lib/travaux-copy';
 import { intlLocale } from '../../lib/i18n';
 import { useLanguage } from '../i18n/Language';
+import guide from '../../lib/travaux-guides.json';
+import Guide from './Guide';
+import Registry from './Registry';
+import CompanyFields from './CompanyFields';
+import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
+import panels from '../../lib/travaux-panels.json';
 import Picker, { type ChoiceGroup } from './Picker';
 import styles from './travaux.module.css';
 
@@ -23,14 +29,14 @@ type Commune = { code: string; name: string; postcode: string; featured: boolean
 type Contact = { name: string; address: string; email: string; phone: string };
 type Reply = { company: string; email: string; phone: string; message: string | null; quote_cents: number | null; slot: number };
 type PublicJob = {
-  id: string; title: string; description: string; commune: string; category: TravauxCategory;
+  id: string; title: string; description: string; commune: string; category: TravauxCategory; responseCount?: number;
 };
 type Job = PublicJob & {
   status: 'pending' | 'open' | 'rejected' | 'closed';
   responses?: Reply[];
 };
 type Dashboard = {
-  active: boolean; provider: { name: string; phone: string; subscribed: boolean; cancelled: boolean } | null;
+  active: boolean; admin: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; subscribed: boolean; cancelled: boolean } | null;
   jobs: Job[]; pending: Job[];
   sent: { job_id: string; job: { title: string; commune: string; contact: Contact | null } | null }[];
 };
@@ -70,11 +76,16 @@ function submit(run: (data: FormData) => void) {
 export default function Travaux({ enabled, communes }: { enabled: boolean; communes: Commune[] }) {
   const { locale } = useLanguage();
   const t = travauxCopy(locale);
+  const copy = panels[locale];
+  const company = companyCopy(locale);
+  const [panel, setPanel] = useState<'jobs' | 'guide' | 'contact' | 'admin'>('jobs');
+
   const eur = new Intl.NumberFormat(intlLocale[locale], { style: 'currency', currency: 'EUR' });
   const [category, setCategory] = useState('');
   const [commune, setCommune] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [communeFilter, setCommuneFilter] = useState('');
+  const [recommended, setRecommended] = useState(false);
   const categoryGroups = useMemo<ChoiceGroup[]>(() => Object.entries(travauxGroups).map(([group, label]) => ({
     label: travauxText(label, locale),
     options: Object.entries(travauxCategories).flatMap(([value, [section, name, example]]) => section === group
@@ -109,7 +120,11 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
   useEffect(() => {
     if (!auth) return;
     const { data } = auth.auth.onAuthStateChange((_event, next) => {
-      if (currentSession.current?.user.id !== next?.user.id) setDashboard(null);
+      if (currentSession.current?.user.id !== next?.user.id) {
+        if (!next) setRecommended(false);
+        setDashboard(null);
+        setPanel(previous => previous === 'admin' ? 'jobs' : previous);
+      }
       currentSession.current = next;
       setSession(next);
       setLoading(false);
@@ -141,8 +156,9 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     const params = new URLSearchParams({ page: String(page) });
     if (categoryFilter) params.set('category', categoryFilter);
     if (communeFilter) params.set('commune', communeFilter);
+    if (recommended && token) params.set('recommended', '1');
     try {
-      const result = await fetch(apiPath + '/jobs?' + params, { signal, cache: 'no-store' });
+      const result = await fetch(apiPath + '/jobs?' + params, { signal, cache: 'no-store', headers: recommended && token ? { Authorization: 'Bearer ' + token } : undefined });
       if (!result.ok) throw Error();
       const data: { jobs: PublicJob[]; hasMore: boolean } = await result.json();
       if (current()) {
@@ -155,7 +171,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     } catch {
       if (current()) setJobsError(true);
     }
-  }, [categoryFilter, communeFilter]);
+  }, [categoryFilter, communeFilter, recommended, token]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -177,22 +193,24 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
   async function send(data: { action: string; [key: string]: unknown }, success: string) {
     if (!token) return;
     await run(async () => {
-      const result = await api(token, data);
+      let result;
+      try { result = await api(token, data); }
+      catch (error) { if (data.action === 'respond') await refreshJobs(); throw error; }
       if (result.checkoutUrl) { window.location.assign(result.checkoutUrl); return; }
       if (data.action === 'publish') { setCategory(''); setCommune(''); setPublishVersion(version => version + 1); }
       setNotice(success);
       await refresh(token);
-      if (['respond', 'moderate', 'close'].includes(data.action)) await refreshJobs();
+      if (['respond', 'moderate', 'close', 'save-profile'].includes(data.action)) await refreshJobs();
     });
   }
 
   const userEmail = session?.user.email;
-  const provider = dashboard?.provider;
-  const ownOrAnsweredJobs = new Set([
-    ...(dashboard?.jobs ?? []).map(job => job.id),
-    ...(dashboard?.sent ?? []).map(reply => reply.job_id),
-  ]);
-  const visibleJobs = jobs?.filter(job => !ownOrAnsweredJobs.has(job.id));
+  const provider = dashboard?.provider ?? null;
+  const jobTown = communes.find(place => place.code === commune);
+  const ownJobs = new Set(dashboard?.jobs.map(job => job.id));
+  const answeredJobs = new Set(dashboard?.sent.map(reply => reply.job_id));
+  const specialties = new Set(provider?.details?.specialties ?? []);
+  const visibleJobs = jobs;
   const categoryPicker = (value: string, onChoose: (next: string) => void) =>
     <Picker label={t("Type de travaux")} placeholder={t("Choisir un type de travaux")}
       searchLabel={t("Rechercher un métier ou un type de travaux")} groups={categoryGroups} value={value} onChoose={onChoose} />;
@@ -201,6 +219,29 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
       searchLabel={t("Rechercher par commune ou code postal")} groups={communeGroups} value={value} onChoose={onChoose} />;
 
   return <div className={styles.body} id="espace">
+    <nav className={styles.tabs} aria-label={copy.jobs}>
+      {(['jobs', 'guide', 'contact', ...(dashboard?.admin ? ['admin'] as const : [])] as const).map(tab =>
+        <button type="button" key={tab} className={styles.secondary} aria-pressed={panel === tab}
+          onClick={() => setPanel(tab)}>{copy[tab]}</button>)}
+    </nav>
+    {panel === 'guide' && <Guide />}
+    {panel === 'contact' && <Card title={copy.contact}>
+      <p>{copy.help}</p><p><a href="mailto:info@cotededuras.com">info@cotededuras.com</a> · <a href="/contact">{copy.platformContact}</a></p>
+      <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
+    </Card>}
+     {panel === 'admin' && dashboard?.admin && token && <>
+      <Registry token={token} />
+      {Boolean(dashboard?.pending.length) && <Card title={t("Demandes à modérer")}>
+          <p>{t("Vérifiez que le titre et la description préservent l’anonymat du demandeur avant de publier.")}</p>
+          {dashboard?.pending.map(job => <article key={job.id} className={styles.item}>
+            <JobSummary job={job} /><div className={styles.actions}>
+              <button className={styles.button} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'open' }, t("Demande publiée."))}>{t("Publier")}</button>
+              <button className={styles.secondary} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'rejected' }, t("Demande refusée."))}>{t("Refuser")}</button>
+            </div>
+          </article>)}
+        </Card>}
+    </>}
+    <div hidden={panel !== 'jobs'}>
     <div className={styles.pathways}>
       <section className={styles.card}>
         <h2>{t("J’ai des travaux à faire")}</h2>
@@ -221,6 +262,11 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     {enabled && <div id="demandes">
       <Card title={t("Demandes de travaux")}>
         {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#compte" onClick={() => setView('provider')}>{t("abonnez-vous pour 25 € par mois")}</a>.</p>}
+        {session && <div className={styles.tabs}>
+          <button type="button" className={styles.secondary} aria-pressed={!recommended} onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
+          <button type="button" className={styles.secondary} aria-pressed={recommended} onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
+        </div>}
+        {session && recommended && !specialties.size && <p><a href="#compte" onClick={() => setView('provider')}>{t("Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.")}</a></p>}
         <div className={styles.filters}>
           {categoryPicker(categoryFilter, setCategoryFilter)}
           {communePicker(communeFilter, setCommuneFilter)}
@@ -232,15 +278,24 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
         {!jobsError && visibleJobs?.length === 0 && <p>{t("Aucune nouvelle demande disponible.")}</p>}
         {visibleJobs?.map(job => <article className={styles.item} key={job.id}>
           <JobSummary job={job} />
-          {dashboard?.active && <details><summary>{t("Répondre à cette demande")}</summary>
+          <div className={styles.actions}>
+            <span className={styles.meta}>{job.responseCount ?? 0}/3 {t("réponses")}{job.responseCount === 3 ? " · " + t("Complet") : ""}</span>
+            {specialties.has(job.category) && <span className={styles.match}>{t("Correspond à vos spécialités")}</span>}
+          </div>
+          {session && ownJobs.has(job.id) && <p>{t("Votre demande")}</p>}
+          {session && answeredJobs.has(job.id) && <p>{t("Vous avez déjà répondu")}</p>}
+          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.button}>{t("Répondre à cette demande")}</summary>
+            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#compte" onClick={() => setView('provider')}>{t("abonnez-vous pour 25 € par mois")}</a></p> : <>
+            <p>{guide[locale].beforeReply}</p>
             <form className={styles.form} onSubmit={submit(data => {
               const quote = String(data.get('quote'));
+              setView('provider');
               void send({ action: 'respond', id: job.id, message: data.get('message'), quote: quote ? Math.round(Number(quote) * 100) : null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
             })}>
               <label>{t("Message ou détails du devis (facultatif)")}<textarea name="message" maxLength={1500} rows={3} /></label>
               <label>{t("Montant indicatif en euros (facultatif)")}<input name="quote" type="number" min="0.01" max="1000000" step="0.01" /></label>
               <button className={styles.button} disabled={busy}>{t("Envoyer ma réponse")}</button>
-            </form>
+            </form></>}
           </details>}
         </article>)}
         {hasMoreJobs && <button className={styles.button} disabled={busy} type="button"
@@ -282,12 +337,19 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
               <label>{t("Titre")}<input name="title" minLength={5} maxLength={100} required /></label>
               <label>{t("Description")}<textarea name="description" minLength={20} maxLength={2000} rows={5} required placeholder={t("Dimensions, matériaux, état actuel et délai souhaité")} /></label>
               <fieldset><legend>{t("Coordonnées privées")}</legend>
+                <p className={styles.meta}>{guide[locale].privacy} <a href="/contact">{guide[locale].contact}</a></p>
                 <div className={styles.fields}>
                   <label>{t("Nom et prénom")}<input name="name" autoComplete="name" maxLength={120} required /></label>
                   <label>{t("Téléphone")}<input name="phone" type="tel" autoComplete="tel" maxLength={30} required /></label>
                 </div>
-                <label>{t("Adresse des travaux")}<input name="address" autoComplete="street-address" maxLength={220} required /></label>
-                <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}&nbsp;: {userEmail}</p>
+                <label>{company('street')}<input name="address" autoComplete="address-line1" maxLength={160} required /></label>
+                <label>{company('complement')}<input name="complement" autoComplete="address-line2" maxLength={80} /></label>
+                <div className={styles.fields}>
+                  <label>{company('postcode')}<input autoComplete="postal-code" value={jobTown?.postcode ?? ''} readOnly /></label>
+                  <label>{company('city')}<input autoComplete="address-level2" value={jobTown?.name ?? ''} readOnly /></label>
+                </div>
+                <label>{t("Adresse e-mail")}<input type="email" value={userEmail ?? ""} readOnly autoComplete="email" /></label>
+                <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}</p>
               </fieldset>
               <label className={styles.check}><input name="consent" type="checkbox" required /> {t("J’accepte que mon nom, mon adresse, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
               <button className={styles.button} disabled={busy || !category || !commune}>{t("Envoyer ma demande gratuite")}</button>
@@ -316,36 +378,32 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
                 <button className={styles.secondary} disabled={busy} onClick={() => {
                   if (window.confirm(t("Arrêter le renouvellement mensuel ?"))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
                 }}>{t("Arrêter le renouvellement")}</button>}
-            </> : <form className={styles.form} onSubmit={submit(data => void send({
-              action: 'checkout', company: data.get('company'), phone: data.get('phone'), locale, consent: data.has('billingConsent'),
-            }, t("Paiement confirmé. Votre accès a été actualisé.")))}>
-              <p>{t("Le premier mois coûte 25 €, puis l’abonnement se renouvelle à 25 € par mois jusqu’à sa résiliation.")}</p>
-              <div className={styles.fields}>
-                <label>{t("Nom de l’entreprise")}<input name="company" defaultValue={provider?.name} readOnly={Boolean(provider)} autoComplete="organization" maxLength={120} required /></label>
-                <label>{t("Téléphone professionnel")}<input name="phone" defaultValue={provider?.phone} readOnly={Boolean(provider)} type="tel" autoComplete="tel" maxLength={30} required /></label>
-              </div>
-              <label className={styles.check}><input name="billingConsent" type="checkbox" required /> {t("J’accepte le paiement de 25 € par mois jusqu’à résiliation.")}</label>
-              <button className={styles.button} disabled={busy}>{provider ? t("Reprendre ou vérifier mon paiement") : t("S’abonner avec Mollie")}</button>
+            </> : null}
+            {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={styles.form} onSubmit={submit(data => void send({
+              action: provider?.subscribed ? 'save-profile' : 'checkout', ...Object.fromEntries(data),
+              specialties: data.getAll('specialties'), locale, termsVersion, consent: data.has('billingConsent'),
+            }, provider?.subscribed ? company('saved') : t("Paiement confirmé. Votre accès a été actualisé.")))}>
+              <CompanyFields profile={provider} email={userEmail} />
+              {!provider?.subscribed && <>
+                <details><summary>{company('terms')}</summary><p>{company('termsText')}</p>
+                  <p>{copy.market} {copy.guarantees} {copy.liability}</p></details>
+                <label className={styles.check}><input name="billingConsent" type="checkbox" required /> {company('accept')}</label>
+              </>}
+              <button className={styles.button} disabled={busy}>{provider?.subscribed ? company('save')
+                : provider ? t("Reprendre ou vérifier mon paiement") : t("S’abonner avec Mollie")}</button>
             </form>}
           </Card>
           <Card title={t("Mes réponses")}>
             {!dashboard?.sent.length && <p>{t("Aucune réponse envoyée.")}</p>}
             {dashboard?.sent.map(({ job, job_id }) => job?.contact && <article key={job_id} className={styles.item}>
-              <h3>{job.title}</h3><p>{job.contact.name} · {job.contact.address}, {job.commune}</p>
+              <h3>{job.title}</h3><p>{job.contact.name} · {job.contact.address}</p>
               <p>{job.contact.email} · {job.contact.phone}</p>
             </article>)}
           </Card>
         </>}
-        {Boolean(dashboard?.pending.length) && <Card title={t("Demandes à modérer")}>
-          <p>{t("Vérifiez que le titre et la description préservent l’anonymat du demandeur avant de publier.")}</p>
-          {dashboard?.pending.map(job => <article key={job.id} className={styles.item}>
-            <JobSummary job={job} /><div className={styles.actions}>
-              <button className={styles.button} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'open' }, t("Demande publiée."))}>{t("Publier")}</button>
-              <button className={styles.secondary} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'rejected' }, t("Demande refusée."))}>{t("Refuser")}</button>
-            </div>
-          </article>)}
-        </Card>}
+
       </>}
     </div>}
+    </div>
   </div>;
 }

@@ -1,3 +1,5 @@
+import { projectAddress, readCompanyDetails } from '../../../lib/travaux-company-server';
+import { termsVersion } from '../../../lib/travaux-company';
 import { localeFrom } from '../../../lib/i18n';
 import { adminService } from '../../../lib/admin-service';
 import { travauxCategories } from '../../../lib/travaux';
@@ -15,7 +17,7 @@ export async function GET(request: Request) {
     const { db, user } = await travauxUser(request);
     const [paid, profile, jobs, sent, admin] = await Promise.all([
       db.rpc('travaux_paid', { p_user: user.id, p_test: travauxTestMode() }),
-      db.from('travaux_providers').select('name,phone,cancelled_at,subscription_id').eq('user_id', user.id).maybeSingle(),
+      db.from('travaux_providers').select('name,phone,cancelled_at,subscription_id,details').eq('user_id', user.id).maybeSingle(),
       db.from('travaux_jobs').select(`${jobFields}, responses:travaux_responses(${contactFields})`)
         .eq('owner_id', user.id).order('created_at', { ascending: false }).limit(100),
       db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,address,email,phone))')
@@ -27,9 +29,9 @@ export async function GET(request: Request) {
     const pending = admin ? checked(await db.from('travaux_jobs').select(jobFields)
       .eq('status', 'pending').order('created_at').limit(100)) : [];
     return travauxJson({
-      active, pending, jobs: checked(jobs), sent: checked(sent),
+      active, admin: Boolean(admin), pending, jobs: checked(jobs), sent: checked(sent),
       provider: provider && {
-        name: provider.name, phone: provider.phone, cancelled: Boolean(provider.cancelled_at),
+        name: provider.name, phone: provider.phone, details: provider.details, cancelled: Boolean(provider.cancelled_at),
         subscribed: Boolean(provider.subscription_id),
       },
     });
@@ -45,10 +47,20 @@ export async function POST(request: Request) {
     try { body = JSON.parse(raw); } catch { throw new TravauxError('Demande invalide.'); }
     if (!body || typeof body !== 'object') throw new TravauxError('Demande invalide.');
 
-    if (body.action === 'checkout') {
-      if (body.consent !== true) throw new TravauxError('Confirmez le prix et le renouvellement de l’abonnement.');
-      return travauxJson(await startTravauxCheckout(db, request, user.id, email,
-        field(body.company, 'entreprise', 120), phoneField(body.phone), localeFrom(body.locale)));
+    if (body.action === 'checkout' || body.action === 'save-profile') {
+      const company = field(body.company, 'entreprise', 120);
+      const phone = phoneField(body.phone);
+      const details = readCompanyDetails(body);
+      if (body.action === 'save-profile') {
+        const saved = checked(await db.from('travaux_providers').update({ name: company, phone, email, details })
+          .eq('user_id', user.id).select('user_id').maybeSingle());
+        if (!saved) throw new TravauxError('Demande introuvable.', 404);
+        return travauxJson({ ok: true });
+      }
+      if (body.consent !== true || body.termsVersion !== termsVersion) {
+        throw new TravauxError('Confirmez le prix et le renouvellement de l’abonnement.');
+      }
+      return travauxJson(await startTravauxCheckout(db, request, user.id, email, company, phone, localeFrom(body.locale), details));
     }
     if (body.action === 'cancel') {
       await cancelTravauxSubscription(db, user.id);
@@ -66,7 +78,7 @@ export async function POST(request: Request) {
       }
       const id = checked(await db.rpc('travaux_create', {
         p_owner: user.id, p_job: { title, description, category: body.category, commune: commune.name },
-        p_contact: { name: field(body.name, 'nom', 120), address: field(body.address, 'adresse', 220), phone: phoneField(body.phone), email },
+        p_contact: { name: field(body.name, 'nom', 120), address: projectAddress(body, commune), phone: phoneField(body.phone), email },
       }));
       return travauxJson({ id }, 201);
     }
