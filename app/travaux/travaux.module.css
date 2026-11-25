@@ -3,13 +3,13 @@
 .hero :global(.hero-shade) { background: linear-gradient(#132e2c61, #132e2c83); }
 .body { width: min(1080px, calc(100% - 36px)); margin: 28px auto 45px; }
 .pathways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.pathways .card { margin-top: 0; }
+.pathways .card { margin-top: 0; display: grid; grid-row: span 2; grid-template-rows: subgrid; }
+.pathwayActions { display: flex; align-items: start; flex-wrap: wrap; gap: 8px; }
 .card { margin: 18px 0; padding: clamp(17px, 3vw, 30px); border: 1px solid #d9dfd5; border-radius: 16px; background: #fffdf7; box-shadow: 0 8px 25px #203b350b; }
 .card h2, .card h3 { margin: 0 0 9px; font-family: Georgia, 'Times New Roman', serif; color: #193d3a; }
 .card h2 { font-size: clamp(23px, 3vw, 32px); }
 .card h3 { font-size: 23px; overflow-wrap: anywhere; }
 .card p { margin: 0 0 13px; line-height: 1.55; overflow-wrap: anywhere; }
-.card .proLink { margin: 10px 0 0; }
 .card .price strong { font-size: 22px; color: #265449; }
 .button, .secondary { display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-height: 43px; padding: 10px 17px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 700; text-decoration: none; }
 .button { background: #a74728; color: white !important; }
@@ -18,7 +18,7 @@
 .button:disabled, .secondary:disabled { opacity: .55; cursor: wait; }
 .form { display: grid; gap: 14px; max-width: 760px; }
 .form label { display: grid; gap: 5px; font-weight: 600; }
-.form input:not([type=checkbox]), .form textarea, .form select { width: 100%; min-width: 0; border: 1px solid #a8b6ac; border-radius: 8px; padding: 10px; color: #193d3a; background: #fff; font: inherit; font-weight: 400; }
+.form input:not([type=checkbox]):not([type=radio]), .form textarea, .form select { width: 100%; min-width: 0; border: 1px solid #a8b6ac; border-radius: 8px; padding: 10px; color: #193d3a; background: #fff; font: inherit; font-weight: 400; }
 .form fieldset { display: grid; min-width: 0; gap: 12px; margin: 0; padding: 12px; border: 1px solid #bac7bd; border-radius: 10px; }
 .form legend { padding: 0 6px; font-weight: 700; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -37,7 +37,7 @@
 @media (max-width: 650px) {
   .pathways, .fields { grid-template-columns: minmax(0, 1fr); }
   .pathways { gap: 10px; }
-  .pathways .card { margin-bottom: 0; }
+  .pathways .card { margin-bottom: 0; grid-row: auto; grid-template-rows: auto auto; gap: 10px; }
   .pathways { margin-bottom: 18px; }
 }
 

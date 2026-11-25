@@ -13,6 +13,7 @@ import Registry from './Registry';
 import Stats from './Stats';
 import AnalyticsConsent from '../components/AnalyticsConsent';
 import CompanyFields from './CompanyFields';
+import TradeFields from './TradeFields';
 import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
 import panels from '../../lib/travaux-panels.json';
 import Picker, { type ChoiceGroup } from './Picker';
@@ -283,16 +284,16 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     <div hidden={panel !== 'jobs'}>
     <div className={styles.pathways}>
       <section className={styles.card}>
-        <h2>{t("J’ai des travaux à faire")}</h2>
-        <p>{t("Décrivez votre projet gratuitement. Vos coordonnées sont communiquées aux trois premiers professionnels abonnés qui répondent. Vous retrouvez leurs contacts et leurs propositions dans votre espace.")}</p>
-        {enabled && <a className={styles.button} href="#compte" onClick={() => setView('resident')}>{t("Déposer une demande")}</a>}
+        <div><h2>{t("J’ai des travaux à faire")}</h2>
+        <p>{t("Décrivez votre projet gratuitement. Vos coordonnées sont communiquées aux trois premiers professionnels abonnés qui répondent. Vous retrouvez leurs contacts et leurs propositions dans votre espace.")}</p></div>
+        <div className={styles.pathwayActions}>{enabled && <a className={styles.button} href="#compte" onClick={() => setView('resident')}>{t("Déposer une demande")}</a>}</div>
       </section>
       <section className={styles.card}>
-        <h2>{t("Je suis artisan")}</h2>
+        <div><h2>{t("Je suis artisan")}</h2>
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
-        <p className={styles.price}><strong>{eur.format(25).replace(/[.,]00(?=\s|$)/, '')}</strong> {t("/ mois · paiement via Mollie")}</p>
-        {enabled && <a className={styles.button} href="#demandes" onClick={() => setView('provider')}>{t("Voir les demandes de travaux")}</a>}
-        {enabled && <p className={styles.proLink}><a href="#compte" onClick={() => setView('provider')}>{t("Accéder à l’espace pro")}</a></p>}
+        <p className={styles.price}><strong>{eur.format(25).replace(/[.,]00(?=\s|$)/, '')}</strong> {t("/ mois · paiement via Mollie")}</p></div>
+        <div className={styles.pathwayActions}>{enabled && <a className={styles.button} href="#demandes" onClick={() => setView('provider')}>{t("Voir les demandes de travaux")}</a>}
+        {enabled && <a className={styles.secondary} href="#compte" onClick={() => setView('provider')}>{t("Accéder à l’espace pro")}</a>}</div>
       </section>
     </div>
 
@@ -388,10 +389,8 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
             <form key={publishVersion} className={styles.form} onSubmit={submit(data => void send({
               action: 'publish', ...Object.fromEntries(data), category, commune, consent: data.has('consent'),
             }, t("Votre demande a été reçue. Elle sera publiée après vérification.")))}>
-              <div className={styles.fields}>
-                {categoryPicker(category, setCategory)}
-                {communePicker(commune, setCommune)}
-              </div>
+              <TradeFields legend={t("Type de travaux")} onChoose={setCategory} />
+              {communePicker(commune, setCommune)}
               <label>{t("Titre")}<input name="title" minLength={5} maxLength={100} required /></label>
               <label>{t("Description")}<textarea name="description" minLength={20} maxLength={2000} rows={5} required placeholder={t("Dimensions, matériaux, état actuel et délai souhaité")} /></label>
               <fieldset><legend>{t("Coordonnées privées")}</legend>
