@@ -12,6 +12,7 @@ import ContactForm from './ContactForm';
 import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
 import OwnerContacts from './OwnerContacts';
+import AdminLogin from './AdminLogin';
 import Stats from './Stats';
 import Invoices from './Invoices';
 import AnalyticsConsent from '../components/AnalyticsConsent';
@@ -157,11 +158,14 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
   const [error, setError] = useState('');
   const token = session?.access_token;
   const currentSession = useRef<Session | null>(null);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [publishVersion, setPublishVersion] = useState(0);
 
   useEffect(() => {
     if (!auth) return;
-    const { data } = auth.auth.onAuthStateChange((_event, next) => {
+    const { data } = auth.auth.onAuthStateChange((event, next) => {
+      if (event === 'PASSWORD_RECOVERY') { setPasswordRecovery(true); setPanel('admin'); }
+      if (!next) setPasswordRecovery(false);
       if (currentSession.current?.user.id !== next?.user.id) {
         if (!next) setRecommended(false);
         setDashboard(null);
@@ -264,14 +268,14 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
     <Picker label={t("Commune des travaux")} placeholder={t("Choisir une commune")}
       searchLabel={t("Rechercher par commune ou code postal")} groups={communeGroups} value={value} onChoose={onChoose} />;
 
-  function signInForm(management: boolean) {
+  function signInForm() {
     return <form className={styles.form} onSubmit={submit(data => void run(async () => {
           if (!auth) throw Error("Connexion indisponible.");
           const email = String(data.get('email') ?? '').trim();
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
           const { error: authError } = await auth.auth.signInWithOtp({
             email,
-            options: { shouldCreateUser: !management, emailRedirectTo: window.location.origin + travauxPath + '?' + new URLSearchParams({ lang: locale, ...(management ? { espace: 'admin' } : view === 'provider' ? { espace: 'pro' } : {}) }) },
+            options: { emailRedirectTo: window.location.origin + travauxPath + '?' + new URLSearchParams({ lang: locale, ...(view === 'provider' ? { espace: 'pro' } : {}) }) },
           });
           if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
             throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
@@ -309,9 +313,12 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
           <p>{t("Ce compte n’a pas accès à l’administration.")}</p>
           <button className={styles.secondary} type="button" disabled={busy}
             onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); setPanel('admin'); })}>{t("Se déconnecter")}</button>
-        </> : signInForm(true)}
+        </> : auth && <AdminLogin auth={auth} />}
     </Card>}
-    {panel === 'admin' && dashboard?.admin && token && <>
+    {panel === 'admin' && dashboard?.admin && passwordRecovery && auth && <Card title={t("Connexion à l’administration")}>
+      <AdminLogin auth={auth} recovery onSaved={() => setPasswordRecovery(false)} />
+    </Card>}
+    {panel === 'admin' && dashboard?.admin && token && !passwordRecovery && <>
       <div className={styles.account}><span>{userEmail}</span>
         <button type="button" className={styles.secondary} disabled={busy}
           onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); })}>{t("Se déconnecter")}</button>
@@ -341,7 +348,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
         <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
         <div className={styles.pathwayActions}>{enabled && <a className={styles.button} href="#demandes" onClick={() => setView('provider')}>{t("Voir les demandes de travaux")}</a>}
-        {enabled && <a className={styles.secondary} href="#compte" onClick={() => setView('provider')}>{t("Accéder à l’espace pro")}</a>}</div>
+        {enabled && <a className={styles.secondary} href="#compte" onClick={() => setView('provider')}>{session ? t("Accéder à l’espace pro") : t("Connexion artisan")}</a>}</div>
       </section>
     </div>
 
@@ -406,7 +413,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
 
     {!enabled ? <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p> : <div id="compte" aria-busy={busy || loading}>
       {loading ? <p role="status">{t("Chargement de votre espace…")}</p> : !session ? <Card title={t("Accéder à mon espace")}>
-        {signInForm(false)}
+        {signInForm()}
       </Card> : <>
         <div className={styles.account}>
           <span>{userEmail}</span>

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import catalog from './data/area-catalog.json';
 import centres from './data/commune-centres.json';
@@ -76,7 +77,13 @@ export function phoneField(value: unknown) {
 export const uuid = (value: unknown): value is string =>
   typeof value === 'string' && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value);
 
+// Bind production to the confirmed owner of Database 47 without storing their ID in source.
+const productionOwnerHash = "c3724b5cbcdb954dddd4616d5b6725d8e2d82aebb6c3fdd72b3469e752a0e64a";
+
 export function isTravauxOwner(userId: string) {
   const configured = process.env.TRAVAUX_OWNER_USER_ID?.trim();
-  return uuid(configured) && configured.toLowerCase() === userId.toLowerCase();
+  if (configured) return uuid(configured) && configured.toLowerCase() === userId.toLowerCase();
+  if (process.env.VERCEL_ENV !== 'production'
+    || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, '') !== 'https://jhzbfeyhtyzyobsxypvj.supabase.co') return false;
+  return createHash('sha256').update(userId.toLowerCase()).digest('hex') === productionOwnerHash;
 }
