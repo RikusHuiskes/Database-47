@@ -93,3 +93,11 @@
 @media (max-width: 850px) {
   .pathways .fields { grid-template-columns: minmax(0, 1fr); }
 }
+
+.contactGrid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.contactGrid aside { padding: 16px; border-radius: 10px; background: #f0f4ed; }
+.contactGrid aside p:last-child { margin-bottom: 0; }
+.contactAddress { margin-bottom: 13px; font-style: normal; line-height: 1.55; }
+@media (max-width: 650px) {
+  .contactGrid { grid-template-columns: minmax(0, 1fr); }
+}

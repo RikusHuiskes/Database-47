@@ -150,13 +150,14 @@ const professionalCopy = {
   nl: { register: 'Registreren', login: 'Inloggen', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
 };
 
-export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero }: {
+export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero, contactDetails }: {
   enabled: boolean;
   communes: Commune[];
   initialPanel: 'jobs' | 'contact' | 'admin';
   initialAccount: Account | null;
   navigation: ReactNode;
   hero: ReactNode;
+  contactDetails: ReactNode;
 }) {
   const { locale } = useLanguage();
   const t = travauxCopy(locale);
@@ -469,7 +470,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     {panel === 'guide' && <Guide onContact={showContact} />}
     {panel === 'contact' && <Card title={copy.contact}>
       <p>{copy.help}</p>
-      <ContactForm email={userEmail} role={view === 'provider' ? 'professional' : 'requester'} />
+      <div className={styles.contactGrid}>
+        <ContactForm email={userEmail} role={view === 'provider' ? 'professional' : 'requester'} />
+        {contactDetails}
+      </div>
       <div className={styles.contactTerms}>
         <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
       </div>

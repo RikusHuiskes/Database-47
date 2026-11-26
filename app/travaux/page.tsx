@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { LOCALE_COOKIE, localeFrom } from '../../lib/i18n';
 import { travauxCopy } from '../../lib/travaux-copy';
+import { ADVERTISING_SELLER } from '../../lib/mollie';
 import { travauxCommunes, travauxEnabled } from '../../lib/travaux-server';
 import Travaux from './Travaux';
 import styles from './travaux.module.css';
@@ -37,6 +38,16 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
           <a href="/#agenda">{t("Agenda")}</a><a href="/#gemeenten">{t("Guide local")}</a>
         </nav>
       </div>}
+      contactDetails={<aside aria-labelledby="travaux-contact-business">
+        <h3 id="travaux-contact-business">{ADVERTISING_SELLER.name}</h3>
+        <address className={styles.contactAddress}>
+          {ADVERTISING_SELLER.address}<br />
+          {ADVERTISING_SELLER.postcode} Savignac-de-Duras<br />
+          {locale === 'nl' ? 'Frankrijk' : 'France'}
+        </address>
+        <p><a href="mailto:info@cotededuras.com">info@cotededuras.com</a></p>
+        <p>SIRET {ADVERTISING_SELLER.siret}</p>
+      </aside>}
       hero={<div className={`hero-grid ${styles.hero}`}>
         <div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>
         <div className="hero-shade" aria-hidden="true" />
