@@ -7,6 +7,7 @@ import { travauxCopy, travauxErrorText } from '../../lib/travaux-copy';
 import { intlLocale } from '../../lib/i18n';
 import { travauxAuthDestination } from './auth-destination';
 import { clearRequestDraft, readRequestDraft, saveRequestDraft } from './request-draft';
+import { missionCopy } from '../../lib/mission-copy';
 import { trackTravaux } from '../../lib/travaux-interactions';
 import { jobTitleLocales, localizedJobTitle, type JobTitle } from '../../lib/travaux-job-title';
 import { useLanguage } from '../i18n/Language';
@@ -620,9 +621,12 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <header className="site-header">
       {navigation}
       <nav className={styles.tabs} aria-label={copy.jobs}>
-        {(['intro', 'jobs', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
-          <button type="button" key={tab} className={`${styles.secondary} ${tab === 'admin' ? styles.adminTab : ''}`}
-            aria-pressed={panel === tab} data-travaux-track={tab === 'admin' ? undefined : `tab_${tab}`} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
+        {(['intro', 'jobs', 'guide', 'contact'] as const).map(tab =>
+          <button type="button" key={tab} className={styles.secondary}
+            aria-pressed={panel === tab} data-travaux-track={`tab_${tab}`} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
+        <a href="/missie-visie" className={styles.secondary}>{missionCopy[locale].menu}</a>
+        {enabled && <button type="button" className={`${styles.secondary} ${styles.adminTab}`}
+          aria-pressed={panel === 'admin'} onClick={() => setPanel('admin')}>{copy.admin}</button>}
       </nav>
       <div className={`hero-grid ${styles.hero}`}>
         {heroArt}

@@ -1,4 +1,5 @@
 "use client";
+import { missionCopy } from '../lib/mission-copy';
 import discovery from './components/local-discovery.module.css';
 import QuickDateFilters from './components/QuickDateFilters';
 import {CHRISTMAS_CATEGORY} from '../lib/event-period';
@@ -2212,6 +2213,7 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeente informatie"}</T></a>
             {travauxEnabled && <a href="/travaux">{locale === 'nl' ? 'Klussen' : locale === 'en' ? 'Home projects' : 'Travaux'}</a>}
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
+            <a href="/missie-visie">{missionCopy[locale].menu}</a>
           </nav></A>
         </div>
         <div className="hero-grid" id="top">
