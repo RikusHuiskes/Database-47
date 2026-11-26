@@ -142,7 +142,16 @@
   .pathwaySummary, .pathwayActions, .pathwayDetails { grid-column: 1; min-width: 0; }
   .pathwaySummary { grid-row: 1; padding: 24px 22px 0; }
   .pathwaySummary h2 { font-size: clamp(23px, 2.35vw, 28px); }
-  .pathwayActions { grid-row: 2; align-content: start; padding: 0 22px 22px; }
+  .pathwayActions { grid-row: 2; flex-wrap: nowrap; padding: 0 22px 22px; }
+  .pathwayActions > button {
+    min-width: 0;
+    min-height: 52px;
+    padding: 7px 11px;
+    font-size: .925rem;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
   .pathwayDetails {
     grid-row: 3;
     align-self: start;
