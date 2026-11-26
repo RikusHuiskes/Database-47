@@ -2210,10 +2210,10 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
             <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
             <a href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><T>{"Agenda"}</T></a>
             <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
+            <a href="/missie-visie">{missionCopy[locale].menu}</a>
             <a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeente informatie"}</T></a>
             {travauxEnabled && <a href="/travaux">{locale === 'nl' ? 'Klussen' : locale === 'en' ? 'Home projects' : 'Travaux'}</a>}
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
-            <a href="/missie-visie">{missionCopy[locale].menu}</a>
           </nav></A>
         </div>
         <div className="hero-grid" id="top">

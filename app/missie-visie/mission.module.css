@@ -26,8 +26,7 @@
 .links a { display: inline-flex; align-items: center; min-height: 40px; color: #275748; font-weight: 700; text-underline-offset: 4px; }
 .figure { margin: 0; }
 .image { position: relative; overflow: hidden; aspect-ratio: 1 / 1; border-radius: 18px; background: #e8eadf; }
-.image img { object-fit: cover; object-position: 60% center; }
-.figure figcaption { margin-top: 8px; color: #496156; font-size: 13px; }
+.image img { object-fit: contain; }
 @media (max-width: 740px) {
   .layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .image { aspect-ratio: 4 / 3; }

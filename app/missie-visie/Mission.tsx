@@ -38,9 +38,8 @@ export default function Mission({ showTravaux }: { showTravaux: boolean }) {
       </article>
       <figure className={styles.figure}>
         <div className={styles.image}>
-          <Image src="/mission-rencontre.webp" alt={copy.imageAlt} fill sizes="(max-width: 740px) 90vw, 460px" />
+          <Image src="/mission-network.svg" alt={copy.imageAlt} fill sizes="(max-width: 740px) 90vw, 460px" />
         </div>
-        <figcaption>{copy.imageCaption}</figcaption>
       </figure>
     </div>
   </main>;
