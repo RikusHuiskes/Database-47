@@ -620,7 +620,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <button type="button" className={styles.secondary} aria-expanded={residentAccountOpen}
             aria-controls="compte" onClick={openResidentAccount}>{account.myJobs}</button>
         </div>}
-        <div className={styles.pathwayDetails}>
+        <div className={styles.pathwayDetails} hidden={!requestOpen && !residentAccountOpen}>
         {enabled && <div hidden={!requestOpen} className={styles.requestArea}>
           <div id="klus-aanvraag" className={styles.requestForm}>
             <h3>{t("Déposer une demande")}</h3>
@@ -714,7 +714,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button>
             </>}
           </div>}
-          <div className={styles.pathwayDetails}>
+          <div className={styles.pathwayDetails} hidden={!providerAction}>
           {enabled && <div id="espace-pro" hidden={!providerAction} className={styles.requestArea} aria-busy={loading || busy}>
             {providerAction && (loading ? <p role="status">{t("Chargement de votre espace…")}</p> : session ? <>
               {accountHeader()}
