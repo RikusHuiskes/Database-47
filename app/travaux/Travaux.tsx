@@ -621,10 +621,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <header className="site-header">
       {navigation}
       <nav className={styles.tabs} aria-label={copy.jobs}>
+        <a href="/missie-visie" className={styles.secondary}>{missionCopy[locale].menu}</a>
         {(['intro', 'jobs', 'guide', 'contact'] as const).map(tab =>
           <button type="button" key={tab} className={styles.secondary}
             aria-pressed={panel === tab} data-travaux-track={`tab_${tab}`} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
-        <a href="/missie-visie" className={styles.secondary}>{missionCopy[locale].menu}</a>
         {enabled && <button type="button" className={`${styles.secondary} ${styles.adminTab}`}
           aria-pressed={panel === 'admin'} onClick={() => setPanel('admin')}>{copy.admin}</button>}
       </nav>
