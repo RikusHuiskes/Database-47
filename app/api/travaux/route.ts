@@ -82,7 +82,9 @@ export async function POST(request: Request) {
       if (/@|https?:\/\/|www\.|(?:\d[ .()-]*){8}/i.test(title + ' ' + description)) {
         throw new TravauxError('Saisissez vos coordonnées uniquement dans les champs privés.');
       }
+      if (body.submissionId !== undefined && !uuid(body.submissionId)) throw new TravauxError('Demande invalide.');
       const id = checked(await db.rpc('travaux_create', {
+        ...(body.submissionId ? { p_submission: body.submissionId } : {}),
         p_owner: user.id, p_job: { title, description, category: body.category, commune: commune.name },
         p_contact: { name: field(body.name, 'nom', 120), address: projectAddress(body, commune), phone: phoneField(body.phone), email },
       }));

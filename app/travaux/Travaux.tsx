@@ -128,18 +128,24 @@ const accountCopy = {
 };
 
 const requestCopy = {
-  fr: { intro: 'Décrivez vos travaux et indiquez vos coordonnées. Confirmez votre adresse par e-mail, puis envoyez la demande pour validation avant publication.', verify: 'Confirmer mon adresse e-mail', restored: 'Votre e-mail est confirmé. Vérifiez votre demande, puis envoyez-la pour validation.', storageError: 'Impossible de conserver votre brouillon dans ce navigateur. Autorisez le stockage du site et réessayez.' },
-  en: { intro: 'Describe the work and enter your contact details. Confirm your email, then submit your request for review before it goes live.', verify: 'Confirm my email address', restored: 'Your email is confirmed. Review your request, then send it for approval.', storageError: 'Your draft could not be saved in this browser. Enable site storage and try again.' },
-  nl: { intro: 'Beschrijf je klus en vul je contactgegevens in. Bevestig je e-mailadres en stuur je aanvraag daarna in. We controleren de aanvraag vóór publicatie.', verify: 'Bevestig mijn e-mailadres', restored: 'Je e-mailadres is bevestigd. Controleer je aanvraag en stuur die in ter goedkeuring.', storageError: 'Je concept kon niet worden bewaard in deze browser. Sta opslag voor deze site toe en probeer het opnieuw.' },
+  fr: { intro: 'Décrivez vos travaux et indiquez vos coordonnées. Confirmez votre adresse par e-mail pour envoyer automatiquement votre demande pour validation.', verify: 'Confirmer mon adresse e-mail', restored: 'Votre e-mail est confirmé. Vous pouvez vérifier votre demande et l’envoyer ci-dessous.', storageError: 'Impossible de conserver votre brouillon dans ce navigateur. Autorisez le stockage du site et réessayez.' },
+  en: { intro: 'Describe the work and enter your contact details. Confirm your email to submit your request for review before it goes live.', verify: 'Confirm my email address', restored: 'Your email is confirmed. You can review and submit your request below.', storageError: 'Your draft could not be saved in this browser. Enable site storage and try again.' },
+  nl: { intro: 'Beschrijf je klus en vul je contactgegevens in. Bevestig je e-mailadres om je aanvraag in te dienen. We controleren die vóór publicatie.', verify: 'Bevestig mijn e-mailadres', restored: 'Je e-mailadres is bevestigd. Je kunt je aanvraag hieronder controleren en indienen.', storageError: 'Je concept kon niet worden bewaard in deze browser. Sta opslag voor deze site toe en probeer het opnieuw.' },
 };
 
 const emailCopy = {
-  fr: { sent: 'Merci. Nous vous avons envoyé un lien de connexion. Consultez votre boîte de réception et vos indésirables.', wait: 'Trop de demandes de lien. Si vous avez déjà reçu un e-mail, utilisez le dernier lien reçu. Sinon, réessayez plus tard.', sending: 'Envoi en cours…' },
-  en: { sent: 'Thank you. We’ve sent you a sign-in link. Check your inbox and spam folder.', wait: 'Too many link requests. If you already received an email, use the latest link. Otherwise, try again later.', sending: 'Sending…' },
-  nl: { sent: 'Bedankt. We hebben je een inloglink gestuurd. Kijk in je inbox en eventueel bij ongewenste e-mail.', wait: 'Er zijn te veel inloglinks aangevraagd. Heb je al een mail ontvangen? Gebruik dan de nieuwste link. Probeer het anders later opnieuw.', sending: 'Bezig met versturen…' },
+  fr: { sent: 'Merci. Nous vous avons envoyé un lien de connexion. Consultez votre boîte de réception et vos indésirables.', draftSent: 'Merci. Ouvrez le lien reçu par e-mail dans ce même navigateur pour envoyer votre demande.', wait: 'Trop de demandes de lien. Si vous avez déjà reçu un e-mail, utilisez le dernier lien reçu. Sinon, réessayez plus tard.', sending: 'Envoi en cours…' },
+  en: { sent: 'Thank you. We’ve sent you a sign-in link. Check your inbox and spam folder.', draftSent: 'Thank you. Open the email link in this same browser to submit your request.', wait: 'Too many link requests. If you already received an email, use the latest link. Otherwise, try again later.', sending: 'Sending…' },
+  nl: { sent: 'Bedankt. We hebben je een inloglink gestuurd. Kijk in je inbox en eventueel bij ongewenste e-mail.', draftSent: 'Bedankt. Open de link uit je e-mail in dezezelfde browser om je aanvraag in te dienen.', wait: 'Er zijn te veel inloglinks aangevraagd. Heb je al een mail ontvangen? Gebruik dan de nieuwste link. Probeer het anders later opnieuw.', sending: 'Bezig met versturen…' },
 };
 
-type EmailFeedback = 'sent' | 'wait' | { error: string };
+type EmailFeedback = 'sent' | 'draftSent' | 'wait' | { error: string };
+
+const submittedCopy = {
+  fr: { title: 'Votre demande est en cours de traitement', review: 'Votre demande a été reçue. Elle sera publiée après validation.', signIn: 'Pour revenir, demandez un nouveau lien dans « Mes demandes » avec cette adresse e-mail. Aucun mot de passe n’est nécessaire.' },
+  en: { title: 'Your request is being reviewed', review: 'We’ve received your request. It will go live after approval.', signIn: 'To return, request a new link under “My projects” using this email address. You don’t need a password.' },
+  nl: { title: 'Je aanvraag is in behandeling', review: 'We hebben je klusaanvraag ontvangen. Na goedkeuring komt die online.', signIn: 'Gebruik dit e-mailadres de volgende keer bij ‘Mijn klussen’. Je ontvangt dan een nieuwe inloglink. Een wachtwoord is niet nodig.' },
+};
 
 type Account = 'resident' | 'provider';
 type ProviderAction = 'register' | 'login';
@@ -166,6 +172,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const account = accountCopy[locale];
   const professional = professionalCopy[locale];
   const request = requestCopy[locale];
+  const submitted = submittedCopy[locale];
   const emailMessages = emailCopy[locale];
   const company = companyCopy(locale);
   const [panel, setPanel] = useState<'jobs' | 'intro' | 'guide' | 'contact' | 'admin'>(initialPanel);
@@ -203,6 +210,13 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const mailRequestInFlight = useRef(false);
   const mailRetryAfter = useRef(0);
   const requestDraftChecked = useRef<string | null>(null);
+  const submittedDialog = useRef<HTMLDialogElement>(null);
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  const [sendingDraft, setSendingDraft] = useState(false);
+
+  useEffect(() => {
+    if (submittedEmail && !submittedDialog.current?.open) submittedDialog.current?.showModal();
+  }, [submittedEmail]);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [jobs, setJobs] = useState<PublicJob[] | null>(null);
   const [jobsPage, setJobsPage] = useState(0);
@@ -317,6 +331,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       if (result.checkoutUrl) { window.location.assign(result.checkoutUrl); return; }
       if (data.action === 'publish') {
         if (userEmail) clearRequestDraft(userEmail);
+        if (userEmail) setSubmittedEmail(userEmail);
         setDraft(null);
         setCategory('');
         setCommune('');
@@ -334,19 +349,43 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       requestDraftChecked.current = null;
       return;
     }
-    if (view !== 'resident' || requestDraftChecked.current === userEmail) return;
+    if (!token || view !== 'resident' || requestDraftChecked.current === userEmail) return;
     requestDraftChecked.current = userEmail;
     const saved = readRequestDraft(userEmail);
     if (!saved) return;
-    setDraft(saved);
-    setCategory(saved.category);
-    setCommune(saved.commune);
-    setPublishVersion(version => version + 1);
-    setEmailFeedback(null);
-    setRequestOpen(true);
-    setResidentAccountOpen(false);
-    if (initialAccount === 'resident') requestAnimationFrame(() => document.getElementById('klus-aanvraag')?.scrollIntoView());
-  }, [userEmail, view, initialAccount]);
+    function restoreDraft() {
+      if (!saved) return;
+      setDraft(saved);
+      setCategory(saved.category);
+      setCommune(saved.commune);
+      setPublishVersion(version => version + 1);
+      setEmailFeedback(null);
+      setRequestOpen(true);
+      setResidentAccountOpen(false);
+      requestAnimationFrame(() => document.getElementById('klus-aanvraag')?.scrollIntoView());
+    }
+
+    // Older drafts were saved with a separate submit step.
+    if (initialAccount !== 'resident' || !saved.submissionId) {
+      restoreDraft();
+      return;
+    }
+    const userId = session?.user.id;
+    setSendingDraft(true);
+    void api(token, { action: 'publish', ...saved.fields, category: saved.category, commune: saved.commune,
+      consent: saved.consent, submissionId: saved.submissionId }).then(() => {
+      clearRequestDraft(userEmail, saved.submissionId);
+      if (currentSession.current?.user.id !== userId) return;
+      setResidentAccountOpen(true);
+      setRequestOpen(false);
+      setSubmittedEmail(userEmail);
+      return refresh(currentSession.current?.access_token ?? token);
+    }).catch(err => {
+      if (currentSession.current?.user.id !== userId) return;
+      restoreDraft();
+      setError(err instanceof Error ? err.message : "Le service ne répond pas.");
+    }).finally(() => setSendingDraft(false));
+  }, [userEmail, view, initialAccount, token, session?.user.id, refresh]);
 
   const provider = dashboard?.provider ?? null;
   const jobTown = communes.find(place => place.code === commune);
@@ -391,7 +430,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       // Supabase enforces an interval between sends. Leave its server-side limit in place.
       mailRetryAfter.current = Date.now() + 60_000;
       setEmailCooldown(true);
-      setEmailFeedback({ role, result: limited ? 'wait' : 'sent' });
+      setEmailFeedback({ role, result: limited ? 'wait' : data ? 'draftSent' : 'sent' });
     } catch (err) {
       setEmailFeedback({ role, result: { error: err instanceof Error ? err.message : "Connexion indisponible." } });
     } finally {
@@ -457,6 +496,17 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       {hero}
     </header>
     <div className={styles.body} id="espace">
+    <dialog ref={submittedDialog} className={styles.dialog} aria-labelledby="travaux-submitted-title"
+      onClose={() => setSubmittedEmail(null)}>
+      {submittedEmail && <div className={styles.dialogContent}>
+        <h2 id="travaux-submitted-title">{submitted.title}</h2>
+        <p>{submitted.review}</p>
+        <p>{submitted.signIn}</p>
+        <p><strong>{submittedEmail}</strong></p>
+        <button type="button" className={styles.button} onClick={() => submittedDialog.current?.close()}>{t("Fermer")}</button>
+      </div>}
+    </dialog>
+    {sendingDraft && <p className={styles.status} role="status">{emailMessages.sending}</p>}
     {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
     {panel === 'intro' && <Card title={intro.title}>
       <p>{intro.lead}</p>
@@ -536,7 +586,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 return;
               }
               void send({
-                action: 'publish', ...Object.fromEntries(data), category, commune, consent: data.has('consent'),
+                action: 'publish', ...Object.fromEntries(data), category, commune, consent: data.has('consent'), submissionId: draft?.submissionId,
               }, t("Votre demande a été reçue. Elle sera publiée après vérification."));
             })}>
               {categoryPicker(category, setCategory)}
@@ -559,7 +609,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}</p>
               </fieldset>
               <label className={styles.check}><input name="consent" type="checkbox" defaultChecked={draft?.consent} required /> {t("J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
-              <button className={styles.button} disabled={loading || busy || (!session && emailSendingBlocked) || !category || !commune}>
+              <button className={styles.button} disabled={loading || busy || sendingDraft || (!session && emailSendingBlocked) || !category || !commune}>
                 {session ? t("Envoyer ma demande gratuite") : sendingLink ? emailMessages.sending : request.verify}
               </button>
               {!session && emailStatus('resident')}

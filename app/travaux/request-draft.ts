@@ -6,6 +6,7 @@ type RequestField = typeof requestFields[number];
 
 type RequestDraft = {
   email: string;
+  submissionId?: string;
   fields: Record<RequestField, string>;
   category: string;
   commune: string;
@@ -16,7 +17,7 @@ type RequestDraft = {
 export function saveRequestDraft(email: string, data: FormData, category: string, commune: string) {
   const fields = Object.fromEntries(requestFields.map(field => [field, String(data.get(field) ?? '')]));
   localStorage.setItem(storageKey, JSON.stringify({
-    email: email.toLowerCase(), fields, category, commune, consent: data.has('consent'),
+    email: email.toLowerCase(), submissionId: readRequestDraft(email)?.submissionId ?? crypto.randomUUID(), fields, category, commune, consent: data.has('consent'),
     expiresAt: Date.now() + draftLifetime,
   }));
 }
@@ -35,8 +36,9 @@ export function readRequestDraft(email: string): RequestDraft | null {
   }
 }
 
-export function clearRequestDraft(email: string) {
-  if (readRequestDraft(email)) {
+export function clearRequestDraft(email: string, submissionId?: string) {
+  const draft = readRequestDraft(email);
+  if (draft && (!submissionId || draft.submissionId === submissionId)) {
     try { localStorage.removeItem(storageKey); } catch { /* The draft still expires. */ }
   }
 }
