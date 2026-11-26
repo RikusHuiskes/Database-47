@@ -53,8 +53,11 @@ type Dashboard = {
 };
 const jobStatus = { pending: 'En cours de vérification', open: 'En ligne', rejected: 'Refusée', closed: 'Clôturée' } as const;
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return <section className={styles.card}><h2>{title}</h2>{children}</section>;
+function Card({ title, children, compact = false }: { title: string; children: ReactNode; compact?: boolean }) {
+  return <section className={compact ? styles.accountSection : styles.card}>
+    {compact ? <h3>{title}</h3> : <h2>{title}</h2>}
+    {children}
+  </section>;
 }
 
 function ContactDetails({ contact, title }: { contact: Contact; title: string }) {
@@ -139,6 +142,13 @@ const emailCopy = {
 type EmailFeedback = 'sent' | 'wait' | { error: string };
 
 type Account = 'resident' | 'provider';
+type ProviderAction = 'register' | 'login';
+
+const professionalCopy = {
+  fr: { register: 'S’inscrire', login: 'Se connecter', registerTitle: 'Créer mon compte artisan', registerHelp: 'Confirmez votre adresse e-mail, puis renseignez votre entreprise et choisissez votre abonnement.' },
+  en: { register: 'Register', login: 'Sign in', registerTitle: 'Create a tradesperson account', registerHelp: 'Confirm your email, then enter your business details and choose a subscription.' },
+  nl: { register: 'Registreren', login: 'Inloggen', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
+};
 
 export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero }: {
   enabled: boolean;
@@ -153,6 +163,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const copy = panels[locale];
   const intro = introCopy[locale];
   const account = accountCopy[locale];
+  const professional = professionalCopy[locale];
   const request = requestCopy[locale];
   const emailMessages = emailCopy[locale];
   const company = companyCopy(locale);
@@ -181,10 +192,11 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const [auth] = useState(() => enabled ? travauxAuth() : null);
   const [session, setSession] = useState<Session | null>(null);
   const [view, setView] = useState<Account>(initialAccount ?? 'resident');
-  const [accountOpen, setAccountOpen] = useState(Boolean(initialAccount));
+  const [residentAccountOpen, setResidentAccountOpen] = useState(initialAccount === 'resident');
+  const [providerAction, setProviderAction] = useState<ProviderAction | null>(initialAccount === 'provider' ? 'login' : null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [draft, setDraft] = useState<ReturnType<typeof readRequestDraft>>(null);
-  const [emailFeedback, setEmailFeedback] = useState<EmailFeedback | null>(null);
+  const [emailFeedback, setEmailFeedback] = useState<{ role: Account; result: EmailFeedback } | null>(null);
   const [sendingLink, setSendingLink] = useState(false);
   const [emailCooldown, setEmailCooldown] = useState(false);
   const mailRequestInFlight = useRef(false);
@@ -233,7 +245,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     if (!emailCooldown) return;
     const timer = window.setTimeout(() => {
       setEmailCooldown(false);
-      setEmailFeedback(feedback => feedback === 'wait' ? null : feedback);
+      setEmailFeedback(feedback => feedback?.result === 'wait' ? null : feedback);
     }, Math.max(0, mailRetryAfter.current - Date.now()));
     return () => window.clearTimeout(timer);
   }, [emailCooldown]);
@@ -331,6 +343,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     setPublishVersion(version => version + 1);
     setEmailFeedback(null);
     setRequestOpen(true);
+    setResidentAccountOpen(false);
     if (initialAccount === 'resident') requestAnimationFrame(() => document.getElementById('klus-aanvraag')?.scrollIntoView());
   }, [userEmail, view, initialAccount]);
 
@@ -362,7 +375,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       }
       const { error: authError } = await auth.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: travauxAuthDestination(window.location.origin, locale, role === 'provider' ? 'pro' : 'demandeur') },
+        options: {
+          emailRedirectTo: travauxAuthDestination(window.location.origin, locale, role === 'provider' ? 'pro' : 'demandeur'),
+          shouldCreateUser: role === 'resident' || providerAction === 'register',
+        },
       });
       if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
         throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
@@ -374,9 +390,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       // Supabase enforces an interval between sends. Leave its server-side limit in place.
       mailRetryAfter.current = Date.now() + 60_000;
       setEmailCooldown(true);
-      setEmailFeedback(limited ? 'wait' : 'sent');
+      setEmailFeedback({ role, result: limited ? 'wait' : 'sent' });
     } catch (err) {
-      setEmailFeedback({ error: err instanceof Error ? err.message : "Connexion indisponible." });
+      setEmailFeedback({ role, result: { error: err instanceof Error ? err.message : "Connexion indisponible." } });
     } finally {
       mailRequestInFlight.current = false;
       setSendingLink(false);
@@ -384,9 +400,13 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   }
 
   const emailSendingBlocked = sendingLink || emailCooldown;
-  const emailStatus = emailFeedback && (typeof emailFeedback === 'string'
-    ? <p className={styles.status} role="status">{emailMessages[emailFeedback]}</p>
-    : <p className={styles.error} role="alert">{travauxErrorText(emailFeedback.error, locale)}</p>);
+  function emailStatus(role: Account) {
+    const feedback = emailFeedback?.role === role ? emailFeedback.result : null;
+    if (!feedback) return null;
+    return typeof feedback === 'string'
+      ? <p className={styles.status} role="status">{emailMessages[feedback]}</p>
+      : <p className={styles.error} role="alert">{travauxErrorText(feedback.error, locale)}</p>;
+  }
 
   function signInForm(role: Account) {
     return <form className={styles.form} onSubmit={submit(data =>
@@ -395,14 +415,29 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <button className={styles.button} disabled={emailSendingBlocked}>
         {sendingLink ? emailMessages.sending : t("Recevoir mon lien de connexion")}
       </button>
-      {emailStatus}
+      {emailStatus(role)}
     </form>;
   }
 
-  function openAccount(role: Account) {
-    setView(role);
-    setAccountOpen(true);
-    if (role !== view) setEmailFeedback(null);
+  function openResidentAccount() {
+    setView('resident');
+    setRequestOpen(false);
+    setResidentAccountOpen(true);
+    setEmailFeedback(null);
+  }
+
+  function openProviderAccount(action: ProviderAction) {
+    setView('provider');
+    setProviderAction(action);
+    setEmailFeedback(null);
+  }
+
+  function accountHeader() {
+    return <div className={styles.account}>
+      <span>{userEmail}</span>
+      <button type="button" className={styles.secondary} disabled={busy}
+        onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); })}>{t("Se déconnecter")}</button>
+    </div>;
   }
 
   function showContact() {
@@ -480,11 +515,11 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <button type="button" className={styles.button} aria-expanded={requestOpen} onClick={() => {
             setView('resident');
             setRequestOpen(open => !open);
+            setResidentAccountOpen(false);
             setEmailFeedback(null);
           }}>{t("Déposer une demande")}</button>
-          {session ? <a className={styles.secondary} href="#compte" onClick={() => openAccount('resident')}>{account.myJobs}</a>
-            : <button type="button" className={styles.secondary} aria-expanded={accountOpen && view === 'resident' && !requestOpen}
-              onClick={() => { openAccount('resident'); setRequestOpen(false); setEmailFeedback(null); }}>{account.myJobs}</button>}
+          <button type="button" className={styles.secondary} aria-expanded={residentAccountOpen}
+            aria-controls="compte" onClick={openResidentAccount}>{account.myJobs}</button>
         </div>}
         {enabled && <div hidden={!requestOpen} className={styles.requestArea}>
           <div id="klus-aanvraag" className={styles.requestForm}>
@@ -523,97 +558,14 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
               <button className={styles.button} disabled={loading || busy || (!session && emailSendingBlocked) || !category || !commune}>
                 {session ? t("Envoyer ma demande gratuite") : sendingLink ? emailMessages.sending : request.verify}
               </button>
-              {!session && view === 'resident' && emailStatus}
+              {!session && emailStatus('resident')}
             </form>
           </div>
         </div>}
-        {enabled && accountOpen && view === 'resident' && !requestOpen && !session && !loading && <div className={styles.requestArea}>
-          <h3>{account.resident}</h3>
-          <p>{account.residentHelp}</p>
-          {signInForm('resident')}
-        </div>}
-        </div>
-      </section>
-      <section className={styles.card}>
-        <div><h2>{t("Je suis artisan")}</h2>
-        <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
-        <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
-        <div className={styles.pathwayActions}>{enabled && <a className={styles.button} href="#demandes" onClick={() => setView('provider')}>{t("Voir les demandes de travaux")}</a>}
-        {enabled && <a className={styles.secondary} href="#compte" onClick={() => openAccount('provider')}>{session ? t("Accéder à l’espace pro") : t("Connexion artisan")}</a>}</div>
-      </section>
-    </div>
-
-    {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
-    {notice && <p className={styles.status} role="status">{notice}</p>}
-    {enabled && <div id="demandes">
-      <Card title={t("Demandes de travaux")}>
-        {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#compte" onClick={() => openAccount('provider')}>{company("plan")}</a>.</p>}
-        {session && <div className={styles.tabs}>
-          <button type="button" className={styles.secondary} aria-pressed={!recommended} onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
-          <button type="button" className={styles.secondary} aria-pressed={recommended} onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
-        </div>}
-        {session && recommended && !specialties.size && <p><a href="#compte" onClick={() => openAccount('provider')}>{t("Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.")}</a></p>}
-        <div className={styles.filters}>
-          {categoryPicker(categoryFilter, setCategoryFilter)}
-          {communePicker(communeFilter, setCommuneFilter)}
-          {(categoryFilter || communeFilter) && <button type="button" className={styles.secondary}
-            onClick={() => { setCategoryFilter(''); setCommuneFilter(''); }}>{t("Effacer les filtres")}</button>}
-        </div>
-        {jobsError && <p role="alert">{t("Les demandes sont temporairement indisponibles.")}</p>}
-        {!jobsError && !visibleJobs && <p role="status">{t("Chargement des demandes…")}</p>}
-        {!jobsError && visibleJobs?.length === 0 && <p>{t("Aucune nouvelle demande disponible.")}</p>}
-        {visibleJobs?.map(job => {
-          const contact = answeredJobs.get(job.id);
-          return <article className={styles.item} key={job.id}>
-          <JobSummary job={job} />
-          <div className={styles.actions}>
-            <span className={styles.meta}>{job.responseCount ?? 0}/3 {t("réponses")}{job.responseCount === 3 ? " · " + t("Complet") : ""}</span>
-            {specialties.has(job.category) && <span className={styles.match}>{t("Correspond à vos spécialités")}</span>}
-          </div>
-          {session && ownJobs.has(job.id) && <p>{t("Votre demande")}</p>}
-          {session && answeredJobs.has(job.id) && <div className={styles.reply}>
-            <p>{t("Vous avez déjà répondu")}</p>
-            {contact && <ContactDetails contact={contact} title={job.title} />}
-          </div>}
-          {session && dashboard?.active && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) &&
-            <button type="button" className={styles.button} disabled={busy}
-              onClick={() => {
-                setView('provider');
-                void send({ action: 'respond', id: job.id, message: '', quote: null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
-              }}>{t("Répondre à cette demande")}</button>}
-          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
-            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#compte" onClick={() => openAccount('provider')}>{company("plan")}</a></p> : <>
-            <p>{guide[locale].beforeReply}</p>
-            <form className={styles.form} onSubmit={submit(data => {
-              const quote = String(data.get('quote'));
-              setView('provider');
-              void send({ action: 'respond', id: job.id, message: data.get('message'), quote: quote ? Math.round(Number(quote) * 100) : null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
-            })}>
-              <label>{t("Message ou détails du devis (facultatif)")}<textarea name="message" maxLength={1500} rows={3} /></label>
-              <label>{t("Montant indicatif en euros (facultatif)")}<input name="quote" type="number" min="0.01" max="1000000" step="0.01" /></label>
-              <button className={styles.button} disabled={busy}>{t("Envoyer ma réponse")}</button>
-            </form></>}
-          </details>}
-        </article>})}
-        {hasMoreJobs && <button className={styles.button} disabled={busy} type="button"
-          onClick={() => void run(() => refreshJobs(undefined, jobsPage + 1))}>{t("Afficher plus de demandes")}</button>}
-        {(jobs || jobsError) && <button className={styles.secondary} disabled={busy}
-          onClick={() => void run(() => refreshJobs())}>{t("Actualiser les demandes")}</button>}
-      </Card>
-    </div>}
-
-    {!enabled ? <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p> : <div id="compte" aria-busy={busy || loading}>
-      {(!session && !(accountOpen && view === 'provider')) ? null : loading ? <p role="status">{t("Chargement de votre espace…")}</p> : !session ? <Card title={account[view]}>
-        <p>{account.providerHelp}</p>
-        {signInForm('provider')}
-      </Card> : <>
-        <div className={styles.account}>
-          <span>{userEmail}</span>
-          <button type="button" className={styles.secondary} disabled={busy} onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); })}>{t("Se déconnecter")}</button>
-        </div>
-
-        {view === 'resident' ? <>
-          {pendingOwnJobs.length > 0 && <Card title={t("Mes demandes en attente")}>
+        {enabled && <div id="compte" hidden={!residentAccountOpen} className={styles.requestArea} aria-busy={loading || busy}>
+          {residentAccountOpen && (loading ? <p role="status">{t("Chargement de votre espace…")}</p> : session ? <>
+            {accountHeader()}
+          {pendingOwnJobs.length > 0 && <Card compact title={t("Mes demandes en attente")}>
             <p>{t("Ces demandes sont privées jusqu’à leur approbation.")}</p>
             {pendingOwnJobs.map(job => <article className={styles.item} key={job.id}>
               <JobSummary job={job} />
@@ -623,7 +575,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
               }}>{t("Clôturer la demande")}</button>
             </article>)}
           </Card>}
-          {(!pendingOwnJobs.length || reviewedOwnJobs.length > 0) && <Card title={t("Mes demandes et mes contacts")}>
+          {(!pendingOwnJobs.length || reviewedOwnJobs.length > 0) && <Card compact title={t("Mes demandes et mes contacts")}>
             {!reviewedOwnJobs.length && <p>{dashboard ? t("Aucune demande déposée.") : t("Chargement des demandes…")}</p>}
             {reviewedOwnJobs.map(job => <article className={styles.item} key={job.id}>
               <JobSummary job={job} /><p className={styles.meta}>{t(jobStatus[job.status])} · {job.responses?.length ?? 0}/3 {t("contacts")}</p>
@@ -641,8 +593,33 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             await refresh(token);
             await refreshJobs();
           })}>{t("Actualiser mes contacts")}</button>}
-        </> : <>
-          <Card title={t("Mon abonnement professionnel")}>
+          </> : <>
+            <h3>{account.resident}</h3>
+            <p>{account.residentHelp}</p>
+            {signInForm('resident')}
+          </>)}
+        </div>}
+        </div>
+      </section>
+      <section className={styles.card}>
+        <div><h2>{t("Je suis artisan")}</h2>
+        <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
+        <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
+        <div>
+          {enabled && <div className={styles.pathwayActions}>
+            <a className={styles.secondary} href="#demandes" onClick={() => setView('provider')}>{t("Voir les demandes de travaux")}</a>
+            {session ? <button type="button" className={styles.button} aria-expanded={Boolean(providerAction)}
+              aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{t("Accéder à l’espace pro")}</button> : <>
+              <button type="button" className={styles.button} aria-expanded={providerAction === 'register'}
+                aria-controls="espace-pro" onClick={() => openProviderAccount('register')}>{professional.register}</button>
+              <button type="button" className={styles.secondary} aria-expanded={providerAction === 'login'}
+                aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button>
+            </>}
+          </div>}
+          {enabled && <div id="espace-pro" hidden={!providerAction} className={styles.requestArea} aria-busy={loading || busy}>
+            {providerAction && (loading ? <p role="status">{t("Chargement de votre espace…")}</p> : session ? <>
+              {accountHeader()}
+          <Card compact title={t("Mon abonnement professionnel")}>
             {!dashboard ? <p>{t("Chargement de l’abonnement…")}</p> : provider?.subscribed ? <>
               <p>{dashboard.active ? t("Accès actif pour la période payée.") : t("Aucun accès actif pour la période en cours.")}</p>
               {provider.plan === 'annual' ? <p>{company('annualActive')}</p> : provider.cancelled ? <p>
@@ -676,16 +653,82 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             </form>}
           </Card>
           {token && provider && <Invoices token={token} />}
-          <Card title={t("Mes réponses")}>
+          <Card compact title={t("Mes réponses")}>
             {!dashboard?.sent.length && <p>{t("Aucune réponse envoyée.")}</p>}
             {dashboard?.sent.map(({ job, job_id }) => job?.contact && <article key={job_id} className={styles.item}>
               <h3>{job.title}</h3><ContactDetails contact={job.contact} title={job.title} />
             </article>)}
           </Card>
-        </>}
+            </> : <>
+              <h3>{providerAction === 'register' ? professional.registerTitle : account.provider}</h3>
+              <p>{providerAction === 'register' ? professional.registerHelp : account.providerHelp}</p>
+              {signInForm('provider')}
+            </>)}
+          </div>}
+        </div>
+      </section>
+    </div>
 
-      </>}
+    {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
+    {notice && <p className={styles.status} role="status">{notice}</p>}
+    {enabled && <div id="demandes">
+      <Card title={t("Demandes de travaux")}>
+        {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#espace-pro" onClick={() => openProviderAccount(session ? 'login' : 'register')}>{company("plan")}</a>.</p>}
+        {session && <div className={styles.tabs}>
+          <button type="button" className={styles.secondary} aria-pressed={!recommended} onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
+          <button type="button" className={styles.secondary} aria-pressed={recommended} onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
+        </div>}
+        {session && recommended && !specialties.size && <p><a href="#espace-pro" onClick={() => openProviderAccount(session ? 'login' : 'register')}>{t("Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.")}</a></p>}
+        <div className={styles.filters}>
+          {categoryPicker(categoryFilter, setCategoryFilter)}
+          {communePicker(communeFilter, setCommuneFilter)}
+          {(categoryFilter || communeFilter) && <button type="button" className={styles.secondary}
+            onClick={() => { setCategoryFilter(''); setCommuneFilter(''); }}>{t("Effacer les filtres")}</button>}
+        </div>
+        {jobsError && <p role="alert">{t("Les demandes sont temporairement indisponibles.")}</p>}
+        {!jobsError && !visibleJobs && <p role="status">{t("Chargement des demandes…")}</p>}
+        {!jobsError && visibleJobs?.length === 0 && <p>{t("Aucune nouvelle demande disponible.")}</p>}
+        {visibleJobs?.map(job => {
+          const contact = answeredJobs.get(job.id);
+          return <article className={styles.item} key={job.id}>
+          <JobSummary job={job} />
+          <div className={styles.actions}>
+            <span className={styles.meta}>{job.responseCount ?? 0}/3 {t("réponses")}{job.responseCount === 3 ? " · " + t("Complet") : ""}</span>
+            {specialties.has(job.category) && <span className={styles.match}>{t("Correspond à vos spécialités")}</span>}
+          </div>
+          {session && ownJobs.has(job.id) && <p>{t("Votre demande")}</p>}
+          {session && answeredJobs.has(job.id) && <div className={styles.reply}>
+            <p>{t("Vous avez déjà répondu")}</p>
+            {contact && <ContactDetails contact={contact} title={job.title} />}
+          </div>}
+          {session && dashboard?.active && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) &&
+            <button type="button" className={styles.button} disabled={busy}
+              onClick={() => {
+                setView('provider');
+                void send({ action: 'respond', id: job.id, message: '', quote: null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
+              }}>{t("Répondre à cette demande")}</button>}
+          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
+            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#espace-pro" onClick={() => openProviderAccount(session ? 'login' : 'register')}>{company("plan")}</a></p> : <>
+            <p>{guide[locale].beforeReply}</p>
+            <form className={styles.form} onSubmit={submit(data => {
+              const quote = String(data.get('quote'));
+              setView('provider');
+              void send({ action: 'respond', id: job.id, message: data.get('message'), quote: quote ? Math.round(Number(quote) * 100) : null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
+            })}>
+              <label>{t("Message ou détails du devis (facultatif)")}<textarea name="message" maxLength={1500} rows={3} /></label>
+              <label>{t("Montant indicatif en euros (facultatif)")}<input name="quote" type="number" min="0.01" max="1000000" step="0.01" /></label>
+              <button className={styles.button} disabled={busy}>{t("Envoyer ma réponse")}</button>
+            </form></>}
+          </details>}
+        </article>})}
+        {hasMoreJobs && <button className={styles.button} disabled={busy} type="button"
+          onClick={() => void run(() => refreshJobs(undefined, jobsPage + 1))}>{t("Afficher plus de demandes")}</button>}
+        {(jobs || jobsError) && <button className={styles.secondary} disabled={busy}
+          onClick={() => void run(() => refreshJobs())}>{t("Actualiser les demandes")}</button>}
+      </Card>
     </div>}
+
+    {!enabled && <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p>}
     </div>
     </div>
   </>;
