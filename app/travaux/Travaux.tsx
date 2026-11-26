@@ -450,7 +450,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <header className="site-header">
       {navigation}
       <nav className={styles.tabs} aria-label={copy.jobs}>
-        {(['jobs', 'intro', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
+        {(['intro', 'jobs', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
           <button type="button" key={tab} className={`${styles.secondary} ${tab === 'admin' ? styles.adminTab : ''}`}
             aria-pressed={panel === tab} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
       </nav>
