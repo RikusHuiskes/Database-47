@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     if (!db) throw new TravauxError('Les demandes ne sont pas encore ouvertes.', 503);
 
     const params = new URL(request.url).searchParams;
+    const preview = params.get('preview') === '1';
     const category = params.get('category');
     const communeCode = params.get('commune');
     const commune = communeCode && travauxCommunes.find(place => place.code === communeCode);
@@ -28,12 +29,14 @@ export async function GET(request: Request) {
       query = query.in('category', specialties);
     }
     if (commune) query = query.eq('commune', commune.name);
-    const start = page * travauxPageSize;
+    const pageSize = preview ? 3 : travauxPageSize;
+    if (preview) query = query.lt('response_count', 3);
+    const start = page * pageSize;
     const jobs = checked(await query.order('created_at', { ascending: false }).order('id')
-      .range(start, start + travauxPageSize));
+      .range(start, start + pageSize));
     return travauxJson({
-      jobs: jobs.slice(0, travauxPageSize).map(({ response_count, ...job }) => ({ ...job, responseCount: response_count })),
-      hasMore: jobs.length > travauxPageSize,
+      jobs: jobs.slice(0, pageSize).map(({ response_count, ...job }) => ({ ...job, responseCount: response_count })),
+      hasMore: jobs.length > pageSize,
     });
   } catch (error) { return travauxFailure(error); }
 }

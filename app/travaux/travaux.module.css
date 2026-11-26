@@ -2,8 +2,8 @@
 .page .hero { min-height: clamp(285px, 32vw, 430px); }
 .hero :global(.hero-shade) { background: linear-gradient(#132e2c61, #132e2c83); }
 .body { width: min(1080px, calc(100% - 36px)); margin: 28px auto 45px; }
-.pathways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.pathways > .card { margin-top: 0; display: grid; grid-row: span 2; grid-template-rows: subgrid; }
+.pathways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.pathways > .card { margin: 0; display: grid; gap: 12px; }
 .pathwayActions { display: flex; align-items: start; flex-wrap: wrap; gap: 8px; }
 .card { margin: 18px 0; padding: clamp(17px, 3vw, 30px); border: 1px solid #d9dfd5; border-radius: 16px; background: #fffdf7; box-shadow: 0 8px 25px #203b350b; }
 .card h2, .card h3 { margin: 0 0 9px; font-family: Georgia, 'Times New Roman', serif; color: #193d3a; }
@@ -37,7 +37,7 @@
 @media (max-width: 650px) {
   .pathways, .fields { grid-template-columns: minmax(0, 1fr); }
   .pathways { gap: 10px; }
-  .pathways > .card { margin-bottom: 0; grid-row: auto; grid-template-rows: auto auto; gap: 10px; }
+  .pathways > .card { gap: 10px; }
   .pathways { margin-bottom: 18px; }
 }
 
@@ -100,4 +100,16 @@
 .contactAddress { margin-bottom: 13px; font-style: normal; line-height: 1.55; }
 @media (max-width: 650px) {
   .contactGrid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.recentJobs { background: #f0f4ed; border-color: #9db2a4; }
+.recentJobList { padding: 0; margin: 0; list-style: none; }
+.recentJobList li { padding: 10px 0; border-top: 1px solid #c8d5c8; }
+.recentJobList h3 { margin: 0 0 3px; font-size: 1.08rem; }
+@media (min-width: 651px) and (max-width: 900px) {
+  .pathways { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pathways > .recentJobs { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .pathways > .recentJobs { order: -1; }
 }
