@@ -6,6 +6,7 @@ import { travauxCategories, travauxCategoryLabel, travauxGroups, travauxText, ty
 import { travauxCopy, travauxErrorText } from '../../lib/travaux-copy';
 import { intlLocale } from '../../lib/i18n';
 import { travauxAuthDestination } from './auth-destination';
+import { clearRequestDraft, readRequestDraft, saveRequestDraft } from './request-draft';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
@@ -20,7 +21,6 @@ import Invoices from './Invoices';
 import AnalyticsConsent from '../components/AnalyticsConsent';
 import CompanyFields from './CompanyFields';
 import type { TravauxPlan } from '../../lib/travaux-plans';
-import TradeFields from './TradeFields';
 import { companyCopy, termsVersion, type CompanyDetails } from '../../lib/travaux-company';
 import panels from '../../lib/travaux-panels.json';
 import Picker, { type ChoiceGroup } from './Picker';
@@ -124,6 +124,12 @@ const accountCopy = {
   nl: { resident: 'Inloggen als klusaanvrager', residentHelp: 'Log in via e-mail om een klus te plaatsen, de publicatiestatus te volgen en reacties te bekijken.', provider: 'Inloggen als vakman', providerHelp: 'Log in via e-mail voor je profiel, abonnement en reacties op klussen.', myJobs: 'Mijn klussen' },
 };
 
+const requestCopy = {
+  fr: { intro: 'Décrivez vos travaux et indiquez vos coordonnées. Confirmez votre adresse par e-mail, puis envoyez la demande pour validation avant publication.', verify: 'Confirmer mon adresse e-mail', restored: 'Votre e-mail est confirmé. Vérifiez votre demande, puis envoyez-la pour validation.', storageError: 'Impossible de conserver votre brouillon dans ce navigateur. Autorisez le stockage du site et réessayez.' },
+  en: { intro: 'Describe the work and enter your contact details. Confirm your email, then submit your request for review before it goes live.', verify: 'Confirm my email address', restored: 'Your email is confirmed. Review your request, then send it for approval.', storageError: 'Your draft could not be saved in this browser. Enable site storage and try again.' },
+  nl: { intro: 'Beschrijf je klus en vul je contactgegevens in. Bevestig je e-mailadres en stuur je aanvraag daarna in. We controleren de aanvraag vóór publicatie.', verify: 'Bevestig mijn e-mailadres', restored: 'Je e-mailadres is bevestigd. Controleer je aanvraag en stuur die in ter goedkeuring.', storageError: 'Je concept kon niet worden bewaard in deze browser. Sta opslag voor deze site toe en probeer het opnieuw.' },
+};
+
 type Account = 'resident' | 'provider';
 
 export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero }: {
@@ -139,6 +145,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const copy = panels[locale];
   const intro = introCopy[locale];
   const account = accountCopy[locale];
+  const request = requestCopy[locale];
   const company = companyCopy(locale);
   const [panel, setPanel] = useState<'jobs' | 'intro' | 'guide' | 'contact' | 'admin'>(initialPanel);
 
@@ -166,6 +173,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const [session, setSession] = useState<Session | null>(null);
   const [view, setView] = useState<Account>(initialAccount ?? 'resident');
   const [accountOpen, setAccountOpen] = useState(Boolean(initialAccount));
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [draft, setDraft] = useState<ReturnType<typeof readRequestDraft>>(null);
+  const [requestFeedback, setRequestFeedback] = useState<{ text: string; error?: boolean } | null>(null);
+  const requestDraftChecked = useRef<string | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [jobs, setJobs] = useState<PublicJob[] | null>(null);
   const [jobsPage, setJobsPage] = useState(0);
@@ -188,6 +199,13 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       if (!next) setPasswordRecovery(false);
       if (currentSession.current?.user.id !== next?.user.id) {
         if (!next) setRecommended(false);
+        if (currentSession.current) {
+          setDraft(null);
+          setCategory('');
+          setCommune('');
+          setRequestFeedback(null);
+          setPublishVersion(version => version + 1);
+        }
         setDashboard(null);
         if (!next && currentSession.current) setPanel(previous => previous === 'admin' ? 'jobs' : previous);
       }
@@ -262,7 +280,13 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       try { result = await api(token, data); }
       catch (error) { if (data.action === 'respond') await refreshJobs(); throw error; }
       if (result.checkoutUrl) { window.location.assign(result.checkoutUrl); return; }
-      if (data.action === 'publish') { setCategory(''); setCommune(''); setPublishVersion(version => version + 1); }
+      if (data.action === 'publish') {
+        if (userEmail) clearRequestDraft(userEmail);
+        setDraft(null);
+        setCategory('');
+        setCommune('');
+        setPublishVersion(version => version + 1);
+      }
       setNotice(success);
       await refresh(token);
       if (['respond', 'moderate', 'close', 'save-profile'].includes(data.action)) await refreshJobs();
@@ -270,6 +294,24 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   }
 
   const userEmail = session?.user.email;
+  useEffect(() => {
+    if (!userEmail) {
+      requestDraftChecked.current = null;
+      return;
+    }
+    if (view !== 'resident' || requestDraftChecked.current === userEmail) return;
+    requestDraftChecked.current = userEmail;
+    const saved = readRequestDraft(userEmail);
+    if (!saved) return;
+    setDraft(saved);
+    setCategory(saved.category);
+    setCommune(saved.commune);
+    setPublishVersion(version => version + 1);
+    setRequestFeedback(null);
+    setRequestOpen(true);
+    if (initialAccount === 'resident') requestAnimationFrame(() => document.getElementById('klus-aanvraag')?.scrollIntoView());
+  }, [userEmail, view, initialAccount]);
+
   const provider = dashboard?.provider ?? null;
   const jobTown = communes.find(place => place.code === commune);
   const ownJobs = new Set(dashboard?.jobs.map(job => job.id));
@@ -285,27 +327,54 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <Picker label={t("Commune des travaux")} placeholder={t("Choisir une commune")}
       searchLabel={t("Rechercher par commune ou code postal")} groups={communeGroups} value={value} onChoose={onChoose} />;
 
-  function signInForm() {
-    return <form className={styles.form} onSubmit={submit(data => void run(async () => {
-          if (!auth) throw Error("Connexion indisponible.");
-          const email = String(data.get('email') ?? '').trim();
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
-          const { error: authError } = await auth.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: travauxAuthDestination(window.location.origin, locale, view === 'provider' ? 'pro' : 'demandeur') },
-          });
-          if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
-            throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
-          }
-          if (authError?.code === 'over_email_send_rate_limit' || authError?.code === 'over_request_rate_limit') {
-            throw Error('Patientez avant de demander un nouveau lien.');
-          }
-          if (authError) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
-          setNotice(t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion."));
-        }))}>
-          <label>{t("Adresse e-mail")}<input name="email" type="text" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={254} required /></label>
-          <button className={styles.button} disabled={busy}>{t("Recevoir mon lien de connexion")}</button>
-        </form>;
+  async function requestSignIn(email: string, role: Account) {
+    if (!auth) throw Error("Connexion indisponible.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
+    const { error: authError } = await auth.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: travauxAuthDestination(window.location.origin, locale, role === 'provider' ? 'pro' : 'demandeur') },
+    });
+    if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
+      throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
+    }
+    if (authError?.code === 'over_email_send_rate_limit' || authError?.code === 'over_request_rate_limit') {
+      throw Error('Patientez avant de demander un nouveau lien.');
+    }
+    if (authError) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
+  }
+
+  function signInForm(role: Account) {
+    return <form className={styles.form} onSubmit={submit(data => {
+      const email = String(data.get('email') ?? '').trim();
+      if (role === 'resident') {
+        void verifyRequestEmail(email);
+        return;
+      }
+      void run(async () => {
+        await requestSignIn(email, role);
+        setNotice(t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion."));
+      });
+    })}>
+      <label>{t("Adresse e-mail")}<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+      <button className={styles.button} disabled={busy}>{t("Recevoir mon lien de connexion")}</button>
+    </form>;
+  }
+
+  async function verifyRequestEmail(email: string, data?: FormData) {
+    setBusy(true);
+    setRequestFeedback(null);
+    try {
+      if (data) {
+        try { saveRequestDraft(email, data, category, commune); }
+        catch { setRequestFeedback({ text: request.storageError, error: true }); return; }
+      }
+      await requestSignIn(email, 'resident');
+      setRequestFeedback({ text: t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion.") });
+    } catch (err) {
+      setRequestFeedback({ text: travauxErrorText(err instanceof Error ? err.message : "Connexion indisponible.", locale), error: true });
+    } finally {
+      setBusy(false);
+    }
   }
 
   function openAccount(role: Account) {
@@ -383,8 +452,63 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <section className={styles.card}>
         <div><h2>{t("J’ai des travaux à faire")}</h2>
         <p>{t("Décrivez votre projet gratuitement. Vos coordonnées sont communiquées aux trois premiers professionnels abonnés qui répondent. Vous retrouvez leurs contacts et leurs propositions dans votre espace.")}</p></div>
-        <div className={styles.pathwayActions}>{enabled && <a className={styles.button} href="#compte" onClick={() => openAccount('resident')}>{t("Déposer une demande")}</a>}
-        {enabled && <a className={styles.secondary} href="#compte" onClick={() => openAccount('resident')}>{account.myJobs}</a>}</div>
+        <div>
+        {enabled && <div className={styles.pathwayActions}>
+          <button type="button" className={styles.button} aria-expanded={requestOpen} onClick={() => {
+            setView('resident');
+            setRequestOpen(open => !open);
+            setRequestFeedback(null);
+          }}>{t("Déposer une demande")}</button>
+          {session ? <a className={styles.secondary} href="#compte" onClick={() => openAccount('resident')}>{account.myJobs}</a>
+            : <button type="button" className={styles.secondary} aria-expanded={accountOpen && view === 'resident' && !requestOpen}
+              onClick={() => { openAccount('resident'); setRequestOpen(false); setRequestFeedback(null); }}>{account.myJobs}</button>}
+        </div>}
+        {enabled && <div hidden={!requestOpen} className={styles.requestArea}>
+          <div id="klus-aanvraag" className={styles.requestForm}>
+            <h3>{t("Déposer une demande")}</h3>
+            {!session && <p>{request.intro}</p>}
+            {draft && <p role="status" className={styles.status}>{request.restored}</p>}
+            <form key={publishVersion} className={styles.form} onSubmit={submit(data => {
+              if (!session) {
+                void verifyRequestEmail(String(data.get('email') ?? '').trim(), data);
+                return;
+              }
+              void send({
+                action: 'publish', ...Object.fromEntries(data), category, commune, consent: data.has('consent'),
+              }, t("Votre demande a été reçue. Elle sera publiée après vérification."));
+            })}>
+              {categoryPicker(category, setCategory)}
+              {communePicker(commune, setCommune)}
+              <label>{t("Titre")}<input name="title" defaultValue={draft?.fields.title} minLength={5} maxLength={100} required /></label>
+              <label>{t("Description")}<textarea name="description" defaultValue={draft?.fields.description} minLength={20} maxLength={2000} rows={5} required placeholder={t("Dimensions, matériaux, état actuel et délai souhaité")} /></label>
+              <fieldset><legend>{t("Coordonnées privées")}</legend>
+                <p className={styles.meta}>{guide[locale].privacy} <button className={styles.secondary} type="button" onClick={showContact}>{guide[locale].contact}</button></p>
+                <div className={styles.fields}>
+                  <label>{t("Nom et prénom")}<input name="name" defaultValue={draft?.fields.name} autoComplete="name" maxLength={120} required /></label>
+                  <label>{t("Téléphone")}<input name="phone" defaultValue={draft?.fields.phone} type="tel" autoComplete="tel" maxLength={30} required /></label>
+                </div>
+                <label>{company('street')}<input name="address" defaultValue={draft?.fields.address} autoComplete="address-line1" maxLength={160} required /></label>
+                <label>{company('complement')}<input name="complement" defaultValue={draft?.fields.complement} autoComplete="address-line2" maxLength={80} /></label>
+                <div className={styles.fields}>
+                  <label>{company('postcode')}<input autoComplete="postal-code" value={jobTown?.postcode ?? ''} readOnly /></label>
+                  <label>{company('city')}<input autoComplete="address-level2" value={jobTown?.name ?? ''} readOnly /></label>
+                </div>
+                <label>{t("Adresse e-mail")}<input name="email" type="email" key={userEmail ?? 'guest'} defaultValue={userEmail} readOnly={Boolean(userEmail)} autoComplete="email" maxLength={254} required /></label>
+                <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}</p>
+              </fieldset>
+              <label className={styles.check}><input name="consent" type="checkbox" defaultChecked={draft?.consent} required /> {t("J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
+              <button className={styles.button} disabled={loading || busy || !category || !commune}>{session ? t("Envoyer ma demande gratuite") : request.verify}</button>
+            </form>
+          </div>
+        </div>}
+        {enabled && accountOpen && view === 'resident' && !requestOpen && !session && !loading && <div className={styles.requestArea}>
+          <h3>{account.resident}</h3>
+          <p>{account.residentHelp}</p>
+          {signInForm('resident')}
+        </div>}
+        {requestFeedback && (requestOpen || view === 'resident') && <p className={requestFeedback.error ? styles.error : styles.status}
+          role={requestFeedback.error ? 'alert' : 'status'}>{requestFeedback.text}</p>}
+        </div>
       </section>
       <section className={styles.card}>
         <div><h2>{t("Je suis artisan")}</h2>
@@ -455,9 +579,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     </div>}
 
     {!enabled ? <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p> : <div id="compte" aria-busy={busy || loading}>
-      {!(accountOpen || session) ? null : loading ? <p role="status">{t("Chargement de votre espace…")}</p> : !session ? <Card title={account[view]}>
-        <p>{view === 'resident' ? account.residentHelp : account.providerHelp}</p>
-        {signInForm()}
+      {(!session && !(accountOpen && view === 'provider')) ? null : loading ? <p role="status">{t("Chargement de votre espace…")}</p> : !session ? <Card title={account[view]}>
+        <p>{account.providerHelp}</p>
+        {signInForm('provider')}
       </Card> : <>
         <div className={styles.account}>
           <span>{userEmail}</span>
@@ -465,33 +589,6 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         </div>
 
         {view === 'resident' ? <>
-          <Card title={t("Déposer une demande")}>
-            <form key={publishVersion} className={styles.form} onSubmit={submit(data => void send({
-              action: 'publish', ...Object.fromEntries(data), category, commune, consent: data.has('consent'),
-            }, t("Votre demande a été reçue. Elle sera publiée après vérification.")))}>
-              <TradeFields legend={t("Type de travaux")} onChoose={setCategory} />
-              {communePicker(commune, setCommune)}
-              <label>{t("Titre")}<input name="title" minLength={5} maxLength={100} required /></label>
-              <label>{t("Description")}<textarea name="description" minLength={20} maxLength={2000} rows={5} required placeholder={t("Dimensions, matériaux, état actuel et délai souhaité")} /></label>
-              <fieldset><legend>{t("Coordonnées privées")}</legend>
-                <p className={styles.meta}>{guide[locale].privacy} <button className={styles.secondary} type="button" onClick={showContact}>{guide[locale].contact}</button></p>
-                <div className={styles.fields}>
-                  <label>{t("Nom et prénom")}<input name="name" autoComplete="name" maxLength={120} required /></label>
-                  <label>{t("Téléphone")}<input name="phone" type="tel" autoComplete="tel" maxLength={30} required /></label>
-                </div>
-                <label>{company('street')}<input name="address" autoComplete="address-line1" maxLength={160} required /></label>
-                <label>{company('complement')}<input name="complement" autoComplete="address-line2" maxLength={80} /></label>
-                <div className={styles.fields}>
-                  <label>{company('postcode')}<input autoComplete="postal-code" value={jobTown?.postcode ?? ''} readOnly /></label>
-                  <label>{company('city')}<input autoComplete="address-level2" value={jobTown?.name ?? ''} readOnly /></label>
-                </div>
-                <label>{t("Adresse e-mail")}<input type="email" value={userEmail ?? ""} readOnly autoComplete="email" /></label>
-                <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}</p>
-              </fieldset>
-              <label className={styles.check}><input name="consent" type="checkbox" required /> {t("J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
-              <button className={styles.button} disabled={busy || !category || !commune}>{t("Envoyer ma demande gratuite")}</button>
-            </form>
-          </Card>
           {pendingOwnJobs.length > 0 && <Card title={t("Mes demandes en attente")}>
             <p>{t("Ces demandes sont privées jusqu’à leur approbation.")}</p>
             {pendingOwnJobs.map(job => <article className={styles.item} key={job.id}>

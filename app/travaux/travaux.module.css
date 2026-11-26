@@ -84,3 +84,7 @@
 @media (max-width: 650px) {
   .benefits { grid-template-columns: minmax(0, 1fr); }
 }
+
+.requestArea { margin-top: 14px; }
+.requestForm { margin-top: 8px; padding-top: 14px; border-top: 1px solid #d9dfd5; }
+.requestArea[hidden] { display: none; }
