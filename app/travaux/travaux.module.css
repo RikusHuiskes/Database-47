@@ -51,7 +51,7 @@
 .dialogHeading h2 { margin: 0; }
 .dialogContent input { width: 100%; padding: 10px; border: 1px solid #a8b6ac; border-radius: 8px; font: inherit; }
 .choiceGroup { margin-top: 10px; }
-.choiceGroup ul { padding: 0; margin: 5px 0; list-style: none; }
+.choiceGroup ul { padding: 0; margin: 5px 0; margin-inline-start: 16px; list-style: none; }
 .groupButton, .choice { display: grid; gap: 3px; width: 100%; padding: 10px; border: 1px solid #d9dfd5; border-radius: 8px; text-align: left; color: #193d3a; background: #fff; cursor: pointer; font: inherit; }
 .groupButton { background: #edf1e8; font-weight: 700; }
 .choice { margin: 3px 0; }
