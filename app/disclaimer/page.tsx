@@ -1,7 +1,8 @@
 import {localizeMetadata} from '../i18n/server';
 
-import {T, A} from '../i18n/Language';
+import {T} from '../i18n/Language';
 import type { Metadata } from "next";
+import TravauxLegal from "./TravauxLegal";
 
 const sourceMetadata: Metadata = { title: "Disclaimer | Côte de Duras" };
 export async function generateMetadata(){return localizeMetadata(sourceMetadata);}
@@ -17,5 +18,6 @@ export default function DisclaimerPage() {
     <p><T>{"Organisatoren, adverteerders en andere aanleverende partijen zijn verantwoordelijk voor hun eigen inhoud, aanbiedingen en dienstverlening. Een vermelding, controle of advertentie op Côte de Duras vormt geen garantie of aanbeveling. Wij garanderen geen bezoekersaantallen, reserveringen, omzet of ander advertentieresultaat."}</T></p>
     <p><T>{"Deze disclaimer beperkt geen wettelijke rechten van consumenten en sluit geen aansprakelijkheid uit die volgens het toepasselijke recht niet mag worden uitgesloten, waaronder aansprakelijkheid bij opzet of grove schuld. Dwingende wettelijke verplichtingen en uitdrukkelijk overeengekomen verplichtingen blijven gelden."}</T></p>
     <p><small><T>{"Laatst bijgewerkt: 28 oktober 2026."}</T></small></p>
+    <TravauxLegal />
   </main>;
 }

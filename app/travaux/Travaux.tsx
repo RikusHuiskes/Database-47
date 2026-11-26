@@ -982,7 +982,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <div>
         <a href="/">{t("Accueil")}</a>
         <a href="/travaux?espace=contact#espace">{t("Contact")}</a>
-        <a href="/disclaimer">{t("Mentions légales")}</a>
+        <a href="/disclaimer#travaux">{t("Mentions légales")}</a>
         {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
       </div>
     </footer>
