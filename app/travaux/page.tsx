@@ -34,9 +34,6 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
           <span className="brand-mark"><Image src="/cote-de-duras-logo.webp" alt="" width={54} height={43} /></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
         </a>
-        <nav className="primary-nav" aria-label={t("Navigation principale")}>
-          <a href="/#agenda">{t("Agenda")}</a><a href="/#gemeenten">{t("Guide local")}</a>
-        </nav>
       </div>}
       footerLinks={<>
         <a href="/">{t("Accueil")}</a>
