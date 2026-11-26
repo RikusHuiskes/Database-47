@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { trackTravaux } from '../../lib/travaux-interactions';
 import { useLanguage } from '../i18n/Language';
 import strings from '../../lib/travaux-contact.json';
 import styles from './travaux.module.css';
@@ -13,6 +14,7 @@ export default function ContactForm({ email, role }: { email?: string; role: 're
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state === 'sending') return;
+    trackTravaux('submit_contact');
     const form = event.currentTarget;
     setState('sending');
     try {

@@ -46,7 +46,7 @@ export default function Invoices({ token }: { token: string }) {
     {!error && !invoices.length && <p>{empty}</p>}
     {invoices.map(invoice => <div className={styles.item} key={invoice.id}>
       <p>{invoice.invoice_number} · {date.format(new Date(invoice.issued_at))} · {price.format(invoice.total_cents / 100)}</p>
-      <button className={styles.secondary} type="button" onClick={() => void getPdf(invoice.id)}>{download}</button>
+      <button className={styles.secondary} type="button" data-travaux-track="download_invoice" onClick={() => void getPdf(invoice.id)}>{download}</button>
     </div>)}
   </section>;
 }

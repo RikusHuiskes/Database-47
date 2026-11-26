@@ -195,3 +195,15 @@
 }
 .publicJob > .actions + button { margin-top: 12px; }
 .moreJobs { margin: 12px 0; }
+
+.analyticsColumns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 18px; margin-bottom: 18px; }
+.analyticsColumns section { padding: 14px; background: #f0f4ed; border-radius: 8px; }
+.analyticsColumns section p { margin-bottom: 0; }
+.analyticsBreakdown { margin: 0; }
+.analyticsBreakdown div { display: flex; justify-content: space-between; gap: 12px; padding-block: 6px; }
+.analyticsBreakdown dd { margin: 0; font-weight: 700; }
+.analyticsTable { overflow-x: auto; margin-block: 10px; }
+.analyticsTable table { width: 100%; border-collapse: collapse; text-align: start; }
+.analyticsTable th, .analyticsTable td { padding: 9px 12px; border-bottom: 1px solid #d9dfd5; text-align: start; }
+.analyticsTable thead { background: #f0f4ed; }
+.analyticsTable td { font-variant-numeric: tabular-nums; }

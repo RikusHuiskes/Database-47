@@ -1,0 +1,14 @@
+{
+  "fr": {
+    "consent": "Sur Travaux, cela inclut l’usage des onglets et filtres et les étapes pour déposer une demande, répondre ou s’abonner.",
+    "details": "Avec votre accord, Travaux enregistre le type d’action et le code aléatoire de la visite, notamment pour les onglets, les filtres et les étapes de dépôt, de réponse et d’abonnement. Les statistiques ne contiennent ni le contenu des formulaires, ni le texte des recherches ou des messages, ni les coordonnées des personnes. Les résultats confirmés, comme le nombre de demandes déposées ou de paiements confirmés, sont agrégés séparément à partir de la gestion du service."
+  },
+  "en": {
+    "consent": "On Travaux, this includes the tabs and filters you use and the steps for posting, replying or subscribing.",
+    "details": "With your consent, Travaux records the type of action and a random visit code, including for tabs, filters and steps in posting, replying and subscribing. Analytics store no form content, search or message text, or personal contact details. Confirmed results, such as the number of submitted projects or confirmed payments, are aggregated separately from service records."
+  },
+  "nl": {
+    "consent": "Op Travaux gaat het ook om tabbladen, filters en de stappen bij het plaatsen, reageren of abonneren.",
+    "details": "Met jouw toestemming meet Travaux het soort actie en een willekeurige bezoekcode, onder meer bij tabbladen, filters en de stappen rond plaatsen, reageren en abonneren. De statistieken bewaren geen ingevulde formulieren, zoek- of berichttekst of persoonlijke contactgegevens. Bevestigde resultaten, zoals aantallen ingediende klussen of bevestigde betalingen, tellen we apart op uit de administratie van de dienst."
+  }
+}

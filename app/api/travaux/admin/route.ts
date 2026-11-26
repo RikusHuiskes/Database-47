@@ -13,7 +13,11 @@ export async function GET(request: Request) {
     if (params.get('stats') === '1') {
       const days = Number(params.get('days') ?? '30');
       if (![7,30,90].includes(days)) throw new TravauxError('Demande invalide.');
-      return travauxJson(checked(await db.rpc('travaux_analytics', { p_days: days })));
+      const [summary, interactions] = await Promise.all([
+        db.rpc('travaux_analytics', { p_days: days }),
+        db.rpc('travaux_interaction_report', { p_days: days }),
+      ]);
+      return travauxJson({ ...checked(summary), report: checked(interactions) });
     }
     const provider = params.get('provider');
     const page = Number(params.get('page') ?? '0');

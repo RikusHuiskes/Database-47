@@ -23,7 +23,7 @@ export function trackAnalytics(action:string,detail:Record<string,string|undefin
     }
     session.last=Date.now();sessionStorage.setItem('cdd-session',JSON.stringify(session));
     const send=(kind:string,dimensions:Record<string,string|undefined>)=>void fetch('/api/analytics',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,
-      body:JSON.stringify({id:crypto.randomUUID(),visitorId,sessionId:session.id,consentAt:analyticsChoice()!.at,action:kind,acquisition:session.acquisition,...dimensions})}).catch(()=>{});
+      body:JSON.stringify({id:crypto.randomUUID(),visitorId,sessionId:session.id,consentAt:analyticsChoice()!.at,action:kind,acquisition:kind==='travaux_interaction'?undefined:session.acquisition,...dimensions})}).catch(()=>{});
     if(fresh&&action!=='visit')send('visit',{});
     send(action,detail);
   }catch{/* Storage restrictions must never interrupt the website. */}

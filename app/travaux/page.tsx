@@ -30,7 +30,7 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
   return <main className={`visitor-site ${styles.page}`}>
     <Travaux enabled={enabled} communes={enabled ? travauxCommunes : []} initialPanel={initialPanel} initialAccount={initialAccount}
       navigation={<div className="site-nav">
-        <a className="brand-lockup" href="/" aria-label={t("Côte de Duras, accueil")}>
+        <a className="brand-lockup" href="/" data-travaux-track="site_exit" aria-label={t("Côte de Duras, accueil")}>
           <span className="brand-mark"><Image src="/cote-de-duras-logo.webp" alt="" width={54} height={43} /></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
         </a>

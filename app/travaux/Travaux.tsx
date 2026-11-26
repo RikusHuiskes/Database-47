@@ -7,6 +7,7 @@ import { travauxCopy, travauxErrorText } from '../../lib/travaux-copy';
 import { intlLocale } from '../../lib/i18n';
 import { travauxAuthDestination } from './auth-destination';
 import { clearRequestDraft, readRequestDraft, saveRequestDraft } from './request-draft';
+import { trackTravaux } from '../../lib/travaux-interactions';
 import { jobTitleLocales, localizedJobTitle, type JobTitle } from '../../lib/travaux-job-title';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
@@ -82,11 +83,11 @@ function ContactDetails({ contact, title }: { contact: Contact; title: string })
         <label>{copy.subjectLabel}<input value={subject ?? initial.subject} onChange={e => { setSubject(e.target.value); setStatus(''); }} /></label>
         <label>{copy.bodyLabel}<textarea rows={6} value={body ?? initial.body} onChange={e => { setBody(e.target.value); setStatus(''); }} /></label>
         <div className={styles.actions}>
-          <button type="button" className={styles.button} onClick={async () => {
+          <button type="button" className={styles.button} data-travaux-track="copy_email" onClick={async () => {
             try { await navigator.clipboard.writeText(text); setStatus('copied'); }
             catch { setStatus('manual'); requestAnimationFrame(() => { copyArea.current?.focus(); copyArea.current?.select(); }); }
           }}>{copy.copy}</button>
-          <a className={styles.secondary} href={travauxMailLink(contact.email, subject ?? initial.subject, body ?? initial.body)}>{copy.open}</a>
+          <a className={styles.secondary} data-travaux-track="open_email" href={travauxMailLink(contact.email, subject ?? initial.subject, body ?? initial.body)}>{copy.open}</a>
         </div>
         {status === 'manual' && <textarea ref={copyArea} aria-label={copy.copy} readOnly rows={7} value={text} />}
         {status && <p role="status">{status === 'copied' ? copy.copied : copy.manual}</p>}
@@ -430,6 +431,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
 
   async function openCheckout(data?: FormData) {
     if (!token || checkoutInFlight.current) return;
+    trackTravaux(data ? 'checkout' : 'resume_checkout');
     checkoutInFlight.current = true;
     setOpeningCheckout(true);
     setCheckoutError('');
@@ -522,6 +524,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
 
   async function sendSignInLink(email: string, role: Account, data?: FormData) {
     if (mailRequestInFlight.current || Date.now() < mailRetryAfter.current) return;
+    trackTravaux(role === 'provider' ? 'professional_link' : data ? 'project_email_verification' : 'requester_login');
     mailRequestInFlight.current = true;
     setSendingLink(true);
     setEmailFeedback(null);
@@ -619,7 +622,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <nav className={styles.tabs} aria-label={copy.jobs}>
         {(['intro', 'jobs', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
           <button type="button" key={tab} className={`${styles.secondary} ${tab === 'admin' ? styles.adminTab : ''}`}
-            aria-pressed={panel === tab} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
+            aria-pressed={panel === tab} data-travaux-track={tab === 'admin' ? undefined : `tab_${tab}`} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
       </nav>
       <div className={`hero-grid ${styles.hero}`}>
         {heroArt}
@@ -733,14 +736,14 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         <div className={styles.pathwaySummary}><h2>{t("J’ai des travaux à faire")}</h2>
         <p>{t("Décrivez votre projet gratuitement. Vos coordonnées sont communiquées aux trois premiers professionnels abonnés qui répondent. Vous retrouvez leurs contacts et leurs propositions dans votre espace.")}</p></div>
         {enabled && <div className={styles.pathwayActions}>
-          <button type="button" className={styles.button} aria-expanded={requestOpen} onClick={() => {
+          <button type="button" className={styles.button} aria-expanded={requestOpen} data-travaux-track="start_project" onClick={() => {
             setView('resident');
             setRequestOpen(open => !open);
             setResidentAccountOpen(false);
             setEmailFeedback(null);
           }}>{t("Déposer une demande")}</button>
           <button type="button" className={styles.secondary} aria-expanded={residentAccountOpen}
-            aria-controls="compte" onClick={openResidentAccount}>{account.myJobs}</button>
+            aria-controls="compte" data-travaux-track="my_projects" onClick={openResidentAccount}>{account.myJobs}</button>
         </div>}
         <div className={styles.pathwayDetails} hidden={!requestOpen && !residentAccountOpen}>
         {enabled && <div hidden={!requestOpen} className={styles.requestArea}>
@@ -753,6 +756,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 void sendSignInLink(String(data.get('email') ?? '').trim(), 'resident', data);
                 return;
               }
+              trackTravaux('submit_project');
               void send({
                 action: 'publish', ...Object.fromEntries(data), category, commune, consent: data.has('consent'), submissionId: draft?.submissionId,
               }, t("Votre demande a été reçue. Elle sera publiée après vérification."));
@@ -793,7 +797,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
               <JobSummary job={job} />
               <p className={styles.meta}>{t(jobStatus.pending)}</p>
               <button className={styles.secondary} disabled={busy} onClick={() => {
-                if (window.confirm(t("Clôturer cette demande ?"))) void send({ action: 'close', id: job.id }, t("Demande clôturée."));
+                if (window.confirm(t("Clôturer cette demande ?"))) {
+                  trackTravaux('close_project');
+                  void send({ action: 'close', id: job.id }, t("Demande clôturée."));
+                }
               }}>{t("Clôturer la demande")}</button>
             </article>)}
           </Card>}
@@ -807,7 +814,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 {reply.message && <p className={styles.description}>{reply.message}</p>}
               </div>)}
               {job.status === 'open' && <button className={styles.secondary} disabled={busy} onClick={() => {
-                if (window.confirm(t("Clôturer cette demande ?"))) void send({ action: 'close', id: job.id }, t("Demande clôturée."));
+                if (window.confirm(t("Clôturer cette demande ?"))) {
+                  trackTravaux('close_project');
+                  void send({ action: 'close', id: job.id }, t("Demande clôturée."));
+                }
               }}>{t("Clôturer la demande")}</button>}
             </article>)}
           </Card>}
@@ -829,11 +839,11 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         <p className={styles.price}>{company("monthly")}<br />{company("notice")}<br />{company("annual")}</p></div>
           {enabled && <div className={styles.pathwayActions}>
             {session ? <button type="button" className={styles.button} aria-expanded={providerPanelOpen}
-              aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.dashboard}</button> : <>
+              aria-controls="espace-pro" data-travaux-track="professional_account" onClick={() => openProviderAccount('login')}>{professional.dashboard}</button> : <>
               <button type="button" className={styles.button} aria-haspopup="dialog"
-                aria-controls="travaux-provider-auth" onClick={() => openProviderAccount('register')}>{professional.register}</button>
+                aria-controls="travaux-provider-auth" data-travaux-track="register" onClick={() => openProviderAccount('register')}>{professional.register}</button>
               <button type="button" className={styles.secondary} aria-haspopup="dialog"
-                aria-controls="travaux-provider-auth" onClick={() => openProviderAccount('login')}>{professional.login}</button>
+                aria-controls="travaux-provider-auth" data-travaux-track="professional_login" onClick={() => openProviderAccount('login')}>{professional.login}</button>
             </>}
           </div>}
           <div className={`${styles.pathwayDetails} ${styles.providerDetails}`} hidden={!providerPanelOpen}>
@@ -855,7 +865,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             {provider?.subscribed && provider.plan !== 'annual' && !provider.cancelled && <>
               <p>{company('notice')}</p>
               <button className={styles.secondary} disabled={busy} onClick={() => {
-                if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
+                if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) {
+                  trackTravaux('cancel_subscription');
+                  void send({ action: 'cancel' }, t("Renouvellement arrêté."));
+                }
               }}>{t("Arrêter le renouvellement")}</button>
             </>}
             {provider?.plan === 'monthly' && provider.canResumeCheckout && <p>{company('pendingCancellation')}</p>}
@@ -914,7 +927,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             </li>)}</ul>}
         </div>
         <div className={styles.pathwayActions}>
-          <button type="button" className={styles.button} onClick={showListings}>{listings.all}</button>
+          <button type="button" className={styles.button} data-travaux-track="browse_jobs" onClick={showListings}>{listings.all}</button>
         </div>
       </section>}
     </div>
@@ -924,22 +937,22 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <Card title={t("Demandes de travaux")}>
         {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#espace-pro" onClick={openPlan}>{company("plan")}</a>.</p>}
         {session && <div className={styles.tabs}>
-          <button type="button" className={styles.secondary} aria-pressed={!recommended} onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
-          <button type="button" className={styles.secondary} aria-pressed={recommended} onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
+          <button type="button" className={styles.secondary} aria-pressed={!recommended} data-travaux-track="all_jobs" onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
+          <button type="button" className={styles.secondary} aria-pressed={recommended} data-travaux-track="recommendations" onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
         </div>}
         {session && recommended && !specialties.size && <p><a href="#espace-pro" onClick={openPlan}>{t("Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.")}</a></p>}
         <div className={styles.filters}>
-          {categoryPicker(categoryFilter, setCategoryFilter)}
-          {communePicker(communeFilter, setCommuneFilter)}
+          {categoryPicker(categoryFilter, value => { trackTravaux('filter_trade'); setCategoryFilter(value); })}
+          {communePicker(communeFilter, value => { trackTravaux('filter_town'); setCommuneFilter(value); })}
           {(categoryFilter || communeFilter) && <button type="button" className={styles.secondary}
-            onClick={() => { setCategoryFilter(''); setCommuneFilter(''); }}>{t("Effacer les filtres")}</button>}
+            data-travaux-track="reset_filters" onClick={() => { setCategoryFilter(''); setCommuneFilter(''); }}>{t("Effacer les filtres")}</button>}
         </div>
         {jobsError && <p role="alert">{t("Les demandes sont temporairement indisponibles.")}</p>}
         {!jobsError && !visibleJobs && <p role="status">{t("Chargement des demandes…")}</p>}
         {!jobsError && visibleJobs?.length === 0 && <p>{t("Aucune nouvelle demande disponible.")}</p>}
         {visibleJobs && visibleJobs.length > 0 && <div className={styles.jobGrid}>{visibleJobs.map(job => {
           const contact = answeredJobs.get(job.id);
-          return <article className={styles.publicJob} key={job.id}>
+          return <article className={styles.publicJob} key={job.id} data-travaux-card>
           <JobSummary job={job} />
           <div className={styles.actions}>
             <span className={styles.meta}>{job.responseCount ?? 0}/3 {t("réponses")}{job.responseCount === 3 ? " · " + t("Complet") : ""}</span>
@@ -951,15 +964,16 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             {contact && <ContactDetails contact={contact} title={localizedJobTitle(job, locale)} />}
           </div>}
           {session && dashboard?.active && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) &&
-            <button type="button" className={styles.button} disabled={busy}
+            <button type="button" className={styles.button} disabled={busy} data-travaux-track="reply"
               onClick={() => {
                 setView('provider');
                 void send({ action: 'respond', id: job.id, message: '', quote: null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
               }}>{t("Répondre à cette demande")}</button>}
-          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
+          {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary} data-travaux-track={dashboard.active ? "quote" : undefined}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
             {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#espace-pro" onClick={openPlan}>{company("plan")}</a></p> : <>
             <p>{guide[locale].beforeReply}</p>
             <form className={styles.form} onSubmit={submit(data => {
+              trackTravaux('send_quote');
               const quote = String(data.get('quote'));
               setView('provider');
               void send({ action: 'respond', id: job.id, message: data.get('message'), quote: quote ? Math.round(Number(quote) * 100) : null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
@@ -972,12 +986,12 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         </article>})}</div>}
         {hasMoreJobs && !jobsError && <div ref={moreJobs} className={styles.moreJobs}>
           <button className={styles.secondary} disabled={jobsLoading} type="button"
-            onClick={() => void refreshJobs(undefined, jobsPage + 1)}>
+            data-travaux-track="more_jobs" onClick={() => void refreshJobs(undefined, jobsPage + 1)}>
             {jobsLoading ? t("Chargement des demandes…") : t("Afficher plus de demandes")}
           </button>
         </div>}
         {(jobs || jobsError) && <button className={styles.secondary} disabled={busy || jobsLoading}
-          onClick={() => void run(() => refreshJobs())}>{t("Actualiser les demandes")}</button>}
+          data-travaux-track="refresh_jobs" onClick={() => void run(() => refreshJobs())}>{t("Actualiser les demandes")}</button>}
       </Card>
     </div>}
     </div>
@@ -986,7 +1000,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <footer className={`site-footer ${styles.footer}`}>
       <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
       <div>
-        <a href="/">{t("Accueil")}</a>
+        <a href="/" data-travaux-track="site_exit">{t("Accueil")}</a>
         <a href="/travaux?espace=contact#espace">{t("Contact")}</a>
         <a href="/disclaimer#travaux">{t("Mentions légales")}</a>
         {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}

@@ -1,10 +1,11 @@
 import {ANALYTICS_PAGES,normalizeAcquisition} from "../../../lib/marketing-attribution";
+import {isTravauxInteraction} from '../../../lib/travaux-interactions';
 import {NextResponse} from "next/server";
 import {createServiceClient} from "../../../lib/supabase-server";
 import areas from "../../../lib/data/area-catalog.json";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const actions=new Set(['visit','page_view','filter_view','category_view','place_view','event_view','impression','outbound','advertising_start','checkout_start']);
+const actions=new Set(['visit','page_view','filter_view','category_view','place_view','event_view','impression','outbound','advertising_start','checkout_start','travaux_interaction']);
 export async function POST(request:Request) {
   if(request.headers.get('origin')!==new URL(request.url).origin)return NextResponse.json({error:'Ongeldige oorsprong.'},{status:403});
   if(/bot|crawler|spider|headless|preview/i.test(request.headers.get('user-agent')??''))return new Response(null,{status:204});
@@ -22,6 +23,13 @@ export async function POST(request:Request) {
     || data.action==='filter_view'&&data.radius==null
     || data.area!=null&&!areas.areas.some(a=>a.name===data.area))return new Response(null,{status:400});
   const client=createServiceClient();if(!client)return new Response(null,{status:503});
+  if(data.action==='travaux_interaction'){
+    if(!isTravauxInteraction(data.interaction))return new Response(null,{status:400});
+    const {error}=await client.rpc('record_travaux_interaction',{
+      p_id:data.id,p_session:data.sessionId,p_kind:data.interaction,
+    });
+    return new Response(null,{status:error?503:204});
+  }
   const acquisition=normalizeAcquisition(data.acquisition,request.headers.get('x-vercel-ip-country'),request.headers.get('user-agent')??'');
   const {error}=await client.rpc('record_site_analytics',{p_data:{id:data.id,visitorId:data.visitorId,sessionId:data.sessionId,consentAt:data.consentAt,action:data.action,eventId:data.eventId??null,categoryId:data.categoryId??null,area:data.area??null,placement:data.placement??'standard',channel:data.channel??null,page:data.page??null,radius:data.radius??null,acquisition}});
   return new Response(null,{status:error?503:204});
