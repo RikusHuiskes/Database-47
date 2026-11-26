@@ -38,6 +38,11 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
           <a href="/#agenda">{t("Agenda")}</a><a href="/#gemeenten">{t("Guide local")}</a>
         </nav>
       </div>}
+      footerLinks={<>
+        <a href="/">{t("Accueil")}</a>
+        <a href="/travaux?espace=contact#espace">{t("Contact")}</a>
+        <a href="/disclaimer">{t("Mentions légales")}</a>
+      </>}
       contactDetails={<aside aria-labelledby="travaux-contact-business">
         <h3 id="travaux-contact-business">{ADVERTISING_SELLER.name}</h3>
         <address className={styles.contactAddress}>
@@ -58,9 +63,5 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
         </div>
       </div>}
     />
-    <footer className="site-footer">
-      <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
-      <div><a href="/">{t("Accueil")}</a><a href="/travaux?espace=contact#espace">{t("Contact")}</a><a href="/disclaimer">{t("Mentions légales")}</a></div>
-    </footer>
   </main>;
 }

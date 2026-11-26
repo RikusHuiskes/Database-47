@@ -149,3 +149,15 @@
     border-radius: 16px;
   }
 }
+
+.footer :global(.analytics-settings) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e4ede5;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+.footer :global(.analytics-settings):hover { color: #f4ca77; }

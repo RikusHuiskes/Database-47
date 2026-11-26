@@ -162,7 +162,7 @@ const professionalCopy = {
   nl: { register: 'Registreren', login: 'Inloggen als vakman', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
 };
 
-export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero, contactDetails }: {
+export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero, contactDetails, footerLinks }: {
   enabled: boolean;
   communes: Commune[];
   initialPanel: 'jobs' | 'contact' | 'admin';
@@ -170,6 +170,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   navigation: ReactNode;
   hero: ReactNode;
   contactDetails: ReactNode;
+  footerLinks: ReactNode;
 }) {
   const { locale } = useLanguage();
   const t = travauxCopy(locale);
@@ -549,7 +550,6 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       </div>}
     </dialog>
     {sendingDraft && <p className={styles.status} role="status">{emailMessages.sending}</p>}
-    {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
     {panel === 'intro' && <Card title={intro.title}>
       <p>{intro.lead}</p>
       <div className={styles.benefits}>
@@ -847,5 +847,12 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     </div>}
 
     </div>
+    <footer className={`site-footer ${styles.footer}`}>
+      <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
+      <div>
+        {footerLinks}
+        {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
+      </div>
+    </footer>
   </>;
 }
