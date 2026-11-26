@@ -644,7 +644,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     </dialog>
     {sendingDraft && <p className={styles.status} role="status">{emailMessages.sending}</p>}
     {panel === 'intro' && <Card title={intro.title}>
-      <p>{intro.lead}</p>
+      <p className={styles.introLead}>{intro.lead}</p>
       <div className={styles.benefits}>
         {[intro.resident, intro.provider].map(section => <section key={section.title}>
           <h3>{section.title}</h3>
