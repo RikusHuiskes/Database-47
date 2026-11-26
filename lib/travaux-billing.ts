@@ -95,8 +95,29 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
     ? await mollieRequest('payments/' + profile.first_payment_id)
     : (await mollieRequest(paymentPath + '?limit=50'))._embedded?.payments?.find(
         (item: { metadata?: { checkoutKey?: string } }) => item.metadata?.checkoutKey === key);
-  if (payment?.status === 'open' && payment.metadata?.checkoutMarket !== 'FR' && payment.isCancelable) {
-    payment = await mollieRequest('payments/' + payment.id, { method: 'DELETE' });
+  const checkoutConfiguration = async () => ({
+    method: await frenchCheckoutMethods(plan),
+    billingAddress: { streetAndNumber: details.address, postalCode: details.postcode, city: details.city, country: 'FR' },
+    metadata: { product, userId, checkoutKey: key, plan, checkoutMarket: 'FR' },
+    locale: 'fr_FR',
+  });
+  if (payment?.status === 'open' && payment.metadata?.checkoutMarket !== 'FR') {
+    const path = 'payments/' + payment.id;
+    const configuration = await checkoutConfiguration();
+    try {
+      payment = await mollieRequest(path, { method: 'PATCH', body: JSON.stringify(configuration) });
+    } catch {
+      payment = await mollieRequest(path);
+      if (payment.status === 'open' && payment.metadata?.checkoutMarket !== 'FR') {
+        if (!payment.isCancelable) throw new TravauxError('Le paiement précédent est encore ouvert. Réessayez dans quelques instants.', 409);
+        try {
+          payment = await mollieRequest(path, { method: 'DELETE' });
+        } catch {
+          payment = await mollieRequest(path);
+          if (payment.status === 'open') throw new TravauxError('Le paiement précédent est encore ouvert. Réessayez dans quelques instants.', 409);
+        }
+      }
+    }
   }
   if (payment && ['expired', 'canceled', 'failed'].includes(payment.status)) {
     const updated = checked(await db.from('travaux_providers').update({
@@ -108,10 +129,7 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
   if (!payment) {
     payment = await molliePost('payments', 'travaux-checkout-' + key, {
       amount, description, customerId, sequenceType: plan === 'monthly' ? 'first' : 'oneoff',
-      method: await frenchCheckoutMethods(plan),
-      billingAddress: { streetAndNumber: details.address, postalCode: details.postcode, city: details.city, country: 'FR' },
-      metadata: { product, userId, checkoutKey: key, plan, checkoutMarket: 'FR' },
-      locale: 'fr_FR',
+      ...await checkoutConfiguration(),
       redirectUrl: origin + travauxPath + '?paiement=retour&lang=' + locale,
       webhookUrl: origin + '/api/travaux/mollie',
     });

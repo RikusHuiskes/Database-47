@@ -102,11 +102,12 @@ function JobSummary({ job }: { job: PublicJob }) {
   </>;
 }
 
-async function api(token: string, data?: object) {
+async function api(token: string, data?: object, signal?: AbortSignal) {
   const res = await fetch(apiPath, {
     method: data ? 'POST' : 'GET',
     headers: { Authorization: 'Bearer ' + token, ...(data && { 'Content-Type': 'application/json' }) },
     body: data && JSON.stringify(data),
+    signal,
     cache: 'no-store',
   });
   const result = await res.json();
@@ -238,6 +239,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const checkoutInFlight = useRef(false);
+  const [openingCheckout, setOpeningCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const token = session?.access_token;
   const currentSession = useRef<Session | null>(null);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
@@ -375,6 +379,50 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       if (['respond', 'moderate', 'close', 'save-profile'].includes(data.action)) await refreshJobs();
       if (['respond', 'moderate', 'close'].includes(data.action)) await refreshRecentJobs();
     });
+  }
+
+  useEffect(() => {
+    function restored(event: PageTransitionEvent) {
+      if (event.persisted) {
+        checkoutInFlight.current = false;
+        setOpeningCheckout(false);
+      }
+    }
+    window.addEventListener('pageshow', restored);
+    return () => window.removeEventListener('pageshow', restored);
+  }, []);
+
+  async function openCheckout(data: FormData) {
+    if (!token || checkoutInFlight.current) return;
+    checkoutInFlight.current = true;
+    setOpeningCheckout(true);
+    setCheckoutError('');
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 50_000);
+    let redirecting = false;
+    try {
+      const result = await api(token, {
+        action: 'checkout', ...Object.fromEntries(data), specialties: data.getAll('specialties'),
+        locale, termsVersion, consent: data.has('billingConsent'),
+      }, controller.signal);
+      if (result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
+        redirecting = true;
+      } else {
+        setNotice(t("Paiement confirmé. Votre accès a été actualisé."));
+        await refresh(token);
+      }
+    } catch (err) {
+      setCheckoutError(controller.signal.aborted
+        ? 'L’ouverture de Mollie prend trop de temps. Vous pouvez réessayer.'
+        : err instanceof Error ? err.message : 'Le service ne répond pas.');
+    } finally {
+      window.clearTimeout(timer);
+      if (!redirecting) {
+        checkoutInFlight.current = false;
+        setOpeningCheckout(false);
+      }
+    }
   }
 
   const userEmail = session?.user.email;
@@ -731,10 +779,13 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                   if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
                 }}>{t("Arrêter le renouvellement")}</button>}
             </> : null}
-            {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={`${styles.form} ${styles.providerForm}`} onSubmit={submit(data => void send({
-              action: provider?.subscribed ? 'save-profile' : 'checkout', ...Object.fromEntries(data),
-              specialties: data.getAll('specialties'), locale, termsVersion, consent: data.has('billingConsent'),
-            }, provider?.subscribed ? company('saved') : t("Paiement confirmé. Votre accès a été actualisé.")))}>
+            {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={`${styles.form} ${styles.providerForm}`} onSubmit={submit(data => {
+              if (!provider?.subscribed) {
+                void openCheckout(data);
+                return;
+              }
+              void send({ action: 'save-profile', ...Object.fromEntries(data), specialties: data.getAll('specialties') }, company('saved'));
+            })} aria-busy={openingCheckout}>
               <CompanyFields profile={provider} email={userEmail} />
               {!provider?.subscribed && <>
                 <fieldset><legend>{company('plan')}</legend>
@@ -747,8 +798,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                   <p>{copy.market} {copy.guarantees} {copy.liability}</p></details>
                 <label className={styles.check}><input name="billingConsent" type="checkbox" required /> {company('accept')}</label>
               </>}
-              <button className={styles.button} disabled={busy}>{provider?.subscribed ? company('save')
-                : provider ? t("Reprendre ou vérifier mon paiement") : t("S’abonner avec Mollie")}</button>
+              {checkoutError && <p className={styles.error} role="alert">{travauxErrorText(checkoutError, locale)}</p>}
+              <button className={styles.button} disabled={busy || openingCheckout}>{openingCheckout ? t("Ouverture de Mollie…")
+                : provider?.subscribed ? company('save') : provider ? t("Reprendre ou vérifier mon paiement") : t("S’abonner avec Mollie")}</button>
             </form>}
           </Card>
           {token && provider && <Invoices token={token} />}
