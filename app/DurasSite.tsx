@@ -2207,10 +2207,10 @@ export default function DurasSite({newListingOnly=false,previewAdSamplesEnabled=
           </a></A>
           <a className="my-listing-link" href="/mijn-vermelding"><T>Vermelding toevoegen / beheren</T><span aria-hidden="true"><T>{"→"}</T></span></a>
           <A><nav className="primary-nav" aria-label="Hoofdnavigatie">
+            <a href="/missie-visie">{missionCopy[locale].menu}</a>
             <a href="/de-streek-beleven"><T>{"De streek beleven"}</T></a>
             <a href="#agenda" onClick={()=>{if(discoveryPreview)chooseDiscovery('events');}}><T>{"Agenda"}</T></a>
             <a href="#ontdekken"><T>{"Ontdekken"}</T></a>
-            <a href="/missie-visie">{missionCopy[locale].menu}</a>
             <a href="#gemeenten" onClick={()=>{if(discoveryPreview)chooseDiscovery('practical');}}><T>{"Gemeente informatie"}</T></a>
             <a href="/handleiding"><T>{"Handleiding"}</T></a>
           </nav></A>
