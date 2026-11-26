@@ -96,6 +96,7 @@ const copy = {
   "Actualiser mes contacts": ["Actualiser mes contacts", "Refresh my contacts", "Vernieuw mijn contacten"],
   "Mon abonnement professionnel": ["Mon abonnement professionnel", "My professional subscription", "Mijn abonnement"],
   "Chargement de l’abonnement…": ["Chargement de l’abonnement…", "Loading subscription…", "Abonnement laden…"],
+  "Accès actif.": ["Accès actif.", "Access is active.", "Je hebt toegang."],
   "Accès actif pour la période payée.": ["Accès actif pour la période payée.", "Access is active for your paid period.", "Je hebt toegang gedurende de betaalde periode."],
   "Aucun accès actif pour la période en cours.": ["Aucun accès actif pour la période en cours.", "No paid access for the current period.", "Geen betaalde toegang voor deze periode."],
   "Le renouvellement automatique est arrêté.": ["Le renouvellement automatique est arrêté.", "Automatic renewal is off.", "Automatisch verlengen is stopgezet."],

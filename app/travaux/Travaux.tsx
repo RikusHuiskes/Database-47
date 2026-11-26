@@ -826,7 +826,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <section className={`${styles.card} ${providerPanelOpen ? styles.providerExpanded : ""}`}>
         <div className={styles.pathwaySummary}><h2>{t("Je suis artisan")}</h2>
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
-        <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
+        <p className={styles.price}>{company("monthly")}<br />{company("notice")}<br />{company("annual")}</p></div>
           {enabled && <div className={styles.pathwayActions}>
             {session ? <button type="button" className={styles.button} aria-expanded={providerPanelOpen}
               aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.dashboard}</button> : <>
@@ -841,18 +841,24 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             {providerPanelOpen && <>
               {accountHeader()}
           <Card compact title={t("Mon abonnement professionnel")}>
-            {!dashboard ? <p>{t("Chargement de l’abonnement…")}</p> : provider?.subscribed ? <>
-              <p>{dashboard.active ? t("Accès actif pour la période payée.") : t("Aucun accès actif pour la période en cours.")}</p>
-              {provider.plan === 'annual' ? <p>{company('annualActive')}</p> : provider.cancelled ? <p>
-                {t("Le renouvellement automatique est arrêté.")}
-                {provider.noticeUntil && <> {company('noticeUntil')} {new Intl.DateTimeFormat(intlLocale[locale], {
-                  dateStyle: 'long', timeZone: 'Europe/Paris',
-                }).format(new Date(provider.noticeUntil + 'T12:00:00Z'))}.</>}
-              </p> :
-                <button className={styles.secondary} disabled={busy} onClick={() => {
-                  if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
-                }}>{t("Arrêter le renouvellement")}</button>}
-            </> : null}
+            {!dashboard && <p>{t("Chargement de l’abonnement…")}</p>}
+            {dashboard && provider?.subscribed && <p>{dashboard.active
+              ? t(provider.cancelled ? "Accès actif." : "Accès actif pour la période payée.")
+              : t("Aucun accès actif pour la période en cours.")}</p>}
+            {provider?.subscribed && provider.plan === 'annual' && <p>{company('annualActive')}</p>}
+            {provider?.cancelled && <p>
+              {t("Le renouvellement automatique est arrêté.")}
+              {provider.noticeUntil && <> {company('noticeUntil')} {new Intl.DateTimeFormat(intlLocale[locale], {
+                dateStyle: 'long', timeZone: 'Europe/Paris',
+              }).format(new Date(provider.noticeUntil + 'T12:00:00Z'))}.</>}
+            </p>}
+            {provider?.subscribed && provider.plan !== 'annual' && !provider.cancelled && <>
+              <p>{company('notice')}</p>
+              <button className={styles.secondary} disabled={busy} onClick={() => {
+                if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
+              }}>{t("Arrêter le renouvellement")}</button>
+            </>}
+            {provider?.plan === 'monthly' && provider.canResumeCheckout && <p>{company('pendingCancellation')}</p>}
             {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={`${styles.form} ${styles.providerForm}`} onSubmit={submit(data => {
               if (!provider?.subscribed) {
                 void openCheckout(data);

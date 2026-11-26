@@ -3,7 +3,7 @@ import { projectAddress, readCompanyDetails } from '../../../lib/travaux-company
 import { isTravauxPlan } from '../../../lib/travaux-plans';
 import { processAdvertisingInvoiceMailOutbox } from '../../../lib/advertising-invoices';
 import { after } from 'next/server';
-import { termsVersion } from '../../../lib/travaux-company';
+import { canResumeTravauxTerms, termsVersion } from '../../../lib/travaux-company';
 import { localeFrom } from '../../../lib/i18n';
 import { adminService } from '../../../lib/admin-service';
 import { travauxCategories } from '../../../lib/travaux';
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
       active, admin: Boolean(admin), owner: Boolean(admin && isTravauxOwner(user.id)), pending, jobs: checked(jobs), sent: checked(sent),
       provider: provider && {
         name: provider.name, phone: provider.phone, details: provider.details, cancelled: Boolean(provider.cancelled_at), noticeUntil: provider.notice_ends_on,
-        canResumeCheckout: Boolean(provider.first_payment_id && provider.terms_version === termsVersion && !active && !provider.subscription_id),
+        canResumeCheckout: Boolean(provider.first_payment_id && canResumeTravauxTerms(provider.terms_version) && !active && !provider.subscription_id),
         subscribed: Boolean((provider.subscription_id && (!provider.cancelled_at || active)) || (provider.billing_plan === 'annual' && active)), plan: provider.billing_plan,
       },
     });
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     if (body.action === 'resume-checkout') {
       const profile = checked(await db.from('travaux_providers').select('name,phone,details,billing_plan,first_payment_id,terms_version')
         .eq('user_id', user.id).maybeSingle());
-      if (!profile?.first_payment_id || profile.terms_version !== termsVersion || !profile.details || !isTravauxPlan(profile.billing_plan)) {
+      if (!profile?.first_payment_id || !canResumeTravauxTerms(profile.terms_version) || !profile.details || !isTravauxPlan(profile.billing_plan)) {
         throw new TravauxError('Confirmez le prix et le renouvellement de l’abonnement.');
       }
       const result = await startTravauxCheckout(db, request, user.id, email, profile.name, profile.phone, localeFrom(body.locale),

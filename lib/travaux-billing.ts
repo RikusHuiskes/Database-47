@@ -219,6 +219,7 @@ export async function cancelTravauxSubscription(db: TravauxDb, userId: string, w
   }
   checked(await db.from('travaux_providers').update({
     cancelled_at: cancelledAt.toISOString(),
-    notice_ends_on: withNotice ? monthBoundary(parisDay(cancelledAt), 1) : null,
+    // The next calendar month is the full notice month. Access uses an exclusive end date.
+    notice_ends_on: withNotice ? monthBoundary(parisDay(cancelledAt).slice(0, 7) + '-01', 2) : null,
   }).eq('user_id', userId).eq('subscription_id', profile.subscription_id).is('cancelled_at', null));
 }

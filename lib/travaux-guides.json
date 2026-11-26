@@ -47,11 +47,11 @@
         },
         {
           "title": "Choisissez votre abonnement et payez via Mollie",
-          "text": "Choisissez 25 € par mois par carte ou prélèvement SEPA, ou 250 € en un seul paiement pour 12 mois. Lisez les conditions, cochez la case d’acceptation et continuez vers Mollie. Les moyens disponibles s’affichent lors du paiement. Si le paiement est resté en attente, cliquez sur Reprendre ou vérifier mon paiement quand ce bouton apparaît sous Mon abonnement professionnel."
+          "text": "Choisissez 25 € par mois par carte ou prélèvement SEPA, ou 250 € en un seul paiement pour 12 mois. Le préavis de la formule mensuelle commence le 1er du mois suivant la demande de résiliation. Lisez les conditions, cochez la case d’acceptation et continuez vers Mollie. Les moyens disponibles s’affichent lors du paiement. Si le paiement est resté en attente, cliquez sur Reprendre ou vérifier mon paiement quand ce bouton apparaît sous Mon abonnement professionnel."
         },
         {
           "title": "Retrouvez les factures et gérez le renouvellement",
-          "text": "Vous recevez une facture par e-mail après chaque paiement confirmé. Vous pouvez aussi la télécharger dans Mes factures. L’abonnement mensuel se renouvelle automatiquement et prévoit un préavis d’un mois. Dans Mon abonnement professionnel, cliquez sur Arrêter le renouvellement et confirmez. La date de fin du préavis s’affiche au même endroit. La formule annuelle se termine après 12 mois sans renouvellement automatique."
+          "text": "Vous recevez une facture par e-mail après chaque paiement confirmé. Vous pouvez aussi la télécharger dans Mes factures. Pour résilier l’abonnement mensuel, ouvrez Mon compte, puis Mon abonnement professionnel, cliquez sur Arrêter le renouvellement et confirmez. Le préavis dure un mois à compter du 1er du mois suivant votre demande. Par exemple, pour une demande le 26 novembre, le préavis court du 1er au 31 décembre et prend fin le 1er janvier. Le compte affiche cette date. Les nouveaux paiements automatiques cessent à la demande. Si votre accès est actif, il reste ouvert pendant le préavis et au moins jusqu’à la fin de la période déjà payée. La formule annuelle se termine après 12 mois sans renouvellement automatique."
         },
         {
           "title": "Répondez à une demande",
@@ -116,11 +116,11 @@
         },
         {
           "title": "Choose a subscription and pay via Mollie",
-          "text": "Choose €25 per month by card or SEPA Direct Debit, or a one-off payment of €250 for 12 months. Read and accept the terms, then continue to Mollie. Available payment methods appear at checkout. If you did not finish paying, use Continue or check my payment if the button appears under My professional subscription."
+          "text": "Choose €25 per month by card or SEPA Direct Debit, or a one-off payment of €250 for 12 months. Notice for the monthly plan starts on the first day of the month after you request cancellation. Read and accept the terms, then continue to Mollie. Available payment methods appear at checkout. If you did not finish paying, use Continue or check my payment if the button appears under My professional subscription."
         },
         {
           "title": "Find invoices and manage renewal",
-          "text": "You receive an invoice by email after every confirmed payment. You can also download it under My invoices. The monthly plan renews automatically and has a one-month notice period. Under My professional subscription, choose Cancel subscription and confirm. The notice end date appears there. The annual plan ends after 12 months without automatic renewal."
+          "text": "You receive an invoice by email after every confirmed payment. You can also download it under My invoices. To cancel the monthly plan, open My account, then My professional subscription, choose Cancel subscription and confirm. The one-month notice starts on the first day of the month after your request. For example, if you cancel on 26 November, notice runs from 1 to 31 December and ends on 1 January. Your account shows this date. New automatic payments stop when you request cancellation. If your access is active, it continues through the notice period and at least until the end of the period already paid for. The annual plan ends after 12 months without automatic renewal."
         },
         {
           "title": "Reply to a project",
@@ -185,11 +185,11 @@
         },
         {
           "title": "Kies een abonnement en betaal via Mollie",
-          "text": "Kies €25 per maand via kaart of SEPA-incasso, of betaal één keer €250 voor 12 maanden. Lees de voorwaarden, vink je akkoord aan en ga verder naar Mollie. De betaalopties die je kunt gebruiken staan in het betaalscherm van Mollie. Was de betaling nog niet afgerond, kies dan Hervat of controleer mijn betaling zodra die knop verschijnt onder Mijn abonnement."
+          "text": "Kies €25 per maand via kaart of SEPA-incasso, of betaal één keer €250 voor 12 maanden. Bij het maandabonnement gaat de opzegtermijn in op de eerste dag van de maand na je opzegging. Lees de voorwaarden, vink je akkoord aan en ga verder naar Mollie. De betaalopties die je kunt gebruiken staan in het betaalscherm van Mollie. Was de betaling nog niet afgerond, kies dan Hervat of controleer mijn betaling zodra die knop verschijnt onder Mijn abonnement."
         },
         {
           "title": "Bekijk je facturen en regel je opzegging",
-          "text": "Na elke bevestigde betaling ontvang je een factuur per e-mail. Je kunt die ook downloaden onder Mijn facturen. Het maandabonnement wordt automatisch verlengd en heeft één maand opzegtermijn. Kies in Mijn abonnement voor Abonnement opzeggen en bevestig. Daar zie je ook de einddatum van de opzegtermijn. Het jaarabonnement eindigt na 12 maanden zonder automatische verlenging."
+          "text": "Na elke bevestigde betaling ontvang je een factuur per e-mail. Je kunt die ook downloaden onder Mijn facturen. Wil je je maandabonnement opzeggen? Ga naar Mijn account, open Mijn abonnement, klik op Abonnement opzeggen en bevestig. De opzegtermijn duurt één maand en begint op de eerste dag van de maand na je verzoek. Zeg je op 26 november op, dan loopt de opzegtermijn van 1 tot en met 31 december en eindigt die op 1 januari. Die einddatum zie je in je account. Nieuwe automatische betalingen stoppen zodra je opzegt. Als je toegang dan actief is, houd je die tijdens de opzegtermijn en minimaal tot het einde van de al betaalde periode. Het jaarabonnement eindigt na 12 maanden zonder automatische verlenging."
         },
         {
           "title": "Reageer op een passende klus",

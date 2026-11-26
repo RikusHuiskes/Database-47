@@ -12,7 +12,7 @@ const copy = {
       },
       {
         title: 'Devis, contrat et paiement',
-        text: 'Le particulier et l’artisan conviennent directement du devis, du contrat, des délais et du règlement des travaux. Côte de Duras ne signe pas le contrat de travaux, n’encaisse pas le prix du chantier et ne prélève pas de commission sur celui-ci. Sur Travaux, Mollie traite uniquement les paiements d’abonnement des artisans.',
+        text: 'Le particulier et l’artisan conviennent directement du devis, du contrat, des délais et du règlement des travaux. Côte de Duras ne signe pas le contrat de travaux, n’encaisse pas le prix du chantier et ne prélève pas de commission sur celui-ci. Sur Travaux, Mollie traite uniquement les paiements d’abonnement des artisans. Le préavis d’un mois de l’abonnement mensuel commence le 1er du mois suivant la demande de résiliation. L’abonnement annuel se termine après douze mois sans renouvellement automatique.',
       },
       {
         title: 'Garanties et responsabilités',
@@ -36,7 +36,7 @@ const copy = {
       },
       {
         title: 'Quotes, contracts and payment',
-        text: 'The customer and tradesperson agree the quote, contract, schedule and payment for the work directly. Côte de Duras does not sign the contract for the work, collect payment for the work or charge a commission on it. On Travaux, Mollie only processes tradesperson subscription payments.',
+        text: 'The customer and tradesperson agree the quote, contract, schedule and payment for the work directly. Côte de Duras does not sign the contract for the work, collect payment for the work or charge a commission on it. On Travaux, Mollie only processes tradesperson subscription payments. The monthly plan has one month’s notice starting on the first day of the month after the cancellation request. The annual plan ends after twelve months without automatic renewal.',
       },
       {
         title: 'Guarantees and responsibilities',
@@ -60,7 +60,7 @@ const copy = {
       },
       {
         title: 'Offerte, overeenkomst en betaling',
-        text: 'De aanvrager en de vakman spreken de offerte, overeenkomst, planning en betaling voor het werk rechtstreeks met elkaar af. Côte de Duras is geen partij bij de overeenkomst over de klus, ontvangt geen betaling voor de werkzaamheden en rekent daarover geen commissie. Mollie verwerkt op Travaux alleen de abonnementsbetalingen van vakmensen.',
+        text: 'De aanvrager en de vakman spreken de offerte, overeenkomst, planning en betaling voor het werk rechtstreeks met elkaar af. Côte de Duras is geen partij bij de overeenkomst over de klus, ontvangt geen betaling voor de werkzaamheden en rekent daarover geen commissie. Mollie verwerkt op Travaux alleen de abonnementsbetalingen van vakmensen. De opzegtermijn van het maandabonnement duurt één maand en begint op de eerste dag van de maand na de opzegging. Het jaarabonnement eindigt na twaalf maanden zonder automatische verlenging.',
       },
       {
         title: 'Garanties en verantwoordelijkheid',
