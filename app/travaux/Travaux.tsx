@@ -150,7 +150,7 @@ const submittedCopy = {
 const listingCopy = {
   fr: { headline: 'Derniers travaux à pourvoir', all: 'Voir toutes les demandes', back: 'Retour à Travaux' },
   en: { headline: 'Latest open projects', all: 'Browse all projects', back: 'Back to Travaux' },
-  nl: { headline: 'Nieuwste openstaande klussen', all: 'Bekijk alle klussen', back: 'Terug naar Travaux' },
+  nl: { headline: 'Openstaande klussen', all: 'Bekijk alle klussen', back: 'Terug naar Travaux' },
 };
 
 type Account = 'resident' | 'provider';
@@ -159,7 +159,7 @@ type ProviderAction = 'register' | 'login';
 const professionalCopy = {
   fr: { register: 'S’inscrire', login: 'Se connecter', registerTitle: 'Créer mon compte artisan', registerHelp: 'Confirmez votre adresse e-mail, puis renseignez votre entreprise et choisissez votre abonnement.' },
   en: { register: 'Register', login: 'Sign in', registerTitle: 'Create a tradesperson account', registerHelp: 'Confirm your email, then enter your business details and choose a subscription.' },
-  nl: { register: 'Registreren', login: 'Inloggen', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
+  nl: { register: 'Registreren', login: 'Inloggen als vakman', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
 };
 
 export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero, contactDetails }: {
@@ -608,9 +608,8 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <div hidden={panel !== 'jobs'}>
     <div className={styles.pathways}>
       <section className={styles.card}>
-        <div><h2>{t("J’ai des travaux à faire")}</h2>
+        <div className={styles.pathwaySummary}><h2>{t("J’ai des travaux à faire")}</h2>
         <p>{t("Décrivez votre projet gratuitement. Vos coordonnées sont communiquées aux trois premiers professionnels abonnés qui répondent. Vous retrouvez leurs contacts et leurs propositions dans votre espace.")}</p></div>
-        <div>
         {enabled && <div className={styles.pathwayActions}>
           <button type="button" className={styles.button} aria-expanded={requestOpen} onClick={() => {
             setView('resident');
@@ -621,6 +620,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <button type="button" className={styles.secondary} aria-expanded={residentAccountOpen}
             aria-controls="compte" onClick={openResidentAccount}>{account.myJobs}</button>
         </div>}
+        <div className={styles.pathwayDetails}>
         {enabled && <div hidden={!requestOpen} className={styles.requestArea}>
           <div id="klus-aanvraag" className={styles.requestForm}>
             <h3>{t("Déposer une demande")}</h3>
@@ -702,19 +702,19 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         </div>
       </section>
       <section className={styles.card}>
-        <div><h2>{t("Je suis artisan")}</h2>
+        <div className={styles.pathwaySummary}><h2>{t("Je suis artisan")}</h2>
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
         <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
-        <div>
           {enabled && <div className={styles.pathwayActions}>
             {session ? <button type="button" className={styles.button} aria-expanded={Boolean(providerAction)}
-              aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{t("Accéder à l’espace pro")}</button> : <>
+              aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button> : <>
               <button type="button" className={styles.button} aria-expanded={providerAction === 'register'}
                 aria-controls="espace-pro" onClick={() => openProviderAccount('register')}>{professional.register}</button>
               <button type="button" className={styles.secondary} aria-expanded={providerAction === 'login'}
                 aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button>
             </>}
           </div>}
+          <div className={styles.pathwayDetails}>
           {enabled && <div id="espace-pro" hidden={!providerAction} className={styles.requestArea} aria-busy={loading || busy}>
             {providerAction && (loading ? <p role="status">{t("Chargement de votre espace…")}</p> : session ? <>
               {accountHeader()}
@@ -767,7 +767,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         </div>
       </section>
       {enabled && <section className={`${styles.card} ${styles.recentJobs}`}>
-        <div>
+        <div className={styles.pathwaySummary}>
           <h2>{listings.headline}</h2>
           {recentJobsError ? <p>{t("Les demandes sont temporairement indisponibles.")}</p>
             : !recentJobs ? <p role="status">{t("Chargement des demandes…")}</p>
@@ -777,7 +777,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
               <span className={styles.meta}>{travauxCategoryLabel(job.category, locale)} · {job.commune}</span>
             </li>)}</ul>}
         </div>
-        <button type="button" className={styles.button} onClick={showListings}>{listings.all}</button>
+        <div className={styles.pathwayActions}>
+          <button type="button" className={styles.button} onClick={showListings}>{listings.all}</button>
+        </div>
       </section>}
     </div>
     {!enabled && <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p>}
