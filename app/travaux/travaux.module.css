@@ -24,6 +24,7 @@
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .form .check { display: flex; align-items: start; gap: 9px; font-weight: 400; }
 .check input { margin-top: 4px; accent-color: #265449; }
+.form .check input[type="checkbox"] { flex: 0 0 24px; width: 24px; height: 24px; margin: 0; }
 .account, .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .account { justify-content: space-between; overflow-wrap: anywhere; }
 .item { border-top: 1px solid #d9dfd5; padding: 15px 0; }
