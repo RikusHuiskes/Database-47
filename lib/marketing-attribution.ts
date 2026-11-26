@@ -1,4 +1,4 @@
-export const ANALYTICS_PAGES=['/','/statistieken','/handleiding','/contact','/disclaimer','/de-streek-beleven','/adverteren','/adverteren/betaling','/evenement/nieuw','/gemeentegids/adverteren','/gemeentegids/aanmelden'];
+export const ANALYTICS_PAGES=['/','/travaux','/statistieken','/handleiding','/contact','/disclaimer','/de-streek-beleven','/adverteren','/adverteren/betaling','/evenement/nieuw','/gemeentegids/adverteren','/gemeentegids/aanmelden'];
 export function trafficTag(value:unknown):string {
  if(typeof value!=='string'||value.includes('@')||/https?:|[?&#=]/i.test(value))return '';
  return value.trim().toLowerCase().replace(/[^a-z0-9._ -]/g,'').slice(0,80);

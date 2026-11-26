@@ -1,0 +1,5 @@
+{
+  "fr":{"title":"Coordonnées privées des demandeurs","name":"Nom","address":"Adresse complète du chantier","email":"E-mail","phone":"Téléphone","save":"Enregistrer","saved":"Coordonnées enregistrées.","note":"Réservé au compte propriétaire. Les artisans ayant obtenu une place voient uniquement le nom, l’e-mail et le téléphone.","empty":"Aucune demande."},
+  "en":{"title":"Private requester details","name":"Name","address":"Full project address","email":"Email","phone":"Phone","save":"Save","saved":"Contact details saved.","note":"Owner account only. Tradespeople with an accepted reply see the name, email and phone only.","empty":"No projects."},
+  "nl":{"title":"Privégegevens van aanvragers","name":"Naam","address":"Volledig klusadres","email":"E-mailadres","phone":"Telefoonnummer","save":"Opslaan","saved":"Contactgegevens opgeslagen.","note":"Alleen voor het eigenaaraccount. Een vakman met een geaccepteerde reactie ziet uitsluitend naam, e-mailadres en telefoonnummer.","empty":"Geen aanvragen."}
+}
