@@ -4,77 +4,206 @@
     "resident": {
       "title": "Je dépose des travaux",
       "items": [
-        "Ouvrez Travaux et choisissez Déposer une demande. Le dépôt est gratuit. Saisissez votre e-mail et ouvrez le lien de connexion reçu.",
-        "Choisissez un métier et la commune du chantier. Saisissez un titre clair et indiquez les dimensions, matériaux, contraintes et délais souhaités. Ajoutez votre nom complet, l’adresse du chantier et le téléphone. La commune sélectionnée renseigne le code postal et le nom de la commune. L’e-mail vient de votre compte vérifié.",
-        "Après l’envoi, retrouvez le chantier dans Mes demandes en attente. Le titre, le métier, la commune et la description deviennent visibles dans les demandes publiques après validation. Gardez l’adresse, les coordonnées et les informations identifiantes hors du texte public.",
-        "Une demande accepte jusqu’à trois réponses. Seuls ces artisans reçoivent votre nom, e-mail et téléphone. L’adresse exacte reste privée. Consultez les réponses et les estimations dans Mes demandes et mes contacts. Les artisans peuvent vous écrire ou vous appeler directement.",
-        "Comparez les offres, demandez un devis écrit et vérifiez les qualifications et assurances pertinentes. Convenez de l’exécution, des délais et du paiement directement avec l’artisan. Clôturez la demande si vous ne souhaitez plus recevoir de réponses. Pour obtenir de l’aide, choisissez Demandeur dans le formulaire de contact."
+        {
+          "title": "Décrivez le chantier",
+          "text": "Dans J’ai des travaux à faire, cliquez sur Déposer une demande. Le dépôt est gratuit. Choisissez un métier et la commune où se dérouleront les travaux, dans un rayon de 50 km autour de Duras. Donnez un titre clair et précisez les dimensions, les matériaux, l’état actuel et les délais souhaités."
+        },
+        {
+          "title": "Renseignez vos coordonnées privées",
+          "text": "Saisissez votre nom complet, votre téléphone, votre e-mail et l’adresse du chantier. La commune choisie renseigne la ville et le code postal. Cochez la case autorisant la transmission de votre nom, de votre e-mail et de votre téléphone aux trois premiers artisans disposant d’un abonnement actif qui répondent. Gardez vos coordonnées hors du titre et de la description. L’adresse exacte reste privée."
+        },
+        {
+          "title": "Envoyez et confirmez",
+          "text": "Cliquez sur Confirmer mon adresse e-mail et ouvrez le lien reçu dans le navigateur où vous avez rempli le formulaire. Votre demande est alors envoyée. Si vous êtes déjà connecté, cliquez sur Envoyer ma demande gratuite. Le message Votre demande est en cours de traitement confirme la réception."
+        },
+        {
+          "title": "Suivez la validation",
+          "text": "Consultez le statut dans Mes demandes. Le chantier figure d’abord dans Mes demandes en attente. Après validation, il apparaît de façon anonyme sur la page d’accueil, dans Demandes de travaux. Le titre et la description complète s’affichent dans la langue choisie en haut de la page : français, anglais ou néerlandais."
+        },
+        {
+          "title": "Consultez les réponses et clôturez la demande",
+          "text": "Revenez dans Mes demandes avec le même e-mail et demandez un nouveau lien si besoin. Aucun mot de passe n’est nécessaire. Sous Mes demandes et mes contacts, vous verrez jusqu’à trois réponses avec les coordonnées professionnelles des artisans et leurs éventuels messages ou estimations. Les artisans peuvent vous écrire ou vous appeler directement. Cliquez sur Clôturer la demande si vous ne souhaitez plus recevoir de réponses."
+        },
+        {
+          "title": "Convenez des travaux avec l’artisan",
+          "text": "Demandez un devis écrit et vérifiez les qualifications et assurances pertinentes. Convenez directement avec l’artisan de la réalisation, du calendrier et du paiement. Travaux vous met en relation. L’artisan est responsable de l’exécution du chantier."
+        }
       ]
     },
     "provider": {
       "title": "Je suis artisan",
       "items": [
-        "Consultez gratuitement les demandes par métier ou commune. Ouvrez l’espace pro et connectez-vous avec le lien reçu par e-mail. Renseignez le nom de l’entreprise, le contact, l’adresse, les coordonnées, le SIRET, la forme juridique, l’effectif et au moins une spécialité. Les certifications sont facultatives.",
-        "Choisissez 25 € par mois par carte ou prélèvement SEPA ou un paiement unique de 250 € pour douze mois. Lisez et acceptez les conditions puis poursuivez via Mollie. L’abonnement mensuel se renouvelle jusqu’à son arrêt dans l’espace pro. L’abonnement annuel se termine après douze mois. Chaque paiement confirmé, y compris un prélèvement mensuel, donne lieu à une facture par e-mail. Téléchargez-la aussi dans Mes factures.",
-        "Retrouvez les demandes correspondant à vos spécialités dans Recommandées pour moi. Le compteur indique les places occupées. À 3/3, la demande est complète. Avec un abonnement actif, répondez une fois par demande. Cliquez sur Répondre pour vous signaler directement ou ajoutez d’abord un message ou une estimation.",
-        "Quand votre réponse est acceptée, le nom, le téléphone et l’e-mail apparaissent dans la demande et dans Mes réponses. L’adresse exacte reste privée. Utilisez Écrire au demandeur pour modifier ou copier le brouillon, ou l’ouvrir dans votre application mail. Envoyez-le depuis votre compte, qui reçoit directement les réponses.",
-        "Utilisez les coordonnées uniquement pour le chantier concerné. Convenez du devis, du planning et du paiement directement avec le client. L’abonnement ne garantit aucun chantier. Choisissez Artisan dans le formulaire de contact pour contacter Côte de Duras."
+        {
+          "title": "Consultez les demandes",
+          "text": "La liste complète est accessible gratuitement et sans compte sur la page d’accueil, dans Demandes de travaux. Filtrez par métier ou par commune. La langue choisie en haut de la page détermine celle du titre et de la description. Le compteur indique le nombre de réponses sur les trois possibles. À 3/3, la demande est complète."
+        },
+        {
+          "title": "Inscrivez-vous ou connectez-vous",
+          "text": "Dans Je suis artisan, cliquez sur S’inscrire pour créer un compte ou sur Se connecter si vous en avez déjà un. Dans la fenêtre, saisissez votre e-mail et demandez un lien de connexion. Ouvrez le lien reçu. Utilisez la même adresse lors de votre prochaine visite. Aucun mot de passe n’est nécessaire. Une fois connecté, ouvrez Mon compte pour accéder à votre profil, votre abonnement, vos factures et vos réponses."
+        },
+        {
+          "title": "Renseignez votre profil professionnel",
+          "text": "Indiquez le nom de l’entreprise, le nom du contact, le téléphone professionnel, l’adresse, le code postal, la ville, le SIRET, la forme juridique et l’effectif. Choisissez au moins une spécialité. Les certifications sont facultatives. Dans les annonces, ouvrez Recommandées pour moi pour voir les demandes correspondant aux spécialités enregistrées."
+        },
+        {
+          "title": "Choisissez votre abonnement et payez via Mollie",
+          "text": "Choisissez 25 € par mois par carte ou prélèvement SEPA, ou 250 € en un seul paiement pour 12 mois. Lisez les conditions, cochez la case d’acceptation et continuez vers Mollie. Les moyens disponibles s’affichent lors du paiement. Si le paiement est resté en attente, cliquez sur Reprendre ou vérifier mon paiement quand ce bouton apparaît sous Mon abonnement professionnel."
+        },
+        {
+          "title": "Retrouvez les factures et gérez le renouvellement",
+          "text": "Vous recevez une facture par e-mail après chaque paiement confirmé. Vous pouvez aussi la télécharger dans Mes factures. L’abonnement mensuel se renouvelle automatiquement et prévoit un préavis d’un mois. Dans Mon abonnement professionnel, cliquez sur Arrêter le renouvellement et confirmez. La date de fin du préavis s’affiche au même endroit. La formule annuelle se termine après 12 mois sans renouvellement automatique."
+        },
+        {
+          "title": "Répondez à une demande",
+          "text": "Avec un abonnement actif, vous pouvez répondre une fois par annonce. Cliquez sur Répondre à cette demande ou ouvrez Ajouter un message ou un devis pour joindre un message ou un montant indicatif. Si votre réponse figure parmi les trois premières, le nom, l’e-mail et le téléphone du demandeur apparaissent dans l’annonce et dans Mes réponses. Son adresse exacte reste privée. Le demandeur reçoit vos coordonnées professionnelles."
+        },
+        {
+          "title": "Écrivez directement au demandeur",
+          "text": "Ouvrez Écrire au demandeur pour modifier ou copier le brouillon. Avec Ouvrir l’application mail, le message s’ouvre dans votre messagerie. Envoyez-le depuis votre messagerie pour recevoir les réponses directement. Utilisez les coordonnées uniquement pour ce chantier. Convenez directement du devis, du planning et du paiement. L’abonnement ne garantit aucun chantier."
+        }
       ]
     },
     "privacy": "Les coordonnées sont rattachées à la demande dans un dossier privé. Pour corriger ou demander la suppression de vos données, ou signaler un problème, contactez Côte de Duras.",
     "contact": "Contacter Côte de Duras",
-    "beforeReply": "Une réponse acceptée partage vos coordonnées professionnelles avec le demandeur et ouvre ses coordonnées pour ce chantier uniquement."
+    "beforeReply": "Une réponse acceptée partage vos coordonnées professionnelles avec le demandeur et ouvre ses coordonnées pour ce chantier uniquement.",
+    "help": "Utilisez l’onglet Contact pour toute question sur une demande, vos données ou votre abonnement. Sélectionnez Demandeur ou Artisan et indiquez la référence du chantier si vous la connaissez."
   },
   "en": {
-    "title": "How it works",
+    "title": "User guide",
     "resident": {
       "title": "Posting a project",
       "items": [
-        "Open Projects and choose Post a project. Posting is free. Enter your email address and open the sign-in link from your inbox.",
-        "Choose one trade and the project town. Enter a clear title and describe the dimensions, materials, situation and preferred timing. Add your full name, project address and phone number. The town selection fills in the postcode and town. Your email comes from your verified account.",
-        "After submitting, find the project under My requests awaiting review. Once approved, the title, trade, town and description appear under Open projects. Keep contact details, the address and identifying details out of the public text.",
-        "A project accepts up to three replies. Only those tradespeople receive your name, email and phone number. Your exact address remains private. View replies and estimates under My projects and contacts. A tradesperson can email or call you directly.",
-        "Compare offers, ask for a written quote and check relevant qualifications and insurance. Agree the work, timing and payment directly with the tradesperson. Close the project when you no longer want replies. For help, select Project requester in the contact form."
+        {
+          "title": "Describe the work",
+          "text": "Under I have a project, choose Post a project. Posting is free. Choose one trade and the town where the work will take place, within 50 km of Duras. Give the project a clear title and describe the size, materials, current condition and preferred timing."
+        },
+        {
+          "title": "Enter your private contact details",
+          "text": "Enter your full name, phone number, email and the project address. The town you select fills in the postcode and town. Tick the box to share your name, email and phone number with the first three tradespeople with an active subscription who reply. Keep contact details out of the title and description. Your exact address stays private."
+        },
+        {
+          "title": "Submit and confirm",
+          "text": "Choose Confirm my email address and open the link from your inbox in the browser where you filled in the form. This submits your project. If you are already signed in, choose Submit my free project listing. The message Your request is being reviewed confirms receipt."
+        },
+        {
+          "title": "Track the review",
+          "text": "Check the status under My projects. Your listing first appears under My requests awaiting review. Once approved, it appears anonymously under Open projects on the homepage. The title and full description follow the language selected at the top of the page: English, French or Dutch."
+        },
+        {
+          "title": "Review replies and close your project",
+          "text": "Return to My projects with the same email address and request a fresh sign-in link if needed. You do not need a password. My projects and contacts shows up to three replies with business contact details and any messages or estimates. Tradespeople can email or call you directly. Choose Close project when you no longer want replies."
+        },
+        {
+          "title": "Agree the work with the tradesperson",
+          "text": "Ask for a written quote and check relevant qualifications and insurance. Agree the work, schedule and payment directly with the tradesperson. Travaux puts you in touch. The tradesperson is responsible for carrying out the work."
+        }
       ]
     },
     "provider": {
       "title": "Working as a tradesperson",
       "items": [
-        "Browse open projects for free and filter by trade or town. Open the tradesperson dashboard and sign in with the link sent by email. Enter your business name, contact person, address and contact details, SIRET, legal form, employee count and at least one specialty. Certifications are optional.",
-        "Choose €25 per month by card or SEPA direct debit or a one-off €250 for twelve months. Read and accept the terms and continue to Mollie. The monthly plan renews until you stop renewal in your account. The annual plan ends after twelve months. Each confirmed payment, including monthly debits, produces an invoice by email. You can also download it under My invoices.",
-        "Use Recommended for me to find projects that match your profile specialties. The counter shows how many of the three reply slots are taken. At 3/3, the project is full. An active subscriber can reply once. Choose Reply to respond directly, or add a message or estimate first.",
-        "After your reply is accepted, the name, phone number and email appear beside the project and in My replies. The exact address remains private. Use Email the requester to edit the draft, copy it or open it in your own mail app. Send from your own account so that replies go directly to you.",
-        "Use contact details only for the relevant project. Agree the quote, schedule and payment directly with the customer. A subscription does not guarantee work. Select Tradesperson on the contact form for questions for Côte de Duras."
+        {
+          "title": "Browse available projects",
+          "text": "Open projects on the homepage shows the full list for free, with no account needed. Filter by trade or town. The language selector at the top controls the language of the title and description. The counter shows how many of the three reply slots are taken. At 3/3 the project is full."
+        },
+        {
+          "title": "Register or sign in",
+          "text": "Under I’m a tradesperson, choose Register if you are new or Sign in if you already have an account. Enter your email in the window and request a sign-in link. Open the link from your inbox. Use the same email next time. You do not need a password. Once signed in, use My account to open your profile, subscription, invoices and replies."
+        },
+        {
+          "title": "Complete your business profile",
+          "text": "Enter your company name, contact person, business phone number, address, postcode, town, SIRET, legal form and employee count. Select at least one speciality. Certifications are optional. Use Recommended for me in the projects list to find work that matches your saved specialities."
+        },
+        {
+          "title": "Choose a subscription and pay via Mollie",
+          "text": "Choose €25 per month by card or SEPA Direct Debit, or a one-off payment of €250 for 12 months. Read and accept the terms, then continue to Mollie. Available payment methods appear at checkout. If you did not finish paying, use Continue or check my payment if the button appears under My professional subscription."
+        },
+        {
+          "title": "Find invoices and manage renewal",
+          "text": "You receive an invoice by email after every confirmed payment. You can also download it under My invoices. The monthly plan renews automatically and has a one-month notice period. Under My professional subscription, choose Cancel subscription and confirm. The notice end date appears there. The annual plan ends after 12 months without automatic renewal."
+        },
+        {
+          "title": "Reply to a project",
+          "text": "With an active subscription you can reply once per project. Choose Reply to this project to respond directly, or open Add a message or quote to include a message or estimate. If you are among the first three to reply, the requester’s name, phone number and email appear beside the project and in My replies. Their exact address stays private. The requester receives your business contact details."
+        },
+        {
+          "title": "Email the requester directly",
+          "text": "Use Email the requester to edit or copy the draft. Choose Open mail app to open the message in your own email app. Send it from there so replies come directly to you. Use the details only for this project. Agree the quote, schedule and payment directly with the customer. Your subscription does not guarantee work."
+        }
       ]
     },
     "privacy": "Contact details are linked to the project in a private record. To correct or request deletion of your data, or to report a problem, contact Côte de Duras.",
     "contact": "Contact Côte de Duras",
-    "beforeReply": "An accepted reply shares your business details with the resident and unlocks their contact details for this project only."
+    "beforeReply": "An accepted reply shares your business details with the resident and unlocks their contact details for this project only.",
+    "help": "Use the Contact tab for help with a project, your data or your subscription. Select Project requester or Tradesperson and include the project reference if you know it."
   },
   "nl": {
     "title": "Gebruikershandleiding",
     "resident": {
       "title": "Ik plaats een klus",
       "items": [
-        "Open Klussen en kies Plaats een klus. Plaatsen is gratis. Vul je e-mailadres in en open de inloglink uit je inbox.",
-        "Kies één vakgebied en de plaats van de klus. Geef een duidelijke titel en omschrijving met afmetingen, materiaal, situatie en gewenste termijn. Vul je volledige naam, klusadres en telefoonnummer in. Postcode en plaats worden ingevuld vanuit de gekozen gemeente. Het e-mailadres komt uit je geverifieerde account.",
-        "Na versturen zie je de klus onder Mijn klussen in afwachting. Alleen na akkoord van Beheer verschijnen titel, vakgebied, gemeente en omschrijving in Openstaande klussen. Zet geen contactgegevens, adres of andere herkenbare details in de openbare tekst.",
-        "Een klus kan maximaal drie geaccepteerde reacties krijgen. Alleen die vakmensen krijgen je naam, e-mailadres en telefoonnummer. Je exacte adres blijft privé. Onder Mijn klussen en contacten zie je de reacties en eventuele richtprijzen. Een vakman kan je rechtstreeks mailen of bellen.",
-        "Vergelijk voorstellen, vraag om een schriftelijke offerte en controleer waar relevant kwalificaties en verzekering. Je spreekt uitvoering, tijdstip en betaling rechtstreeks af met de vakman. Sluit de klus als je geen nieuwe reacties meer wilt. Heb je hulp nodig? Kies Aanvrager op het contactformulier."
+        {
+          "title": "Beschrijf je klus",
+          "text": "Klik bij Ik heb een klus op Plaats een klus. Plaatsen is gratis. Kies één soort werk en de gemeente waar de klus plaatsvindt, binnen 50 km rond Duras. Geef de klus een duidelijke titel en beschrijf bijvoorbeeld de afmetingen, materialen, huidige staat en gewenste planning."
+        },
+        {
+          "title": "Vul je privégegevens in",
+          "text": "Vul je volledige naam, telefoonnummer, e-mailadres en het adres van de klus in. De gekozen gemeente vult plaats en postcode in. Vink aan dat de eerste drie vakmensen met een actief abonnement die reageren je naam, e-mailadres en telefoonnummer mogen ontvangen. Houd privégegevens buiten de titel en omschrijving. Je exacte adres blijft privé."
+        },
+        {
+          "title": "Verstuur en bevestig",
+          "text": "Klik op Bevestig mijn e-mailadres en open de link uit je e-mail in dezelfde browser waarin je het formulier hebt ingevuld. Je aanvraag wordt dan ingediend. Ben je al ingelogd, kies dan Verstuur mijn gratis klusaanvraag. De melding Je aanvraag is in behandeling bevestigt de ontvangst."
+        },
+        {
+          "title": "Volg de beoordeling",
+          "text": "Bekijk de status onder Mijn klussen. De aanvraag staat eerst onder Mijn klussen in afwachting. Na goedkeuring verschijnt ze anoniem onder Openstaande klussen op de homepage. De titel en volledige omschrijving worden in de gekozen sitetaal getoond. Je kunt bovenaan wisselen tussen Nederlands, Frans en Engels."
+        },
+        {
+          "title": "Bekijk reacties en sluit je klus",
+          "text": "Open Mijn klussen opnieuw met hetzelfde e-mailadres en vraag zo nodig een nieuwe inloglink aan. Je hebt geen wachtwoord nodig. Onder Mijn klussen en contacten zie je maximaal drie reacties met de zakelijke contactgegevens van de vakmensen en eventuele berichten of richtprijzen. Vakmensen kunnen je rechtstreeks mailen of bellen. Kies Sluit de klus als je geen nieuwe reacties meer wilt ontvangen."
+        },
+        {
+          "title": "Maak afspraken met de vakman",
+          "text": "Vraag om een schriftelijke offerte en controleer de relevante kwalificaties en verzekeringen. Spreek uitvoering, planning en betaling rechtstreeks af met de vakman. Travaux brengt jullie met elkaar in contact. De vakman is verantwoordelijk voor de uitvoering van het werk."
+        }
       ]
     },
     "provider": {
       "title": "Ik ben vakman",
       "items": [
-        "Bekijk openstaande klussen gratis en filter op vakgebied of plaats. Open je vakmensenaccount en log in met de link per e-mail. Vul bedrijfsnaam, contactpersoon, adres en contactgegevens in, plus SIRET, rechtsvorm, aantal werknemers en minimaal één expertise. Certificeringen zijn optioneel.",
-        "Kies €25 per maand via kaart of SEPA-incasso, of betaal één keer €250 voor twaalf maanden. Lees en accepteer de voorwaarden en vervolg via Mollie. Het maandabonnement loopt door tot je in je account op ‘Abonnement opzeggen’ klikt. Het jaarabonnement eindigt na twaalf maanden. Na een bevestigde betaling, ook bij een maandelijkse incasso, ontvang je een factuur per e-mail. Je kunt die ook downloaden onder Mijn facturen.",
-        "Gebruik Aanbevolen voor mij voor klussen die passen bij de expertises in je profiel. De teller laat zien hoeveel van de drie reactieplaatsen bezet zijn. Bij 3/3 is de klus vol. Met een actief abonnement kun je één keer reageren. Kies Reageer voor een directe reactie of voeg eerst een bericht of richtprijs toe.",
-        "Na een geaccepteerde reactie verschijnen naam, telefoonnummer en e-mailadres bij de klus en onder Mijn reacties. Het exacte adres blijft privé. Gebruik Mail de aanvrager om het concept aan te passen, te kopiëren of in je eigen mailapp te openen. Verstuur vanuit je eigen account. Antwoorden komen rechtstreeks bij jou binnen.",
-        "Gebruik deze contactgegevens alleen voor de betreffende klus. Spreek offerte, planning en betaling rechtstreeks met de klant af. Een abonnement geeft geen garantie op opdrachten. Kies Vakman op het contactformulier voor vragen aan Côte de Duras."
+        {
+          "title": "Bekijk de klussen",
+          "text": "Onder Openstaande klussen op de homepage zie je de volledige lijst gratis en zonder account. Filter op soort werk of plaats. De taalkeuze bovenaan bepaalt de taal van de titel en omschrijving. De teller laat zien hoeveel van de drie reactieplaatsen bezet zijn. Bij 3/3 is de klus vol."
+        },
+        {
+          "title": "Registreer of log in",
+          "text": "Klik bij Ik ben vakman op Registreren als je nieuw bent of op Inloggen als vakman als je al een account hebt. Vul in het venster je e-mailadres in en vraag een inloglink aan. Open de link uit je e-mail. Gebruik bij een volgend bezoek hetzelfde adres. Je hebt geen wachtwoord nodig. Ingelogd open je je profiel, abonnement, facturen en reacties via Mijn account."
+        },
+        {
+          "title": "Vul je bedrijfsprofiel in",
+          "text": "Vul bedrijfsnaam, contactpersoon, zakelijk telefoonnummer, adres, postcode, plaats, SIRET, rechtsvorm en aantal werknemers in. Kies minstens één specialisme. Certificeringen zijn optioneel. Gebruik Aanbevolen voor mij bij de klussen om aanvragen te zien die bij je opgeslagen specialismen passen."
+        },
+        {
+          "title": "Kies een abonnement en betaal via Mollie",
+          "text": "Kies €25 per maand via kaart of SEPA-incasso, of betaal één keer €250 voor 12 maanden. Lees de voorwaarden, vink je akkoord aan en ga verder naar Mollie. De betaalopties die je kunt gebruiken staan in het betaalscherm van Mollie. Was de betaling nog niet afgerond, kies dan Hervat of controleer mijn betaling zodra die knop verschijnt onder Mijn abonnement."
+        },
+        {
+          "title": "Bekijk je facturen en regel je opzegging",
+          "text": "Na elke bevestigde betaling ontvang je een factuur per e-mail. Je kunt die ook downloaden onder Mijn facturen. Het maandabonnement wordt automatisch verlengd en heeft één maand opzegtermijn. Kies in Mijn abonnement voor Abonnement opzeggen en bevestig. Daar zie je ook de einddatum van de opzegtermijn. Het jaarabonnement eindigt na 12 maanden zonder automatische verlenging."
+        },
+        {
+          "title": "Reageer op een passende klus",
+          "text": "Met een actief abonnement kun je één keer per klus reageren. Kies Reageer op deze klus voor een directe reactie of open Voeg een bericht of offerte toe om eerst een bericht of richtprijs mee te sturen. Zodra je reactie tot de eerste drie behoort, zie je de naam, het e-mailadres en het telefoonnummer van de aanvrager bij de klus en onder Mijn reacties. Het exacte adres blijft privé. De aanvrager krijgt jouw zakelijke contactgegevens."
+        },
+        {
+          "title": "Mail de aanvrager rechtstreeks",
+          "text": "Gebruik Mail de aanvrager om het concept te bewerken of te kopiëren. Met Open mailapp open je het bericht in je eigen mailprogramma. Je verstuurt het daar en antwoorden komen rechtstreeks bij jou binnen. Gebruik de gegevens alleen voor deze klus en spreek offerte, planning en betaling rechtstreeks af. Je abonnement garandeert geen opdrachten."
+        }
       ]
     },
     "privacy": "Contactgegevens staan in een privédossier bij de klus. Neem contact op met Côte de Duras voor correctie, een verzoek om verwijdering of een melding.",
     "contact": "Contact met Côte de Duras",
-    "beforeReply": "Bij een geaccepteerde reactie ontvangt de plaatser je zakelijke gegevens. Jij krijgt dan toegang tot de contactgegevens voor deze klus."
+    "beforeReply": "Bij een geaccepteerde reactie ontvangt de plaatser je zakelijke gegevens. Jij krijgt dan toegang tot de contactgegevens voor deze klus.",
+    "help": "Gebruik de tab Contact voor hulp bij een klus, je gegevens of je abonnement. Kies Aanvrager of Vakman en vermeld het klussennummer als je het weet."
   }
 }

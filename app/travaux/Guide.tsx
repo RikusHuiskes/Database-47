@@ -11,8 +11,11 @@ export default function Guide({ onContact }: { onContact: () => void }) {
     <h2>{copy.title}</h2>
     {[copy.resident, copy.provider].map(role => <details key={role.title} className={styles.guide}>
       <summary>{role.title}</summary>
-      <ol>{role.items.map(item => <li key={item}>{item}</li>)}</ol>
+      <ol>{role.items.map(step => <li key={step.title}>
+        <strong>{step.title}</strong><p>{step.text}</p>
+      </li>)}</ol>
     </details>)}
-    <p>{copy.privacy} <button className={styles.secondary} type="button" onClick={onContact}>{copy.contact}</button></p>
+    <p>{copy.help}</p>
+    <p><button className={styles.secondary} type="button" onClick={onContact}>{copy.contact}</button></p>
   </section>;
 }

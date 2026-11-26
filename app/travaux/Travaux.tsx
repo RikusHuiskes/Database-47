@@ -162,9 +162,9 @@ type Account = 'resident' | 'provider';
 type ProviderAction = 'register' | 'login';
 
 const professionalCopy = {
-  fr: { register: 'S’inscrire', login: 'Se connecter', registerTitle: 'Créer mon compte artisan', registerHelp: 'Confirmez votre adresse e-mail, puis renseignez votre entreprise et choisissez votre abonnement.' },
-  en: { register: 'Register', login: 'Sign in', registerTitle: 'Create a tradesperson account', registerHelp: 'Confirm your email, then enter your business details and choose a subscription.' },
-  nl: { register: 'Registreren', login: 'Inloggen als vakman', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
+  fr: { register: 'S’inscrire', login: 'Se connecter', dashboard: 'Mon compte', registerTitle: 'Créer mon compte artisan', registerHelp: 'Confirmez votre adresse e-mail, puis renseignez votre entreprise et choisissez votre abonnement.' },
+  en: { register: 'Register', login: 'Sign in', dashboard: 'My account', registerTitle: 'Create a tradesperson account', registerHelp: 'Confirm your email, then enter your business details and choose a subscription.' },
+  nl: { register: 'Registreren', login: 'Inloggen als vakman', dashboard: 'Mijn account', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
 };
 
 export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, heroArt, contactDetails }: {
@@ -213,7 +213,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const [session, setSession] = useState<Session | null>(null);
   const [view, setView] = useState<Account>(initialAccount ?? 'resident');
   const [residentAccountOpen, setResidentAccountOpen] = useState(initialAccount === 'resident');
-  const [providerAction, setProviderAction] = useState<ProviderAction | null>(initialAccount === 'provider' ? 'login' : null);
+  const [providerAction, setProviderAction] = useState<ProviderAction | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [draft, setDraft] = useState<ReturnType<typeof readRequestDraft>>(null);
   const [emailFeedback, setEmailFeedback] = useState<{ role: Account; result: EmailFeedback } | null>(null);
@@ -223,6 +223,20 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const mailRetryAfter = useRef(0);
   const requestDraftChecked = useRef<string | null>(null);
   const submittedDialog = useRef<HTMLDialogElement>(null);
+  const providerAuthDialog = useRef<HTMLDialogElement>(null);
+  const providerPanelOpen = Boolean(session && (providerAction || initialAccount === 'provider'));
+  const providerAuthOpen = enabled && panel === 'jobs' && !session && providerAction !== null;
+
+  useEffect(() => {
+    const dialog = providerAuthDialog.current;
+    if (!dialog) return;
+    if (providerAuthOpen && !dialog.open) {
+      dialog.showModal();
+      dialog.querySelector('input')?.focus();
+    } else if (!providerAuthOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [providerAuthOpen]);
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [sendingDraft, setSendingDraft] = useState(false);
 
@@ -261,6 +275,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         if (!next) setRecommended(false);
         if (currentSession.current) {
           setDraft(null);
+          setProviderAction(null);
           setCategory('');
           setCommune('');
           setEmailFeedback(null);
@@ -578,7 +593,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   function openPlan(event: React.MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
     openProviderAccount(session ? 'login' : 'register');
-    requestAnimationFrame(() => document.getElementById('espace-pro')?.scrollIntoView());
+    if (session) requestAnimationFrame(() => document.getElementById('espace-pro')?.scrollIntoView());
   }
 
   function accountHeader() {
@@ -701,6 +716,17 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
       {notice && <p className={styles.status} role="status">{notice}</p>}
     </>}
+    {enabled && <dialog ref={providerAuthDialog} id="travaux-provider-auth" className={styles.dialog}
+      aria-labelledby="travaux-provider-auth-title" onClose={() => { if (!session) setProviderAction(null); }}>
+      {providerAuthOpen && <div className={styles.dialogContent}>
+        <div className={styles.dialogHeading}>
+          <h2 id="travaux-provider-auth-title">{providerAction === 'register' ? professional.registerTitle : account.provider}</h2>
+          <button type="button" className={styles.secondary} onClick={() => providerAuthDialog.current?.close()}>{t("Fermer")}</button>
+        </div>
+        <p>{providerAction === 'register' ? professional.registerHelp : account.providerHelp}</p>
+        {signInForm('provider')}
+      </div>}
+    </dialog>}
     <div hidden={panel !== 'jobs'}>
     <div className={styles.pathways}>
       <section className={styles.card}>
@@ -797,22 +823,22 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         </div>}
         </div>
       </section>
-      <section className={`${styles.card} ${providerAction ? styles.providerExpanded : ""}`}>
+      <section className={`${styles.card} ${providerPanelOpen ? styles.providerExpanded : ""}`}>
         <div className={styles.pathwaySummary}><h2>{t("Je suis artisan")}</h2>
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
         <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
           {enabled && <div className={styles.pathwayActions}>
-            {session ? <button type="button" className={styles.button} aria-expanded={Boolean(providerAction)}
-              aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button> : <>
-              <button type="button" className={styles.button} aria-expanded={providerAction === 'register'}
-                aria-controls="espace-pro" onClick={() => openProviderAccount('register')}>{professional.register}</button>
-              <button type="button" className={styles.secondary} aria-expanded={providerAction === 'login'}
-                aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button>
+            {session ? <button type="button" className={styles.button} aria-expanded={providerPanelOpen}
+              aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.dashboard}</button> : <>
+              <button type="button" className={styles.button} aria-haspopup="dialog"
+                aria-controls="travaux-provider-auth" onClick={() => openProviderAccount('register')}>{professional.register}</button>
+              <button type="button" className={styles.secondary} aria-haspopup="dialog"
+                aria-controls="travaux-provider-auth" onClick={() => openProviderAccount('login')}>{professional.login}</button>
             </>}
           </div>}
-          <div className={`${styles.pathwayDetails} ${styles.providerDetails}`} hidden={!providerAction}>
-          {enabled && <div id="espace-pro" hidden={!providerAction} className={styles.requestArea} aria-busy={loading || busy}>
-            {providerAction && (loading ? <p role="status">{t("Chargement de votre espace…")}</p> : session ? <>
+          <div className={`${styles.pathwayDetails} ${styles.providerDetails}`} hidden={!providerPanelOpen}>
+          {enabled && <div id="espace-pro" className={styles.requestArea} aria-busy={loading || busy}>
+            {providerPanelOpen && <>
               {accountHeader()}
           <Card compact title={t("Mon abonnement professionnel")}>
             {!dashboard ? <p>{t("Chargement de l’abonnement…")}</p> : provider?.subscribed ? <>
@@ -866,11 +892,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
               <h3>{localizedJobTitle(job, locale)}</h3><ContactDetails contact={job.contact} title={localizedJobTitle(job, locale)} />
             </article>)}
           </Card>
-            </> : <>
-              <h3>{providerAction === 'register' ? professional.registerTitle : account.provider}</h3>
-              <p>{providerAction === 'register' ? professional.registerHelp : account.providerHelp}</p>
-              {signInForm('provider')}
-            </>)}
+            </>}
           </div>}
         </div>
       </section>
