@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { useState, type FormEvent } from 'react';
 import { useLanguage } from '../i18n/Language';
 import styles from './travaux.module.css';
+import { travauxAuthDestination } from './auth-destination';
 
 const words = {
   fr: ['Adresse e-mail', 'Mot de passe', 'Se connecter', 'Mot de passe oublié ?', 'Vérifiez vos identifiants et réessayez.', 'Si votre compte existe, vous recevrez un lien de réinitialisation.', 'Impossible d’envoyer le lien. Réessayez.', 'Nouveau mot de passe', 'Enregistrer le mot de passe', 'Impossible de modifier le mot de passe.'],
@@ -40,9 +41,8 @@ export default function AdminLogin({ auth, recovery = false, onSaved }: {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) { setFeedback('invalid'); return; }
     setBusy(true); setFeedback(null);
     try {
-      const destination = new URL('/travaux', window.location.origin);
-      destination.search = new URLSearchParams({ espace: 'admin', lang: locale }).toString();
-      const { error } = await auth.auth.resetPasswordForEmail(address, { redirectTo: destination.href });
+      const redirectTo = travauxAuthDestination(window.location.origin, locale, 'admin');
+      const { error } = await auth.auth.resetPasswordForEmail(address, { redirectTo });
       setFeedback(error ? 'resetError' : 'sent');
     } catch { setFeedback('resetError'); }
     finally { setBusy(false); }

@@ -18,14 +18,17 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function TravauxPage({ searchParams }: { searchParams: Promise<{ espace?: string | string[] }> }) {
-  const initialPanel = (await searchParams).espace === 'contact' ? 'contact' : 'jobs';
+export default async function TravauxPage({ searchParams }: { searchParams: Promise<{ espace?: string | string[]; paiement?: string | string[] }> }) {
+  const { espace, paiement } = await searchParams;
+  const initialPanel = espace === 'contact' || espace === 'admin' ? espace : 'jobs';
+  const initialAccount = espace === 'pro' || paiement !== undefined ? 'provider'
+    : espace === 'demandeur' ? 'resident' : null;
   const locale = localeFrom((await cookies()).get(LOCALE_COOKIE)?.value);
   const t = travauxCopy(locale);
   const enabled = travauxEnabled() && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   return <main className={`visitor-site ${styles.page}`} lang={locale}>
-    <header className="site-header">
-      <div className="site-nav">
+    <Travaux enabled={enabled} communes={enabled ? travauxCommunes : []} initialPanel={initialPanel} initialAccount={initialAccount}
+      navigation={<div className="site-nav">
         <a className="brand-lockup" href="/" aria-label={t("Côte de Duras, accueil")}>
           <span className="brand-mark"><Image src="/cote-de-duras-logo.webp" alt="" width={54} height={43} /></span>
           <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
@@ -33,8 +36,8 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
         <nav className="primary-nav" aria-label={t("Navigation principale")}>
           <a href="/#agenda">{t("Agenda")}</a><a href="/#gemeenten">{t("Guide local")}</a>
         </nav>
-      </div>
-      <div className={`hero-grid ${styles.hero}`}>
+      </div>}
+      hero={<div className={`hero-grid ${styles.hero}`}>
         <div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-copy">
@@ -42,9 +45,8 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
           <h1>{t("Travaux et artisans")}</h1>
           <p className="hero-intro">{t("Déposez gratuitement votre projet et recevez jusqu’à trois contacts de professionnels.")}</p>
         </div>
-      </div>
-    </header>
-    <Travaux enabled={enabled} communes={enabled ? travauxCommunes : []} initialPanel={initialPanel} />
+      </div>}
+    />
     <footer className="site-footer">
       <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
       <div><a href="/">{t("Accueil")}</a><a href="/travaux?espace=contact#espace">{t("Contact")}</a><a href="/disclaimer">{t("Mentions légales")}</a></div>

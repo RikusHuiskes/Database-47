@@ -63,7 +63,8 @@
 .guide ol { padding-inline-start: 24px; }
 .guide li + li { margin-top: 8px; }
 
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; width: min(1080px, calc(100% - 36px)); margin: 0 auto; padding: 0 0 14px; }
+.tabs .adminTab { margin-inline-start: auto; }
 .tabs [aria-pressed="true"] { color: #fff; background: #265449; border-color: #265449; }
 
 .match { padding: 3px 8px; border-radius: 6px; background: #e6efe5; color: #244e43; font-size: .88rem; }
