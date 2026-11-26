@@ -13,7 +13,7 @@ import {
 } from '../../../lib/travaux-server';
 import { cancelTravauxSubscription, startTravauxCheckout } from '../../../lib/travaux-billing';
 
-const jobFields = 'id,title,title_translations,description,category,commune,status,created_at';
+const jobFields = 'id,title,title_translations,description,description_translations,category,commune,status,created_at';
 const publicContactPattern = /@|https?:\/\/|www\.|(?:\d[ .()-]*){8}/i;
 const contactFields = 'company,email,phone,message,quote_cents,slot';
 
@@ -48,10 +48,11 @@ export async function POST(request: Request) {
   try {
     const { db, user, email } = await travauxUser(request);
     const raw = await request.text();
-    if (raw.length > 8000) throw new TravauxError('Demande trop longue.', 413);
+    if (raw.length > 16000) throw new TravauxError('Demande trop longue.', 413);
     let body;
     try { body = JSON.parse(raw); } catch { throw new TravauxError('Demande invalide.'); }
     if (!body || typeof body !== 'object') throw new TravauxError('Demande invalide.');
+    if (body.action !== 'moderate' && raw.length > 8000) throw new TravauxError('Demande trop longue.', 413);
 
     if (body.action === 'resume-checkout') {
       const profile = checked(await db.from('travaux_providers').select('name,phone,details,billing_plan,first_payment_id,terms_version')
@@ -110,17 +111,31 @@ export async function POST(request: Request) {
       const admin = isTravauxOwner(user.id) && await adminService(request);
       if (!admin) throw new TravauxError('Accès réservé à la modération.', 403);
       if (!['open', 'rejected'].includes(body.status)) throw new TravauxError('Décision invalide.');
-      const titleTranslations = body.status === 'open' ? Object.fromEntries(jobTitleLocales.map(locale => {
-        const title = typeof body.titles?.[locale] === 'string' ? body.titles[locale].trim() : '';
-        if (!title || title.length > 100 || /[\u0000-\u001f]/.test(title)) {
-          throw new TravauxError('Renseignez un titre dans chacune des trois langues.');
+      const changes: { status: string; title_translations?: Record<string, string>; description_translations?: Record<string, string> } = {
+        status: body.status,
+      };
+      if (body.status === 'open') {
+        const titles: Record<string, string> = {};
+        const descriptions: Record<string, string> = {};
+        for (const locale of jobTitleLocales) {
+          const title = typeof body.titles?.[locale] === 'string' ? body.titles[locale].trim() : '';
+          if (!title || title.length > 100 || /[\u0000-\u001f]/.test(title)) {
+            throw new TravauxError('Renseignez un titre dans chacune des trois langues.');
+          }
+          const description = typeof body.descriptions?.[locale] === 'string' ? body.descriptions[locale].trim() : '';
+          if (!description || description.length > 2000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(description)) {
+            throw new TravauxError('Renseignez une description dans chacune des trois langues.');
+          }
+          if (publicContactPattern.test(title + ' ' + description)) {
+            throw new TravauxError('Saisissez vos coordonnées uniquement dans les champs privés.');
+          }
+          titles[locale] = title;
+          descriptions[locale] = description;
         }
-        if (publicContactPattern.test(title)) throw new TravauxError('Saisissez vos coordonnées uniquement dans les champs privés.');
-        return [locale, title];
-      })) : undefined;
-      const job = checked(await admin.from('travaux_jobs').update({
-        status: body.status, ...(titleTranslations && { title_translations: titleTranslations }),
-      })
+        changes.title_translations = titles;
+        changes.description_translations = descriptions;
+      }
+      const job = checked(await admin.from('travaux_jobs').update(changes)
         .eq('id', body.id).eq('status', 'pending').select('id').maybeSingle());
       if (!job) throw new TravauxError('Cette demande a déjà été traitée.', 409);
       return travauxJson({ ok: true });

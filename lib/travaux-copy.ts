@@ -2,7 +2,7 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
-  "Titres dans les trois langues": ["Titres dans les trois langues", "Titles in all three languages", "Titels in de drie talen"],
+  "Renseignez une description dans chacune des trois langues.": ["Renseignez une description dans chacune des trois langues.", "Enter a description in each of the three languages.", "Vul voor elk van de drie talen een omschrijving in."],
   "Renseignez un titre dans chacune des trois langues.": ["Renseignez un titre dans chacune des trois langues.", "Enter a title in each of the three languages.", "Vul voor elk van de drie talen een titel in."],
   "Connexion artisan": ["Connexion artisan", "Tradesperson sign-in", "Vakman inloggen"],
   "Connexion à l’administration": ["Connexion à l’administration", "Sign in to administration", "Inloggen voor Beheer"],

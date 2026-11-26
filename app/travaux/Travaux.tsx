@@ -41,7 +41,7 @@ type Commune = { code: string; name: string; postcode: string; featured: boolean
 type Contact = { name: string; email: string; phone: string };
 type Reply = { company: string; email: string; phone: string; message: string | null; quote_cents: number | null; slot: number };
 type PublicJob = JobTitle & {
-  id: string; description: string; commune: string; category: TravauxCategory; responseCount?: number;
+  id: string; description: string; description_translations?: Partial<Record<(typeof jobTitleLocales)[number], string>>; commune: string; category: TravauxCategory; responseCount?: number;
 };
 type Job = PublicJob & {
   status: 'pending' | 'open' | 'rejected' | 'closed';
@@ -99,7 +99,8 @@ function JobSummary({ job, original = false }: { job: PublicJob; original?: bool
   const { locale } = useLanguage();
   return <>
     <p className={styles.meta}>{travauxCategoryLabel(job.category, locale)} · {job.commune}</p>
-    <h3>{original ? job.title : localizedJobTitle(job, locale)}</h3><p className={styles.description}>{job.description}</p>
+    <h3>{original ? job.title : localizedJobTitle(job, locale)}</h3>
+    <p className={styles.description}>{original ? job.description : job.description_translations?.[locale] || job.description}</p>
   </>;
 }
 
@@ -675,15 +676,19 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           {dashboard?.pending.map(job => <article key={job.id} className={styles.item}>
             <JobSummary job={job} original />
             <form className={styles.form} onSubmit={submit(data => {
-              const titles = Object.fromEntries(jobTitleLocales.map(language => [language, data.get(language)]));
-              void send({ action: 'moderate', id: job.id, status: 'open', titles }, t("Demande publiée."));
+              const titles = Object.fromEntries(jobTitleLocales.map(language => [language, data.get(`title-${language}`)]));
+              const descriptions = Object.fromEntries(jobTitleLocales.map(language => [language, data.get(`description-${language}`)]));
+              void send({ action: 'moderate', id: job.id, status: 'open', titles, descriptions }, t("Demande publiée."));
             })}>
-              <fieldset>
-                <legend>{t("Titres dans les trois langues")}</legend>
-                {jobTitleLocales.map(language => <label key={language}><span lang={language}>{titleLanguage[language]}</span>
-                  <input name={language} lang={language} defaultValue={job.title_translations?.[language]} maxLength={100} required />
-                </label>)}
-              </fieldset>
+              {jobTitleLocales.map(language => <fieldset key={language}>
+                <legend lang={language}>{titleLanguage[language]}</legend>
+                <label>{t("Titre")}
+                  <input name={`title-${language}`} lang={language} defaultValue={job.title_translations?.[language]} maxLength={100} required />
+                </label>
+                <label>{t("Description")}
+                  <textarea name={`description-${language}`} lang={language} defaultValue={job.description_translations?.[language]} maxLength={2000} rows={4} required />
+                </label>
+              </fieldset>)}
               <div className={styles.actions}>
                 <button className={styles.button} disabled={busy}>{t("Publier")}</button>
                 <button type="button" className={styles.secondary} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'rejected' }, t("Demande refusée."))}>{t("Refuser")}</button>

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     if (communeCode && !commune) throw new TravauxError('Choisissez une commune dans un rayon de 50 km autour de Duras.');
 
     // The projection contains moderated job details and a response total only.
-    let query = db.from('travaux_public_feed').select('id,title,title_translations,description,category,commune,response_count');
+    let query = db.from('travaux_public_feed').select('id,title,title_translations,description,description_translations,category,commune,response_count');
     if (category) query = query.eq('category', category);
     if (params.get('recommended') === '1') {
       const { user } = await travauxUser(request);
