@@ -27,7 +27,7 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
   const locale = localeFrom((await cookies()).get(LOCALE_COOKIE)?.value);
   const t = travauxCopy(locale);
   const enabled = travauxEnabled() && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  return <main className={`visitor-site ${styles.page}`} lang={locale}>
+  return <main className={`visitor-site ${styles.page}`}>
     <Travaux enabled={enabled} communes={enabled ? travauxCommunes : []} initialPanel={initialPanel} initialAccount={initialAccount}
       navigation={<div className="site-nav">
         <a className="brand-lockup" href="/" aria-label={t("Côte de Duras, accueil")}>
@@ -35,11 +35,6 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
           <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
         </a>
       </div>}
-      footerLinks={<>
-        <a href="/">{t("Accueil")}</a>
-        <a href="/travaux?espace=contact#espace">{t("Contact")}</a>
-        <a href="/disclaimer">{t("Mentions légales")}</a>
-      </>}
       contactDetails={<aside aria-labelledby="travaux-contact-business">
         <h3 id="travaux-contact-business">{ADVERTISING_SELLER.name}</h3>
         <address className={styles.contactAddress}>
@@ -50,15 +45,7 @@ export default async function TravauxPage({ searchParams }: { searchParams: Prom
         <p><a href="mailto:info@cotededuras.com">info@cotededuras.com</a></p>
         <p>SIRET {ADVERTISING_SELLER.siret}</p>
       </aside>}
-      hero={<div className={`hero-grid ${styles.hero}`}>
-        <div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>
-        <div className="hero-shade" aria-hidden="true" />
-        <div className="hero-copy">
-          <p className="hero-kicker"><span aria-hidden="true" /> {t("Dans un rayon de 50 km autour de Duras")}</p>
-          <h1>{t("Travaux et artisans")}</h1>
-          <p className="hero-intro">{t("Déposez gratuitement votre projet et recevez jusqu’à trois contacts de professionnels.")}</p>
-        </div>
-      </div>}
+      heroArt={<div className="hero-art" aria-hidden="true"><Image src="/lot-et-garonne-hero.png" alt="" fill sizes="100vw" preload /></div>}
     />
   </main>;
 }

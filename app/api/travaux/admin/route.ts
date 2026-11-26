@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const start = page * pageSize;
     if (provider) {
       const rows = checked(await db.from('travaux_responses')
-        .select('job_id,slot,message,quote_cents,job:travaux_jobs(title,commune,status)')
+        .select('job_id,slot,message,quote_cents,job:travaux_jobs(title,title_translations,commune,status)')
         .eq('provider_id', provider).order('job_id').range(start, start + pageSize));
       return travauxJson({ rows: rows.slice(0, pageSize), more: rows.length > pageSize });
     }

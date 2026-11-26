@@ -1,3 +1,4 @@
+import { jobTitleLocales } from '../../../lib/travaux-job-title';
 import { projectAddress, readCompanyDetails } from '../../../lib/travaux-company-server';
 import { isTravauxPlan } from '../../../lib/travaux-plans';
 import { processAdvertisingInvoiceMailOutbox } from '../../../lib/advertising-invoices';
@@ -12,7 +13,8 @@ import {
 } from '../../../lib/travaux-server';
 import { cancelTravauxSubscription, startTravauxCheckout } from '../../../lib/travaux-billing';
 
-const jobFields = 'id,title,description,category,commune,status,created_at';
+const jobFields = 'id,title,title_translations,description,category,commune,status,created_at';
+const publicContactPattern = /@|https?:\/\/|www\.|(?:\d[ .()-]*){8}/i;
 const contactFields = 'company,email,phone,message,quote_cents,slot';
 
 export async function GET(request: Request) {
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
       db.from('travaux_providers').select('name,phone,cancelled_at,notice_ends_on,subscription_id,details,billing_plan,first_payment_id,terms_version').eq('user_id', user.id).maybeSingle(),
       db.from('travaux_jobs').select(`${jobFields}, responses:travaux_responses(${contactFields})`)
         .eq('owner_id', user.id).order('created_at', { ascending: false }).limit(100),
-      db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,email,phone))')
+      db.from('travaux_responses').select('job_id,job:travaux_jobs(title,title_translations,commune,contact:travaux_contacts(name,email,phone))')
         .eq('provider_id', user.id).order('job_id').limit(100),
       isTravauxOwner(user.id) ? adminService(request) : null,
     ]);
@@ -91,7 +93,7 @@ export async function POST(request: Request) {
       const title = field(body.title, 'titre', 100, 5);
       const description = field(body.description, 'description', 2000, 20);
       if (body.consent !== true) throw new TravauxError('Confirmez le partage des coordonnées.');
-      if (/@|https?:\/\/|www\.|(?:\d[ .()-]*){8}/i.test(title + ' ' + description)) {
+      if (publicContactPattern.test(title + ' ' + description)) {
         throw new TravauxError('Saisissez vos coordonnées uniquement dans les champs privés.');
       }
       if (body.submissionId !== undefined && !uuid(body.submissionId)) throw new TravauxError('Demande invalide.');
@@ -108,7 +110,17 @@ export async function POST(request: Request) {
       const admin = isTravauxOwner(user.id) && await adminService(request);
       if (!admin) throw new TravauxError('Accès réservé à la modération.', 403);
       if (!['open', 'rejected'].includes(body.status)) throw new TravauxError('Décision invalide.');
-      const job = checked(await admin.from('travaux_jobs').update({ status: body.status })
+      const titleTranslations = body.status === 'open' ? Object.fromEntries(jobTitleLocales.map(locale => {
+        const title = typeof body.titles?.[locale] === 'string' ? body.titles[locale].trim() : '';
+        if (!title || title.length > 100 || /[\u0000-\u001f]/.test(title)) {
+          throw new TravauxError('Renseignez un titre dans chacune des trois langues.');
+        }
+        if (publicContactPattern.test(title)) throw new TravauxError('Saisissez vos coordonnées uniquement dans les champs privés.');
+        return [locale, title];
+      })) : undefined;
+      const job = checked(await admin.from('travaux_jobs').update({
+        status: body.status, ...(titleTranslations && { title_translations: titleTranslations }),
+      })
         .eq('id', body.id).eq('status', 'pending').select('id').maybeSingle());
       if (!job) throw new TravauxError('Cette demande a déjà été traitée.', 409);
       return travauxJson({ ok: true });

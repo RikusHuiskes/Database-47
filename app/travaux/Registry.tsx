@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { localizedJobTitle, type JobTitle } from '../../lib/travaux-job-title';
 import { useLanguage } from '../i18n/Language';
 import { companyCopy, type CompanyDetails } from '../../lib/travaux-company';
 import { travauxCategoryLabel, type TravauxCategory } from '../../lib/travaux';
@@ -10,7 +11,7 @@ import { travauxCopy } from '../../lib/travaux-copy';
 import styles from './travaux.module.css';
 
 type Provider = { id: string; name: string; email: string; phone: string; test: boolean; subscription: string | null; details: CompanyDetails | null; termsVersion: string | null; termsAcceptedAt: string | null; cancelled: boolean; active: boolean };
-type Reply = { job_id: string; slot: number; message: string | null; quote_cents: number | null; job: { title: string; commune: string; status: string } | null };
+type Reply = { job_id: string; slot: number; message: string | null; quote_cents: number | null; job: (JobTitle & { commune: string; status: string }) | null };
 type Result<T> = { rows: T[]; more: boolean };
 
 function List<T>({ token, provider, empty, children }: {
@@ -72,7 +73,7 @@ export default function Registry({ token }: { token: string }) {
         onClick={() => setSelected(selected === provider.id ? null : provider.id)}>{copy.history}</button>
       {selected === provider.id && <List<Reply> key={provider.id} token={token} provider={provider.id} empty={copy.noHistory}>
         {reply => <div className={styles.reply} key={reply.job_id}>
-          <strong>{reply.job?.title} · {reply.job?.commune}</strong>
+          <strong>{reply.job && localizedJobTitle(reply.job, locale)} · {reply.job?.commune}</strong>
           <p className={styles.meta}>#{reply.job_id} · {reply.slot}/3</p>
           {reply.message && <p>{reply.message}</p>}
           {reply.quote_cents !== null && <p>{euros.format(reply.quote_cents / 100)}</p>}

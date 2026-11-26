@@ -2,6 +2,8 @@ import type { Locale } from './i18n';
 import { travauxText } from './travaux';
 
 const copy = {
+  "Titres dans les trois langues": ["Titres dans les trois langues", "Titles in all three languages", "Titels in de drie talen"],
+  "Renseignez un titre dans chacune des trois langues.": ["Renseignez un titre dans chacune des trois langues.", "Enter a title in each of the three languages.", "Vul voor elk van de drie talen een titel in."],
   "Connexion artisan": ["Connexion artisan", "Tradesperson sign-in", "Vakman inloggen"],
   "Connexion à l’administration": ["Connexion à l’administration", "Sign in to administration", "Inloggen voor Beheer"],
   "Ce compte n’a pas accès à l’administration.": ["Ce compte n’a pas accès à l’administration.", "This account does not have access to administration.", "Dit account heeft geen toegang tot Beheer."],

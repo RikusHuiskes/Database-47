@@ -7,6 +7,7 @@ import { travauxCopy, travauxErrorText } from '../../lib/travaux-copy';
 import { intlLocale } from '../../lib/i18n';
 import { travauxAuthDestination } from './auth-destination';
 import { clearRequestDraft, readRequestDraft, saveRequestDraft } from './request-draft';
+import { jobTitleLocales, localizedJobTitle, type JobTitle } from '../../lib/travaux-job-title';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
@@ -39,8 +40,8 @@ function travauxAuth() {
 type Commune = { code: string; name: string; postcode: string; featured: boolean };
 type Contact = { name: string; email: string; phone: string };
 type Reply = { company: string; email: string; phone: string; message: string | null; quote_cents: number | null; slot: number };
-type PublicJob = {
-  id: string; title: string; description: string; commune: string; category: TravauxCategory; responseCount?: number;
+type PublicJob = JobTitle & {
+  id: string; description: string; commune: string; category: TravauxCategory; responseCount?: number;
 };
 type Job = PublicJob & {
   status: 'pending' | 'open' | 'rejected' | 'closed';
@@ -49,7 +50,7 @@ type Job = PublicJob & {
 type Dashboard = {
   active: boolean; admin: boolean; owner: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; canResumeCheckout: boolean; noticeUntil: string | null; cancelled: boolean } | null;
   jobs: Job[]; pending: Job[];
-  sent: { job_id: string; job: { title: string; commune: string; contact: Contact | null } | null }[];
+  sent: { job_id: string; job: (JobTitle & { commune: string; contact: Contact | null }) | null }[];
 };
 const jobStatus = { pending: 'En cours de vérification', open: 'En ligne', rejected: 'Refusée', closed: 'Clôturée' } as const;
 
@@ -94,11 +95,11 @@ function ContactDetails({ contact, title }: { contact: Contact; title: string })
   </div>;
 }
 
-function JobSummary({ job }: { job: PublicJob }) {
+function JobSummary({ job, original = false }: { job: PublicJob; original?: boolean }) {
   const { locale } = useLanguage();
   return <>
     <p className={styles.meta}>{travauxCategoryLabel(job.category, locale)} · {job.commune}</p>
-    <h3>{job.title}</h3><p className={styles.description}>{job.description}</p>
+    <h3>{original ? job.title : localizedJobTitle(job, locale)}</h3><p className={styles.description}>{job.description}</p>
   </>;
 }
 
@@ -148,6 +149,8 @@ const submittedCopy = {
   nl: { title: 'Je aanvraag is in behandeling', review: 'We hebben je klusaanvraag ontvangen. Na goedkeuring komt die online.', signIn: 'Gebruik dit e-mailadres de volgende keer bij ‘Mijn klussen’. Je ontvangt dan een nieuwe inloglink. Een wachtwoord is niet nodig.' },
 };
 
+const titleLanguage = { fr: 'Français', en: 'English', nl: 'Nederlands' };
+
 const listingCopy = {
   fr: { headline: 'Derniers travaux à pourvoir', all: 'Voir toutes les demandes' },
   en: { headline: 'Latest open projects', all: 'Browse all projects' },
@@ -163,15 +166,14 @@ const professionalCopy = {
   nl: { register: 'Registreren', login: 'Inloggen als vakman', registerTitle: 'Registreren als vakman', registerHelp: 'Bevestig je e-mailadres. Vul daarna je bedrijfsgegevens in en kies een abonnement.' },
 };
 
-export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero, contactDetails, footerLinks }: {
+export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, heroArt, contactDetails }: {
   enabled: boolean;
   communes: Commune[];
   initialPanel: 'jobs' | 'contact' | 'admin';
   initialAccount: Account | null;
   navigation: ReactNode;
-  hero: ReactNode;
+  heroArt: ReactNode;
   contactDetails: ReactNode;
-  footerLinks: ReactNode;
 }) {
   const { locale } = useLanguage();
   const t = travauxCopy(locale);
@@ -603,7 +605,15 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <button type="button" key={tab} className={`${styles.secondary} ${tab === 'admin' ? styles.adminTab : ''}`}
             aria-pressed={panel === tab} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
       </nav>
-      {hero}
+      <div className={`hero-grid ${styles.hero}`}>
+        {heroArt}
+        <div className="hero-shade" aria-hidden="true" />
+        <div className="hero-copy">
+          <p className="hero-kicker"><span aria-hidden="true" /> {t("Dans un rayon de 50 km autour de Duras")}</p>
+          <h1>{t("Travaux et artisans")}</h1>
+          <p className="hero-intro">{t("Déposez gratuitement votre projet et recevez jusqu’à trois contacts de professionnels.")}</p>
+        </div>
+      </div>
     </header>
     <div className={styles.body} id="espace">
     <dialog ref={submittedDialog} className={styles.dialog} aria-labelledby="travaux-submitted-title"
@@ -655,16 +665,30 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         <button type="button" className={styles.secondary} disabled={busy}
           onClick={() => void run(async () => { await auth?.auth.signOut({ scope: 'local' }); })}>{t("Se déconnecter")}</button>
       </div>
+      {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
+      {notice && <p className={styles.status} role="status">{notice}</p>}
       <Stats token={token} />
       <Registry token={token} />
       {dashboard.owner && <OwnerContacts token={token} />}
       {Boolean(dashboard?.pending.length) && <Card title={t("Demandes à modérer")}>
           <p>{t("Vérifiez que le titre et la description préservent l’anonymat du demandeur avant de publier.")}</p>
           {dashboard?.pending.map(job => <article key={job.id} className={styles.item}>
-            <JobSummary job={job} /><div className={styles.actions}>
-              <button className={styles.button} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'open' }, t("Demande publiée."))}>{t("Publier")}</button>
-              <button className={styles.secondary} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'rejected' }, t("Demande refusée."))}>{t("Refuser")}</button>
-            </div>
+            <JobSummary job={job} original />
+            <form className={styles.form} onSubmit={submit(data => {
+              const titles = Object.fromEntries(jobTitleLocales.map(language => [language, data.get(language)]));
+              void send({ action: 'moderate', id: job.id, status: 'open', titles }, t("Demande publiée."));
+            })}>
+              <fieldset>
+                <legend>{t("Titres dans les trois langues")}</legend>
+                {jobTitleLocales.map(language => <label key={language}><span lang={language}>{titleLanguage[language]}</span>
+                  <input name={language} lang={language} defaultValue={job.title_translations?.[language]} maxLength={100} required />
+                </label>)}
+              </fieldset>
+              <div className={styles.actions}>
+                <button className={styles.button} disabled={busy}>{t("Publier")}</button>
+                <button type="button" className={styles.secondary} disabled={busy} onClick={() => void send({ action: 'moderate', id: job.id, status: 'rejected' }, t("Demande refusée."))}>{t("Refuser")}</button>
+              </div>
+            </form>
           </article>)}
         </Card>}
     </>}
@@ -834,7 +858,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <Card compact title={t("Mes réponses")}>
             {!dashboard?.sent.length && <p>{t("Aucune réponse envoyée.")}</p>}
             {dashboard?.sent.map(({ job, job_id }) => job?.contact && <article key={job_id} className={styles.item}>
-              <h3>{job.title}</h3><ContactDetails contact={job.contact} title={job.title} />
+              <h3>{localizedJobTitle(job, locale)}</h3><ContactDetails contact={job.contact} title={localizedJobTitle(job, locale)} />
             </article>)}
           </Card>
             </> : <>
@@ -852,7 +876,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             : !recentJobs ? <p role="status">{t("Chargement des demandes…")}</p>
             : recentJobs.length === 0 ? <p>{t("Aucune nouvelle demande disponible.")}</p>
             : <ul className={styles.recentJobList}>{recentJobs.map(job => <li key={job.id}>
-              <h3>{job.title}</h3>
+              <h3>{localizedJobTitle(job, locale)}</h3>
               <span className={styles.meta}>{travauxCategoryLabel(job.category, locale)} · {job.commune}</span>
             </li>)}</ul>}
         </div>
@@ -891,7 +915,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           {session && ownJobs.has(job.id) && <p>{t("Votre demande")}</p>}
           {session && answeredJobs.has(job.id) && <div className={styles.reply}>
             <p>{t("Vous avez déjà répondu")}</p>
-            {contact && <ContactDetails contact={contact} title={job.title} />}
+            {contact && <ContactDetails contact={contact} title={localizedJobTitle(job, locale)} />}
           </div>}
           {session && dashboard?.active && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) &&
             <button type="button" className={styles.button} disabled={busy}
@@ -929,7 +953,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <footer className={`site-footer ${styles.footer}`}>
       <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
       <div>
-        {footerLinks}
+        <a href="/">{t("Accueil")}</a>
+        <a href="/travaux?espace=contact#espace">{t("Contact")}</a>
+        <a href="/disclaimer">{t("Mentions légales")}</a>
         {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
       </div>
     </footer>

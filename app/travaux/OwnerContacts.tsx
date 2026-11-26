@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { localizedJobTitle, type JobTitle } from '../../lib/travaux-job-title';
 import { useLanguage } from '../i18n/Language';
 import copy from '../../lib/travaux-owner.json';
 import panels from '../../lib/travaux-panels.json';
@@ -8,7 +9,7 @@ import { travauxCopy, travauxErrorText } from '../../lib/travaux-copy';
 import styles from './travaux.module.css';
 
 type Contact = Record<'name' | 'address' | 'email' | 'phone', string>;
-type Row = { id: string; title: string; commune: string; contact: Contact | null };
+type Row = JobTitle & { id: string; commune: string; contact: Contact | null };
 const endpoint = '/api/travaux/owner/contacts';
 const fields = ['name', 'address', 'email', 'phone'] as const;
 
@@ -33,7 +34,7 @@ function Editor({ row, token }: { row: Row; token: string }) {
     }
   }
   return <details className={styles.item}>
-    <summary>{row.title} · {row.commune}</summary>
+    <summary>{localizedJobTitle(row, locale)} · {row.commune}</summary>
     {row.contact && <form className={styles.form} onSubmit={save}>
       {fields.map(key => <label key={key}>{labels[key]}<input name={key} defaultValue={row.contact?.[key]}
         type={key === 'email' ? 'email' : key === 'phone' ? 'tel' : 'text'}

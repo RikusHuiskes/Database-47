@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     if (!Number.isSafeInteger(page) || page < 0 || page > 10000) throw new TravauxError('Demande invalide.');
     const start = page * pageSize;
     const rows = checked(await db.from('travaux_jobs')
-      .select('id,title,commune,status,contact:travaux_contacts(name,address,email,phone)')
+      .select('id,title,title_translations,commune,status,contact:travaux_contacts(name,address,email,phone)')
       .order('created_at', { ascending: false }).order('id').range(start, start + pageSize));
     return travauxJson({ rows: rows.slice(0, pageSize), more: rows.length > pageSize });
   } catch (error) { return travauxFailure(error); }
