@@ -74,3 +74,12 @@
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin: 10px 0 20px; }
 .metrics div { padding: 12px; border-radius: 8px; background: #eef3e9; }
 .metrics dd { margin: 4px 0 0; font-size: 1.4rem; font-weight: 700; }
+
+.benefits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.benefits section { padding: 16px; border-radius: 10px; background: #f0f4ed; }
+.benefits ul { margin: 0; padding-inline-start: 1.25em; line-height: 1.55; }
+.benefits li + li { margin-top: 10px; }
+.contactTerms { margin-top: 26px; padding-top: 18px; border-top: 1px solid #d9dfd5; }
+@media (max-width: 650px) {
+  .benefits { grid-template-columns: minmax(0, 1fr); }
+}

@@ -18,7 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function TravauxPage() {
+export default async function TravauxPage({ searchParams }: { searchParams: Promise<{ espace?: string | string[] }> }) {
+  const initialPanel = (await searchParams).espace === 'contact' ? 'contact' : 'jobs';
   const locale = localeFrom((await cookies()).get(LOCALE_COOKIE)?.value);
   const t = travauxCopy(locale);
   const enabled = travauxEnabled() && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -43,10 +44,10 @@ export default async function TravauxPage() {
         </div>
       </div>
     </header>
-    <Travaux enabled={enabled} communes={enabled ? travauxCommunes : []} />
+    <Travaux enabled={enabled} communes={enabled ? travauxCommunes : []} initialPanel={initialPanel} />
     <footer className="site-footer">
       <span className="brand-name"><strong>CÔTE DE DURAS</strong></span>
-      <div><a href="/">{t("Accueil")}</a><a href="/contact">{t("Contact")}</a><a href="/disclaimer">{t("Mentions légales")}</a></div>
+      <div><a href="/">{t("Accueil")}</a><a href="/travaux?espace=contact#espace">{t("Contact")}</a><a href="/disclaimer">{t("Mentions légales")}</a></div>
     </footer>
   </main>;
 }

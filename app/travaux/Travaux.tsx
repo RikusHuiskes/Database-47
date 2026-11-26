@@ -8,6 +8,7 @@ import { intlLocale } from '../../lib/i18n';
 import { useLanguage } from '../i18n/Language';
 import guide from '../../lib/travaux-guides.json';
 import Guide from './Guide';
+import introCopy from '../../lib/travaux-intro.json';
 import ContactForm from './ContactForm';
 import { travauxMail, travauxMailDraft, travauxMailLink } from '../../lib/travaux-mail';
 import Registry from './Registry';
@@ -116,12 +117,17 @@ function submit(run: (data: FormData) => void) {
   };
 }
 
-export default function Travaux({ enabled, communes }: { enabled: boolean; communes: Commune[] }) {
+export default function Travaux({ enabled, communes, initialPanel }: {
+  enabled: boolean;
+  communes: Commune[];
+  initialPanel: 'jobs' | 'contact';
+}) {
   const { locale } = useLanguage();
   const t = travauxCopy(locale);
   const copy = panels[locale];
+  const intro = introCopy[locale];
   const company = companyCopy(locale);
-  const [panel, setPanel] = useState<'jobs' | 'guide' | 'contact' | 'admin'>('jobs');
+  const [panel, setPanel] = useState<'jobs' | 'intro' | 'guide' | 'contact' | 'admin'>(initialPanel);
 
   const eur = new Intl.NumberFormat(intlLocale[locale], { style: 'currency', currency: 'EUR' });
   const [category, setCategory] = useState('');
@@ -291,19 +297,34 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
         </form>;
   }
 
+  function showContact() {
+    setPanel('contact');
+    document.getElementById('espace')?.scrollIntoView();
+  }
+
   return <div className={styles.body} id="espace">
     {enabled && <AnalyticsConsent disabled={loading || Boolean(session && (!dashboard || dashboard.admin))} />}
     <nav className={styles.tabs} aria-label={copy.jobs}>
-      {(['jobs', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
+      {(['jobs', 'intro', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
         <button type="button" key={tab} className={styles.secondary} aria-pressed={panel === tab}
-          onClick={() => setPanel(tab)}>{copy[tab]}</button>)}
+          onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
     </nav>
-    {panel === 'guide' && <Guide onContact={() => setPanel('contact')} />}
+    {panel === 'intro' && <Card title={intro.title}>
+      <p>{intro.lead}</p>
+      <div className={styles.benefits}>
+        {[intro.resident, intro.provider].map(section => <section key={section.title}>
+          <h3>{section.title}</h3>
+          <ul>{section.benefits.map(benefit => <li key={benefit}>{benefit}</li>)}</ul>
+        </section>)}
+      </div>
+    </Card>}
+    {panel === 'guide' && <Guide onContact={showContact} />}
     {panel === 'contact' && <Card title={copy.contact}>
       <p>{copy.help}</p>
       <ContactForm email={userEmail} role={view === 'provider' ? 'professional' : 'requester'} />
-      <p><a href="/contact">{copy.platformContact}</a></p>
-      <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
+      <div className={styles.contactTerms}>
+        <h3>{copy.legal}</h3><p>{copy.market}</p><p>{copy.guarantees}</p><p>{copy.liability}</p>
+      </div>
     </Card>}
     {panel === 'admin' && !dashboard?.admin && <Card title={t("Connexion à l’administration")}>
       {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
@@ -430,7 +451,7 @@ export default function Travaux({ enabled, communes }: { enabled: boolean; commu
               <label>{t("Titre")}<input name="title" minLength={5} maxLength={100} required /></label>
               <label>{t("Description")}<textarea name="description" minLength={20} maxLength={2000} rows={5} required placeholder={t("Dimensions, matériaux, état actuel et délai souhaité")} /></label>
               <fieldset><legend>{t("Coordonnées privées")}</legend>
-                <p className={styles.meta}>{guide[locale].privacy} <a href="/contact">{guide[locale].contact}</a></p>
+                <p className={styles.meta}>{guide[locale].privacy} <button className={styles.secondary} type="button" onClick={showContact}>{guide[locale].contact}</button></p>
                 <div className={styles.fields}>
                   <label>{t("Nom et prénom")}<input name="name" autoComplete="name" maxLength={120} required /></label>
                   <label>{t("Téléphone")}<input name="phone" type="tel" autoComplete="tel" maxLength={30} required /></label>

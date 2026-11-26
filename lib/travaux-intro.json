@@ -1,0 +1,65 @@
+{
+  "fr": {
+    "tab": "Présentation",
+    "title": "Des travaux et des artisans près de chez vous",
+    "lead": "Côte de Duras Travaux met en relation les habitants et les artisans dans un rayon de 50 km autour de Duras.",
+    "resident": {
+      "title": "Vous cherchez un artisan",
+      "benefits": [
+        "Déposez gratuitement votre demande de travaux. Elle est vérifiée avant publication.",
+        "Votre annonce est publique et anonyme. Seuls les trois premiers artisans abonnés qui répondent reçoivent votre nom, votre e-mail et votre téléphone. Votre adresse reste privée.",
+        "Retrouvez les réponses dans votre espace. Échangez directement avec les artisans et comparez leurs devis si vous en recevez. Vous choisissez à qui confier les travaux."
+      ]
+    },
+    "provider": {
+      "title": "Vous êtes artisan",
+      "benefits": [
+        "Consultez les demandes gratuitement. Filtrez par métier ou par commune et retrouvez les demandes qui correspondent à vos spécialités.",
+        "Répondez avec un abonnement à 25 € par mois par prélèvement SEPA, avec un préavis d’un mois, ou 250 € pour 12 mois en un paiement.",
+        "Si votre réponse fait partie des trois premières, vous pouvez contacter directement le demandeur. Aucun frais par contact ni commission sur le chantier."
+      ]
+    }
+  },
+  "en": {
+    "tab": "About Travaux",
+    "title": "Find local tradespeople and projects",
+    "lead": "Côte de Duras Travaux connects residents and tradespeople within 50 km of Duras.",
+    "resident": {
+      "title": "Find a tradesperson",
+      "benefits": [
+        "Post your project for free. We review it before it goes live.",
+        "Your public listing is anonymous. Only the first three subscribers who respond receive your name, email address and phone number. Your street address stays private.",
+        "See the replies in your account. Speak directly with tradespeople and compare any quotes you receive. You decide who does the work."
+      ]
+    },
+    "provider": {
+      "title": "Find work as a tradesperson",
+      "benefits": [
+        "Browse local projects for free. Filter by trade or town and see suggested projects that match your specialities.",
+        "Reply with a subscription at €25 per month via SEPA Direct Debit, with one month’s notice, or €250 for 12 months in one payment.",
+        "If you’re among the first three to respond, you can contact the customer directly. There are no fees per contact or commission on the work."
+      ]
+    }
+  },
+  "nl": {
+    "tab": "Over Travaux",
+    "title": "Vind vakmensen en klussen in de buurt",
+    "lead": "Côte de Duras Travaux brengt inwoners en vakmensen samen binnen 50 km rond Duras.",
+    "resident": {
+      "title": "Ik zoek een vakman",
+      "benefits": [
+        "Plaats gratis je klus. We controleren je aanvraag voordat die online komt.",
+        "Je klus is openbaar en anoniem. Alleen de eerste drie vakmensen met een abonnement die reageren, krijgen je naam, e-mailadres en telefoonnummer. Je adres blijft privé.",
+        "Bekijk de reacties in je eigen omgeving. Overleg rechtstreeks met vakmensen en vergelijk eventuele offertes. Jij bepaalt wie het werk uitvoert."
+      ]
+    },
+    "provider": {
+      "title": "Ik ben vakman en zoek klussen",
+      "benefits": [
+        "Bekijk lokale klussen gratis. Filter op vakgebied of plaats en krijg suggesties op basis van je specialismen.",
+        "Reageer met een abonnement van €25 per maand via SEPA-incasso, met één maand opzegtermijn, of betaal €250 in één keer voor 12 maanden.",
+        "Ben je een van de eerste drie die reageren, dan kun je rechtstreeks contact opnemen met de aanvrager. Je betaalt geen kosten per contact en geen commissie over de klus."
+      ]
+    }
+  }
+}
