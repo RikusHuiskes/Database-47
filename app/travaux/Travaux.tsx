@@ -701,7 +701,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         </div>}
         </div>
       </section>
-      <section className={styles.card}>
+      <section className={`${styles.card} ${providerAction ? styles.providerExpanded : ""}`}>
         <div className={styles.pathwaySummary}><h2>{t("Je suis artisan")}</h2>
         <p>{t("Consultez librement les demandes près de Duras. Abonnez-vous pour répondre aux projets qui vous intéressent.")}</p>
         <p className={styles.price}>{company("monthly")}<br />{company("annual")}</p></div>
@@ -714,7 +714,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 aria-controls="espace-pro" onClick={() => openProviderAccount('login')}>{professional.login}</button>
             </>}
           </div>}
-          <div className={styles.pathwayDetails} hidden={!providerAction}>
+          <div className={`${styles.pathwayDetails} ${styles.providerDetails}`} hidden={!providerAction}>
           {enabled && <div id="espace-pro" hidden={!providerAction} className={styles.requestArea} aria-busy={loading || busy}>
             {providerAction && (loading ? <p role="status">{t("Chargement de votre espace…")}</p> : session ? <>
               {accountHeader()}
@@ -731,7 +731,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                   if (window.confirm(t("Arrêter le renouvellement mensuel ?") + "\n" + company('notice'))) void send({ action: 'cancel' }, t("Renouvellement arrêté."));
                 }}>{t("Arrêter le renouvellement")}</button>}
             </> : null}
-            {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={styles.form} onSubmit={submit(data => void send({
+            {dashboard && <form key={provider?.subscribed ? 'profile' : 'checkout'} className={`${styles.form} ${styles.providerForm}`} onSubmit={submit(data => void send({
               action: provider?.subscribed ? 'save-profile' : 'checkout', ...Object.fromEntries(data),
               specialties: data.getAll('specialties'), locale, termsVersion, consent: data.has('billingConsent'),
             }, provider?.subscribed ? company('saved') : t("Paiement confirmé. Votre accès a été actualisé.")))}>

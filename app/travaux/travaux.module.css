@@ -161,3 +161,17 @@
   font-weight: 700;
 }
 .footer :global(.analytics-settings):hover { color: #f4ca77; }
+
+.providerForm .fields > label:not(.check) { grid-template-rows: 1fr auto; }
+.providerForm fieldset { margin: 0; padding: 14px; }
+.tradeGroup { min-width: 0; border: 1px solid #d9dfd5; border-radius: 8px; }
+.tradeGroup summary { padding: 10px 12px; background: #f0f4ed; font-weight: 700; cursor: pointer; }
+.tradeGroup .fields { padding: 12px; }
+.tradeGroup .check { min-width: 0; line-height: 1.4; }
+.tradeGroup .check span { overflow-wrap: anywhere; }
+@media (min-width: 651px) and (max-width: 900px) {
+  .pathways > .providerExpanded { grid-column: 1 / -1; }
+}
+@media (min-width: 901px) {
+  .pathways .providerDetails { grid-column: 2 / -1; }
+}
