@@ -130,6 +130,14 @@ const requestCopy = {
   nl: { intro: 'Beschrijf je klus en vul je contactgegevens in. Bevestig je e-mailadres en stuur je aanvraag daarna in. We controleren de aanvraag vóór publicatie.', verify: 'Bevestig mijn e-mailadres', restored: 'Je e-mailadres is bevestigd. Controleer je aanvraag en stuur die in ter goedkeuring.', storageError: 'Je concept kon niet worden bewaard in deze browser. Sta opslag voor deze site toe en probeer het opnieuw.' },
 };
 
+const emailCopy = {
+  fr: { sent: 'Merci. Nous vous avons envoyé un lien de connexion. Consultez votre boîte de réception et vos indésirables.', wait: 'Trop de demandes de lien. Si vous avez déjà reçu un e-mail, utilisez le dernier lien reçu. Sinon, réessayez plus tard.', sending: 'Envoi en cours…' },
+  en: { sent: 'Thank you. We’ve sent you a sign-in link. Check your inbox and spam folder.', wait: 'Too many link requests. If you already received an email, use the latest link. Otherwise, try again later.', sending: 'Sending…' },
+  nl: { sent: 'Bedankt. We hebben je een inloglink gestuurd. Kijk in je inbox en eventueel bij ongewenste e-mail.', wait: 'Er zijn te veel inloglinks aangevraagd. Heb je al een mail ontvangen? Gebruik dan de nieuwste link. Probeer het anders later opnieuw.', sending: 'Bezig met versturen…' },
+};
+
+type EmailFeedback = 'sent' | 'wait' | { error: string };
+
 type Account = 'resident' | 'provider';
 
 export default function Travaux({ enabled, communes, initialPanel, initialAccount, navigation, hero }: {
@@ -146,6 +154,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const intro = introCopy[locale];
   const account = accountCopy[locale];
   const request = requestCopy[locale];
+  const emailMessages = emailCopy[locale];
   const company = companyCopy(locale);
   const [panel, setPanel] = useState<'jobs' | 'intro' | 'guide' | 'contact' | 'admin'>(initialPanel);
 
@@ -175,7 +184,11 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const [accountOpen, setAccountOpen] = useState(Boolean(initialAccount));
   const [requestOpen, setRequestOpen] = useState(false);
   const [draft, setDraft] = useState<ReturnType<typeof readRequestDraft>>(null);
-  const [requestFeedback, setRequestFeedback] = useState<{ text: string; error?: boolean } | null>(null);
+  const [emailFeedback, setEmailFeedback] = useState<EmailFeedback | null>(null);
+  const [sendingLink, setSendingLink] = useState(false);
+  const [emailCooldown, setEmailCooldown] = useState(false);
+  const mailRequestInFlight = useRef(false);
+  const mailRetryAfter = useRef(0);
   const requestDraftChecked = useRef<string | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [jobs, setJobs] = useState<PublicJob[] | null>(null);
@@ -203,7 +216,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           setDraft(null);
           setCategory('');
           setCommune('');
-          setRequestFeedback(null);
+          setEmailFeedback(null);
           setPublishVersion(version => version + 1);
         }
         setDashboard(null);
@@ -215,6 +228,15 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     });
     return () => data.subscription.unsubscribe();
   }, [auth]);
+
+  useEffect(() => {
+    if (!emailCooldown) return;
+    const timer = window.setTimeout(() => {
+      setEmailCooldown(false);
+      setEmailFeedback(feedback => feedback === 'wait' ? null : feedback);
+    }, Math.max(0, mailRetryAfter.current - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [emailCooldown]);
 
   const refresh = useCallback(async (accessToken: string, signal?: AbortSignal) => {
     const stillCurrent = () => !signal?.aborted && currentSession.current?.access_token === accessToken;
@@ -307,7 +329,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     setCategory(saved.category);
     setCommune(saved.commune);
     setPublishVersion(version => version + 1);
-    setRequestFeedback(null);
+    setEmailFeedback(null);
     setRequestOpen(true);
     if (initialAccount === 'resident') requestAnimationFrame(() => document.getElementById('klus-aanvraag')?.scrollIntoView());
   }, [userEmail, view, initialAccount]);
@@ -327,59 +349,60 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     <Picker label={t("Commune des travaux")} placeholder={t("Choisir une commune")}
       searchLabel={t("Rechercher par commune ou code postal")} groups={communeGroups} value={value} onChoose={onChoose} />;
 
-  async function requestSignIn(email: string, role: Account) {
-    if (!auth) throw Error("Connexion indisponible.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
-    const { error: authError } = await auth.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: travauxAuthDestination(window.location.origin, locale, role === 'provider' ? 'pro' : 'demandeur') },
-    });
-    if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
-      throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
-    }
-    if (authError?.code === 'over_email_send_rate_limit' || authError?.code === 'over_request_rate_limit') {
-      throw Error('Patientez avant de demander un nouveau lien.');
-    }
-    if (authError) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
-  }
-
-  function signInForm(role: Account) {
-    return <form className={styles.form} onSubmit={submit(data => {
-      const email = String(data.get('email') ?? '').trim();
-      if (role === 'resident') {
-        void verifyRequestEmail(email);
-        return;
-      }
-      void run(async () => {
-        await requestSignIn(email, role);
-        setNotice(t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion."));
-      });
-    })}>
-      <label>{t("Adresse e-mail")}<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
-      <button className={styles.button} disabled={busy}>{t("Recevoir mon lien de connexion")}</button>
-    </form>;
-  }
-
-  async function verifyRequestEmail(email: string, data?: FormData) {
-    setBusy(true);
-    setRequestFeedback(null);
+  async function sendSignInLink(email: string, role: Account, data?: FormData) {
+    if (mailRequestInFlight.current || Date.now() < mailRetryAfter.current) return;
+    mailRequestInFlight.current = true;
+    setSendingLink(true);
+    setEmailFeedback(null);
     try {
+      if (!auth) throw Error("Connexion indisponible.");
       if (data) {
         try { saveRequestDraft(email, data, category, commune); }
-        catch { setRequestFeedback({ text: request.storageError, error: true }); return; }
+        catch { throw Error(request.storageError); }
       }
-      await requestSignIn(email, 'resident');
-      setRequestFeedback({ text: t("Consultez votre boîte e-mail pour ouvrir votre lien de connexion.") });
+      const { error: authError } = await auth.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: travauxAuthDestination(window.location.origin, locale, role === 'provider' ? 'pro' : 'demandeur') },
+      });
+      if (authError?.code === 'email_address_invalid' || authError?.code === 'validation_failed') {
+        throw Error('Vérifiez votre adresse e-mail (ex. nom@exemple.fr).');
+      }
+      const limited = authError?.status === 429 || authError?.code === 'over_email_send_rate_limit'
+        || authError?.code === 'over_request_rate_limit';
+      if (authError && !limited) throw Error("Le lien de connexion n’a pas pu être envoyé. Réessayez dans quelques instants.");
+
+      // Supabase enforces an interval between sends. Leave its server-side limit in place.
+      mailRetryAfter.current = Date.now() + 60_000;
+      setEmailCooldown(true);
+      setEmailFeedback(limited ? 'wait' : 'sent');
     } catch (err) {
-      setRequestFeedback({ text: travauxErrorText(err instanceof Error ? err.message : "Connexion indisponible.", locale), error: true });
+      setEmailFeedback({ error: err instanceof Error ? err.message : "Connexion indisponible." });
     } finally {
-      setBusy(false);
+      mailRequestInFlight.current = false;
+      setSendingLink(false);
     }
+  }
+
+  const emailSendingBlocked = sendingLink || emailCooldown;
+  const emailStatus = emailFeedback && (typeof emailFeedback === 'string'
+    ? <p className={styles.status} role="status">{emailMessages[emailFeedback]}</p>
+    : <p className={styles.error} role="alert">{travauxErrorText(emailFeedback.error, locale)}</p>);
+
+  function signInForm(role: Account) {
+    return <form className={styles.form} onSubmit={submit(data =>
+      void sendSignInLink(String(data.get('email') ?? '').trim(), role))}>
+      <label>{t("Adresse e-mail")}<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+      <button className={styles.button} disabled={emailSendingBlocked}>
+        {sendingLink ? emailMessages.sending : t("Recevoir mon lien de connexion")}
+      </button>
+      {emailStatus}
+    </form>;
   }
 
   function openAccount(role: Account) {
     setView(role);
     setAccountOpen(true);
+    if (role !== view) setEmailFeedback(null);
   }
 
   function showContact() {
@@ -457,11 +480,11 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <button type="button" className={styles.button} aria-expanded={requestOpen} onClick={() => {
             setView('resident');
             setRequestOpen(open => !open);
-            setRequestFeedback(null);
+            setEmailFeedback(null);
           }}>{t("Déposer une demande")}</button>
           {session ? <a className={styles.secondary} href="#compte" onClick={() => openAccount('resident')}>{account.myJobs}</a>
             : <button type="button" className={styles.secondary} aria-expanded={accountOpen && view === 'resident' && !requestOpen}
-              onClick={() => { openAccount('resident'); setRequestOpen(false); setRequestFeedback(null); }}>{account.myJobs}</button>}
+              onClick={() => { openAccount('resident'); setRequestOpen(false); setEmailFeedback(null); }}>{account.myJobs}</button>}
         </div>}
         {enabled && <div hidden={!requestOpen} className={styles.requestArea}>
           <div id="klus-aanvraag" className={styles.requestForm}>
@@ -470,7 +493,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
             {draft && <p role="status" className={styles.status}>{request.restored}</p>}
             <form key={publishVersion} className={styles.form} onSubmit={submit(data => {
               if (!session) {
-                void verifyRequestEmail(String(data.get('email') ?? '').trim(), data);
+                void sendSignInLink(String(data.get('email') ?? '').trim(), 'resident', data);
                 return;
               }
               void send({
@@ -497,7 +520,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 <p className={styles.meta}>{t("Adresse e-mail partagée avec les répondants retenus")}</p>
               </fieldset>
               <label className={styles.check}><input name="consent" type="checkbox" defaultChecked={draft?.consent} required /> {t("J’accepte que mon nom, mon téléphone et mon e-mail soient transmis aux trois premiers professionnels abonnés qui répondent à cette demande.")}</label>
-              <button className={styles.button} disabled={loading || busy || !category || !commune}>{session ? t("Envoyer ma demande gratuite") : request.verify}</button>
+              <button className={styles.button} disabled={loading || busy || (!session && emailSendingBlocked) || !category || !commune}>
+                {session ? t("Envoyer ma demande gratuite") : sendingLink ? emailMessages.sending : request.verify}
+              </button>
+              {!session && view === 'resident' && emailStatus}
             </form>
           </div>
         </div>}
@@ -506,8 +532,6 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           <p>{account.residentHelp}</p>
           {signInForm('resident')}
         </div>}
-        {requestFeedback && (requestOpen || view === 'resident') && <p className={requestFeedback.error ? styles.error : styles.status}
-          role={requestFeedback.error ? 'alert' : 'status'}>{requestFeedback.text}</p>}
         </div>
       </section>
       <section className={styles.card}>
