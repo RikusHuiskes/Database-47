@@ -149,9 +149,9 @@ const submittedCopy = {
 };
 
 const listingCopy = {
-  fr: { headline: 'Derniers travaux à pourvoir', all: 'Voir toutes les demandes', back: 'Retour à Travaux' },
-  en: { headline: 'Latest open projects', all: 'Browse all projects', back: 'Back to Travaux' },
-  nl: { headline: 'Openstaande klussen', all: 'Bekijk alle klussen', back: 'Terug naar Travaux' },
+  fr: { headline: 'Derniers travaux à pourvoir', all: 'Voir toutes les demandes' },
+  en: { headline: 'Latest open projects', all: 'Browse all projects' },
+  nl: { headline: 'Nieuwste klussen', all: 'Bekijk alle klussen' },
 };
 
 type Account = 'resident' | 'provider';
@@ -184,7 +184,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const listings = listingCopy[locale];
   const emailMessages = emailCopy[locale];
   const company = companyCopy(locale);
-  const [panel, setPanel] = useState<'jobs' | 'list' | 'intro' | 'guide' | 'contact' | 'admin'>(initialPanel);
+  const [panel, setPanel] = useState<'jobs' | 'intro' | 'guide' | 'contact' | 'admin'>(initialPanel);
 
   const eur = new Intl.NumberFormat(intlLocale[locale], { style: 'currency', currency: 'EUR' });
   const [category, setCategory] = useState('');
@@ -235,6 +235,8 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const [hasMoreJobs, setHasMoreJobs] = useState(false);
   const latestJobsRequest = useRef(0);
   const [jobsError, setJobsError] = useState(false);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const moreJobs = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(enabled);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
@@ -300,6 +302,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   const refreshJobs = useCallback(async (signal?: AbortSignal, page = 0) => {
     const revision = ++latestJobsRequest.current;
     const current = () => !signal?.aborted && latestJobsRequest.current === revision;
+    setJobsLoading(true);
     const params = new URLSearchParams({ page: String(page) });
     if (categoryFilter) params.set('category', categoryFilter);
     if (communeFilter) params.set('commune', communeFilter);
@@ -317,6 +320,8 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       }
     } catch {
       if (current()) setJobsError(true);
+    } finally {
+      if (current()) setJobsLoading(false);
     }
   }, [categoryFilter, communeFilter, recommended, token]);
 
@@ -351,6 +356,19 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     void refreshJobs(controller.signal);
     return () => controller.abort();
   }, [enabled, refreshJobs]);
+
+  useEffect(() => {
+    if (panel !== 'jobs' || jobsLoading || jobsError || !hasMoreJobs ||
+      !moreJobs.current || typeof IntersectionObserver === 'undefined') return;
+    const revision = latestJobsRequest.current;
+    const observer = new IntersectionObserver(entries => {
+      if (latestJobsRequest.current !== revision || !entries.some(entry => entry.isIntersecting)) return;
+      observer.disconnect();
+      void refreshJobs(undefined, jobsPage + 1);
+    }, { rootMargin: '250px' });
+    observer.observe(moreJobs.current);
+    return () => observer.disconnect();
+  }, [panel, jobsLoading, jobsError, hasMoreJobs, jobsPage, refreshJobs]);
 
   async function run(action: () => Promise<void>) {
     setBusy(true); setError(''); setNotice('');
@@ -552,10 +570,12 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     setView('provider');
     setProviderAction(action);
     setEmailFeedback(null);
-    if (panel === 'list') {
-      setPanel('jobs');
-      requestAnimationFrame(() => document.getElementById('espace-pro')?.scrollIntoView());
-    }
+  }
+
+  function openPlan(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    openProviderAccount(session ? 'login' : 'register');
+    requestAnimationFrame(() => document.getElementById('espace-pro')?.scrollIntoView());
   }
 
   function accountHeader() {
@@ -567,8 +587,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
   }
 
   function showListings() {
-    setPanel('list');
-    requestAnimationFrame(() => document.getElementById('demandes')?.focus());
+    document.getElementById('demandes')?.focus();
   }
 
   function showContact() {
@@ -582,7 +601,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       <nav className={styles.tabs} aria-label={copy.jobs}>
         {(['intro', 'jobs', 'guide', 'contact', ...(enabled ? ['admin'] as const : [])] as const).map(tab =>
           <button type="button" key={tab} className={`${styles.secondary} ${tab === 'admin' ? styles.adminTab : ''}`}
-            aria-pressed={panel === tab || (tab === 'jobs' && panel === 'list')} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
+            aria-pressed={panel === tab} onClick={() => setPanel(tab)}>{tab === 'intro' ? intro.tab : copy[tab]}</button>)}
       </nav>
       {hero}
     </header>
@@ -649,7 +668,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
           </article>)}
         </Card>}
     </>}
-    {(panel === 'jobs' || panel === 'list') && <>
+    {panel === 'jobs' && <>
       {error && <p className={styles.error} role="alert">{travauxErrorText(error, locale)}</p>}
       {notice && <p className={styles.status} role="status">{notice}</p>}
     </>}
@@ -843,20 +862,15 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
       </section>}
     </div>
     {!enabled && <p className={styles.status}>{t("Les inscriptions ouvriront prochainement.")}</p>}
-    </div>
 
-    {enabled && panel === 'list' && <div id="demandes" tabIndex={-1}>
-      <button type="button" className={styles.secondary} onClick={() => {
-        setPanel('jobs');
-        requestAnimationFrame(() => document.getElementById('espace')?.scrollIntoView());
-      }}>{listings.back}</button>
+    {enabled && <div id="demandes" tabIndex={-1} className={styles.publicListings}>
       <Card title={t("Demandes de travaux")}>
-        {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#espace-pro" onClick={() => openProviderAccount(session ? 'login' : 'register')}>{company("plan")}</a>.</p>}
+        {!dashboard?.active && <p>{t("Consultez librement les demandes. Pour répondre et recevoir les coordonnées du demandeur,")} <a href="#espace-pro" onClick={openPlan}>{company("plan")}</a>.</p>}
         {session && <div className={styles.tabs}>
           <button type="button" className={styles.secondary} aria-pressed={!recommended} onClick={() => setRecommended(false)}>{t("Toutes les demandes")}</button>
           <button type="button" className={styles.secondary} aria-pressed={recommended} onClick={() => setRecommended(true)}>{t("Recommandées pour moi")}</button>
         </div>}
-        {session && recommended && !specialties.size && <p><a href="#espace-pro" onClick={() => openProviderAccount(session ? 'login' : 'register')}>{t("Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.")}</a></p>}
+        {session && recommended && !specialties.size && <p><a href="#espace-pro" onClick={openPlan}>{t("Ajoutez vos spécialités dans votre espace pro pour recevoir des recommandations.")}</a></p>}
         <div className={styles.filters}>
           {categoryPicker(categoryFilter, setCategoryFilter)}
           {communePicker(communeFilter, setCommuneFilter)}
@@ -866,9 +880,9 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
         {jobsError && <p role="alert">{t("Les demandes sont temporairement indisponibles.")}</p>}
         {!jobsError && !visibleJobs && <p role="status">{t("Chargement des demandes…")}</p>}
         {!jobsError && visibleJobs?.length === 0 && <p>{t("Aucune nouvelle demande disponible.")}</p>}
-        {visibleJobs?.map(job => {
+        {visibleJobs && visibleJobs.length > 0 && <div className={styles.jobGrid}>{visibleJobs.map(job => {
           const contact = answeredJobs.get(job.id);
-          return <article className={styles.item} key={job.id}>
+          return <article className={styles.publicJob} key={job.id}>
           <JobSummary job={job} />
           <div className={styles.actions}>
             <span className={styles.meta}>{job.responseCount ?? 0}/3 {t("réponses")}{job.responseCount === 3 ? " · " + t("Complet") : ""}</span>
@@ -886,7 +900,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 void send({ action: 'respond', id: job.id, message: '', quote: null }, t("Réponse transmise. Les coordonnées sont dans « Mes réponses »."));
               }}>{t("Répondre à cette demande")}</button>}
           {session && dashboard && job.responseCount !== 3 && !ownJobs.has(job.id) && !answeredJobs.has(job.id) && <details className={styles.jobReply}><summary className={styles.secondary}>{dashboard.active ? t("Ajouter un message ou un devis") : t("Répondre à cette demande")}</summary>
-            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#espace-pro" onClick={() => openProviderAccount(session ? 'login' : 'register')}>{company("plan")}</a></p> : <>
+            {!dashboard.active ? <p>{t("Un abonnement actif est nécessaire pour envoyer votre réponse.")} <a href="#espace-pro" onClick={openPlan}>{company("plan")}</a></p> : <>
             <p>{guide[locale].beforeReply}</p>
             <form className={styles.form} onSubmit={submit(data => {
               const quote = String(data.get('quote'));
@@ -898,13 +912,18 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
               <button className={styles.button} disabled={busy}>{t("Envoyer ma réponse")}</button>
             </form></>}
           </details>}
-        </article>})}
-        {hasMoreJobs && <button className={styles.button} disabled={busy} type="button"
-          onClick={() => void run(() => refreshJobs(undefined, jobsPage + 1))}>{t("Afficher plus de demandes")}</button>}
-        {(jobs || jobsError) && <button className={styles.secondary} disabled={busy}
+        </article>})}</div>}
+        {hasMoreJobs && !jobsError && <div ref={moreJobs} className={styles.moreJobs}>
+          <button className={styles.secondary} disabled={jobsLoading} type="button"
+            onClick={() => void refreshJobs(undefined, jobsPage + 1)}>
+            {jobsLoading ? t("Chargement des demandes…") : t("Afficher plus de demandes")}
+          </button>
+        </div>}
+        {(jobs || jobsError) && <button className={styles.secondary} disabled={busy || jobsLoading}
           onClick={() => void run(() => refreshJobs())}>{t("Actualiser les demandes")}</button>}
       </Card>
     </div>}
+    </div>
 
     </div>
     <footer className={`site-footer ${styles.footer}`}>

@@ -175,3 +175,21 @@
 @media (min-width: 901px) {
   .pathways .providerDetails { grid-column: 2 / -1; }
 }
+
+.publicListings { scroll-margin-top: 20px; }
+.jobGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr));
+  align-items: start;
+  gap: 14px;
+  margin: 16px 0;
+}
+.publicJob {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #c8d5c8;
+  border-radius: 12px;
+  background: #f0f4ed;
+}
+.publicJob > .actions + button { margin-top: 12px; }
+.moreJobs { margin: 12px 0; }
