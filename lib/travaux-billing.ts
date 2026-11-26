@@ -1,10 +1,10 @@
 import { termsVersion, type CompanyDetails } from './travaux-company';
-import { intlLocale, type Locale } from './i18n';
+import type { Locale } from './i18n';
 import { monthBoundary } from './recurring-billing';
 import { loadAdvertisingInvoiceProfile } from './advertising-invoices';
 import { mailConfiguration } from './mail';
 import { travauxPlans, type TravauxPlan } from './travaux-plans';
-import { billingOrigin, firstMethods } from './recurring-server';
+import { billingOrigin } from './recurring-server';
 import { mollieRequest } from './mollie';
 import { isPaymentCheckoutUrl } from './payment-checkout-url';
 import { travauxPath } from './travaux';
@@ -21,6 +21,20 @@ function molliePost(path: string, idempotencyKey: string, body: object) {
   return mollieRequest(path, {
     method: 'POST', headers: { 'Idempotency-Key': idempotencyKey }, body: JSON.stringify(body),
   });
+}
+
+async function frenchCheckoutMethods(plan: TravauxPlan) {
+  const params = new URLSearchParams({
+    sequenceType: plan === 'monthly' ? 'first' : 'oneoff',
+    locale: 'fr_FR', billingCountry: 'FR',
+    'amount[currency]': 'EUR', 'amount[value]': amountFor(plan).value,
+  });
+  const data = await mollieRequest('methods?' + params);
+  const methods = (data._embedded?.methods ?? []).map((method: { id: string }) => method.id) as string[];
+  const frenchMethods = plan === 'monthly' ? ['creditcard', 'paybybank'] : ['creditcard', 'paybybank', 'banktransfer'];
+  const available = frenchMethods.filter(method => methods.includes(method));
+  if (!available.length) throw new TravauxError('Les paiements par carte ou banque française sont temporairement indisponibles.', 503);
+  return available;
 }
 
 function travauxBillingOrigin(request: Request) {
@@ -81,6 +95,9 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
     ? await mollieRequest('payments/' + profile.first_payment_id)
     : (await mollieRequest(paymentPath + '?limit=50'))._embedded?.payments?.find(
         (item: { metadata?: { checkoutKey?: string } }) => item.metadata?.checkoutKey === key);
+  if (payment?.status === 'open' && payment.metadata?.checkoutMarket !== 'FR' && payment.isCancelable) {
+    payment = await mollieRequest('payments/' + payment.id, { method: 'DELETE' });
+  }
   if (payment && ['expired', 'canceled', 'failed'].includes(payment.status)) {
     const updated = checked(await db.from('travaux_providers').update({
       checkout_key: crypto.randomUUID(), first_payment_id: null,
@@ -91,9 +108,10 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
   if (!payment) {
     payment = await molliePost('payments', 'travaux-checkout-' + key, {
       amount, description, customerId, sequenceType: plan === 'monthly' ? 'first' : 'oneoff',
-      ...(plan === 'monthly' ? { method: await firstMethods('sepa', travauxPlans.monthly.cents) } : {}),
-      metadata: { product, userId, checkoutKey: key, plan },
-      locale: intlLocale[locale].replace('-', '_'),
+      method: await frenchCheckoutMethods(plan),
+      billingAddress: { streetAndNumber: details.address, postalCode: details.postcode, city: details.city, country: 'FR' },
+      metadata: { product, userId, checkoutKey: key, plan, checkoutMarket: 'FR' },
+      locale: 'fr_FR',
       redirectUrl: origin + travauxPath + '?paiement=retour&lang=' + locale,
       webhookUrl: origin + '/api/travaux/mollie',
     });
@@ -129,7 +147,7 @@ export async function reconcileTravauxPayment(db: TravauxDb, id: string, origin:
         .eq('id', id).eq('provider_id', profile.user_id).maybeSingle());
       if (!previous) return;
     } else if ((profile.billing_plan ?? 'monthly') !== plan) return;
-  } else if (plan !== 'monthly' || payment.sequenceType !== 'recurring' || payment.method !== 'directdebit'
+  } else if (plan !== 'monthly' || payment.sequenceType !== 'recurring' || !['directdebit', 'creditcard'].includes(payment.method)
     || !profile.subscription_id || payment.subscriptionId !== profile.subscription_id) return;
 
   const disputed = Number(payment.amountRefunded?.value ?? 0) > 0 || Number(payment.amountChargedBack?.value ?? 0) > 0;
@@ -139,13 +157,14 @@ export async function reconcileTravauxPayment(db: TravauxDb, id: string, origin:
     if (!/^mdt_[A-Za-z0-9]+$/.test(payment.mandateId ?? '')) throw Error('Missing Travaux mandate');
     const base = 'customers/' + profile.customer_id;
     const mandate = await mollieRequest(base + '/mandates/' + payment.mandateId);
-    if (mandate.status !== 'valid' || mandate.method !== 'directdebit') throw Error('Travaux mandate is not valid yet');
+    const method = payment.method === 'creditcard' ? 'creditcard' : 'directdebit';
+    if (mandate.status !== 'valid' || mandate.method !== method) throw Error('Travaux mandate is not valid yet');
     const path = base + '/subscriptions';
     const known = (await mollieRequest(path + '?limit=50'))._embedded?.subscriptions?.find(
       (item: { metadata?: { firstPayment?: string } }) => item.metadata?.firstPayment === id);
     const startDate = [monthBoundary(day, 1), parisDay(new Date())].sort()[1];
     const subscription = known ?? await molliePost(path, 'travaux-subscription-' + id, {
-      amount, description, startDate, interval: '1 month', mandateId: payment.mandateId,
+      amount, description, startDate, interval: '1 month', method, mandateId: payment.mandateId,
       metadata: { product, firstPayment: id }, webhookUrl: origin + '/api/travaux/mollie',
     });
     checked(await db.from('travaux_providers').update({ subscription_id: subscription.id, first_payment_id: id })
