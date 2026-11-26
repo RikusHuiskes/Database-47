@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const { db, user } = await travauxUser(request);
     const [paid, profile, jobs, sent, admin] = await Promise.all([
       db.rpc('travaux_paid', { p_user: user.id, p_test: travauxTestMode() }),
-      db.from('travaux_providers').select('name,phone,cancelled_at,notice_ends_on,subscription_id,details,billing_plan').eq('user_id', user.id).maybeSingle(),
+      db.from('travaux_providers').select('name,phone,cancelled_at,notice_ends_on,subscription_id,details,billing_plan,first_payment_id,terms_version').eq('user_id', user.id).maybeSingle(),
       db.from('travaux_jobs').select(`${jobFields}, responses:travaux_responses(${contactFields})`)
         .eq('owner_id', user.id).order('created_at', { ascending: false }).limit(100),
       db.from('travaux_responses').select('job_id,job:travaux_jobs(title,commune,contact:travaux_contacts(name,email,phone))')
@@ -35,6 +35,7 @@ export async function GET(request: Request) {
       active, admin: Boolean(admin), owner: Boolean(admin && isTravauxOwner(user.id)), pending, jobs: checked(jobs), sent: checked(sent),
       provider: provider && {
         name: provider.name, phone: provider.phone, details: provider.details, cancelled: Boolean(provider.cancelled_at), noticeUntil: provider.notice_ends_on,
+        canResumeCheckout: Boolean(provider.first_payment_id && provider.terms_version === termsVersion && !active && !provider.subscription_id),
         subscribed: Boolean((provider.subscription_id && (!provider.cancelled_at || active)) || (provider.billing_plan === 'annual' && active)), plan: provider.billing_plan,
       },
     });
@@ -50,6 +51,17 @@ export async function POST(request: Request) {
     try { body = JSON.parse(raw); } catch { throw new TravauxError('Demande invalide.'); }
     if (!body || typeof body !== 'object') throw new TravauxError('Demande invalide.');
 
+    if (body.action === 'resume-checkout') {
+      const profile = checked(await db.from('travaux_providers').select('name,phone,details,billing_plan,first_payment_id,terms_version')
+        .eq('user_id', user.id).maybeSingle());
+      if (!profile?.first_payment_id || profile.terms_version !== termsVersion || !profile.details || !isTravauxPlan(profile.billing_plan)) {
+        throw new TravauxError('Confirmez le prix et le renouvellement de l’abonnement.');
+      }
+      const result = await startTravauxCheckout(db, request, user.id, email, profile.name, profile.phone, localeFrom(body.locale),
+        profile.details, profile.billing_plan, true);
+      if (result.ok) after(() => processAdvertisingInvoiceMailOutbox().catch(() => undefined));
+      return travauxJson(result);
+    }
     if (body.action === 'checkout' || body.action === 'save-profile') {
       const company = field(body.company, 'entreprise', 120);
       const phone = phoneField(body.phone);

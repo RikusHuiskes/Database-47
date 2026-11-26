@@ -45,7 +45,7 @@ function travauxBillingOrigin(request: Request) {
   return origin;
 }
 
-export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale, details: CompanyDetails, plan: TravauxPlan) {
+export async function startTravauxCheckout(db: TravauxDb, request: Request, userId: string, email: string, name: string, phone: string, locale: Locale, details: CompanyDetails, plan: TravauxPlan, resume = false) {
   const origin = travauxBillingOrigin(request);
   if (!mailConfiguration().deliveryEnabled || !(await loadAdvertisingInvoiceProfile(db)).profile) {
     throw new TravauxError('La facturation par e-mail est temporairement indisponible.', 503);
@@ -74,7 +74,8 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
   }
 
   const savedProfile = checked(await db.from('travaux_providers').update({
-    email, name, phone, details, billing_plan: plan, terms_version: termsVersion, terms_accepted_at: new Date().toISOString(),
+    email, name, phone, details, billing_plan: plan,
+    ...(!resume && { terms_version: termsVersion, terms_accepted_at: new Date().toISOString() }),
   }).eq('user_id', userId).eq('checkout_key', profile.checkout_key).or('billing_plan.is.null,billing_plan.eq.' + plan).is('subscription_id', null).select('user_id').maybeSingle());
   if (!savedProfile) throw new TravauxError('Un abonnement existe déjà pour ce compte.', 409);
 

@@ -100,6 +100,7 @@ const copy = {
   "Arrêter le renouvellement mensuel ?": ["Arrêter le renouvellement mensuel ?", "Cancel the monthly subscription?", "Je maandabonnement opzeggen?"],
   "Le paiement précédent est encore ouvert. Réessayez dans quelques instants.": ["Le paiement précédent est encore ouvert. Réessayez dans quelques instants.", "Your previous payment is still open. Try again shortly.", "Je vorige betaling staat nog open. Probeer het zo opnieuw."],
   "L’ouverture de Mollie prend trop de temps. Vous pouvez réessayer.": ["L’ouverture de Mollie prend trop de temps. Vous pouvez réessayer.", "Opening Mollie took too long. You can try again.", "Het openen van Mollie duurt te lang. Je kunt het opnieuw proberen."],
+  "Continuer avec les données renseignées": ["Continuer avec les données renseignées", "Continue with these details", "Verder met deze gegevens"],
   "Ouverture de Mollie…": ["Ouverture de Mollie…", "Opening Mollie…", "Mollie openen…"],
   "Les paiements par carte ou banque française sont temporairement indisponibles.": ["Les paiements par carte ou banque française sont temporairement indisponibles.", "Card and French bank payments are temporarily unavailable.", "Betalen met een kaart of Franse bank is tijdelijk niet beschikbaar."],
   "Renouvellement arrêté.": ["Renouvellement arrêté.", "Renewal stopped.", "Verlenging stopgezet."],

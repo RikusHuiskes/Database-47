@@ -47,7 +47,7 @@ type Job = PublicJob & {
   responses?: Reply[];
 };
 type Dashboard = {
-  active: boolean; admin: boolean; owner: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; noticeUntil: string | null; cancelled: boolean } | null;
+  active: boolean; admin: boolean; owner: boolean; provider: { name: string; phone: string; details: CompanyDetails | null; plan: TravauxPlan | null; subscribed: boolean; canResumeCheckout: boolean; noticeUntil: string | null; cancelled: boolean } | null;
   jobs: Job[]; pending: Job[];
   sent: { job_id: string; job: { title: string; commune: string; contact: Contact | null } | null }[];
 };
@@ -392,7 +392,7 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     return () => window.removeEventListener('pageshow', restored);
   }, []);
 
-  async function openCheckout(data: FormData) {
+  async function openCheckout(data?: FormData) {
     if (!token || checkoutInFlight.current) return;
     checkoutInFlight.current = true;
     setOpeningCheckout(true);
@@ -401,10 +401,10 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
     const timer = window.setTimeout(() => controller.abort(), 50_000);
     let redirecting = false;
     try {
-      const result = await api(token, {
+      const result = await api(token, data ? {
         action: 'checkout', ...Object.fromEntries(data), specialties: data.getAll('specialties'),
         locale, termsVersion, consent: data.has('billingConsent'),
-      }, controller.signal);
+      } : { action: 'resume-checkout', locale }, controller.signal);
       if (result.checkoutUrl) {
         window.location.assign(result.checkoutUrl);
         redirecting = true;
@@ -799,8 +799,16 @@ export default function Travaux({ enabled, communes, initialPanel, initialAccoun
                 <label className={styles.check}><input name="billingConsent" type="checkbox" required /> {company('accept')}</label>
               </>}
               {checkoutError && <p className={styles.error} role="alert">{travauxErrorText(checkoutError, locale)}</p>}
-              <button className={styles.button} disabled={busy || openingCheckout}>{openingCheckout ? t("Ouverture de Mollie…")
-                : provider?.subscribed ? company('save') : provider ? t("Reprendre ou vérifier mon paiement") : t("S’abonner avec Mollie")}</button>
+              <div className={styles.actions}>
+                {provider?.canResumeCheckout && !provider.subscribed && <button type="button" className={styles.button}
+                  disabled={busy || openingCheckout} onClick={() => void openCheckout()}>
+                  {openingCheckout ? t("Ouverture de Mollie…") : t("Reprendre ou vérifier mon paiement")}
+                </button>}
+                <button className={provider?.canResumeCheckout && !provider.subscribed ? styles.secondary : styles.button}
+                  disabled={busy || openingCheckout}>{provider?.subscribed ? company('save')
+                    : provider?.canResumeCheckout ? t("Continuer avec les données renseignées")
+                    : openingCheckout ? t("Ouverture de Mollie…") : t("S’abonner avec Mollie")}</button>
+              </div>
             </form>}
           </Card>
           {token && provider && <Invoices token={token} />}
