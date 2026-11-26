@@ -102,7 +102,10 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
     metadata: { product, userId, checkoutKey: key, plan, checkoutMarket: 'FR' },
     locale: 'fr_FR',
   });
-  if (payment?.status === 'open' && payment.metadata?.checkoutMarket !== 'FR') {
+  const canContinueBankCheckout = (existing: typeof payment) =>
+    existing.method === 'paybybank' && isPaymentCheckoutUrl(existing._links?.checkout?.href, existing.method);
+  if (payment?.status === 'open' && payment.metadata?.checkoutMarket !== 'FR'
+    && (payment.isCancelable || !canContinueBankCheckout(payment))) {
     const path = 'payments/' + payment.id;
     const configuration = await checkoutConfiguration();
     try {
@@ -110,12 +113,15 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
     } catch {
       payment = await mollieRequest(path);
       if (payment.status === 'open' && payment.metadata?.checkoutMarket !== 'FR') {
-        if (!payment.isCancelable) throw new TravauxError('Le paiement précédent est encore ouvert. Réessayez dans quelques instants.', 409);
-        try {
-          payment = await mollieRequest(path, { method: 'DELETE' });
-        } catch {
-          payment = await mollieRequest(path);
-          if (payment.status === 'open') throw new TravauxError('Le paiement précédent est encore ouvert. Réessayez dans quelques instants.', 409);
+        if (payment.isCancelable) {
+          try {
+            payment = await mollieRequest(path, { method: 'DELETE' });
+          } catch {
+            payment = await mollieRequest(path);
+          }
+        }
+        if (payment.status === 'open' && !canContinueBankCheckout(payment)) {
+          throw new TravauxError('Le paiement précédent est encore ouvert. Réessayez dans quelques instants.', 409);
         }
       }
     }
@@ -142,7 +148,7 @@ export async function startTravauxCheckout(db: TravauxDb, request: Request, user
     await reconcileTravauxPayment(db, payment.id, origin);
     return { ok: true };
   }
-  if (payment.status === 'open' && isPaymentCheckoutUrl(payment._links?.checkout?.href)) {
+  if (payment.status === 'open' && isPaymentCheckoutUrl(payment._links?.checkout?.href, payment.method)) {
     return { checkoutUrl: payment._links.checkout.href as string };
   }
   throw new TravauxError('Votre paiement est en cours de traitement.', 409);
