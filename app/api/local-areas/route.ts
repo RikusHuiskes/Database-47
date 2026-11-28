@@ -84,5 +84,5 @@ export async function GET() {
     .filter((town) => !requestedNames.has(town.name))
     .map((town) => ({ ...town, distance_group: "Overige plaatsen" })));
 
-  return NextResponse.json({ areas });
+  return NextResponse.json({ areas }, { headers: { "X-Robots-Tag": "noindex" } });
 }
